@@ -2676,7 +2676,6 @@ function renderCalorie() {
 
 function renderCalEntries() {
   const cd = getCalData(currentWeek, calDay);
-  const p = getMacroPrefs();
   const container = document.getElementById('mealSections');
   if (!container) return;
 
@@ -2686,10 +2685,10 @@ function renderCalEntries() {
   }
 
   container.innerHTML = cd.entries.map((e, i) => {
-    let macroStr = `${e.kcal} kcal · ${e.protein || 0}g prot`;
-    if (p.carbs && e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
-    if (p.fats  && e.fats  != null) macroStr += ` · ${e.fats}g fat`;
-    if (p.sugar && e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
+    let macroStr = `${e.kcal} kcal · ${e.protein || 0}g protein`;
+    if (e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
+    if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
+    if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
     return `
     <div class="meal-entry-grid" id="entry_${i}">
       <span style="font-size:13px;color:var(--text);">${e.name}</span>
