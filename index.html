@@ -920,9 +920,15 @@
         <div class="cal-bar-bg"><div class="cal-bar-fill" id="calBarFill" style="width:0%;background:var(--green);"></div></div>
       </div>
 
-      <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick add — your regular meals</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Quick add — your regular meals</div>
+      </div>
       <div class="quick-add-row" id="quickAddRow"></div>
 
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Today's food log</div>
+        <button onclick="clearSection(calDay,'calories')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear all</button>
+      </div>
       <div id="mealSections"></div>
       <button class="add-entry-btn" onclick="addCustomEntry()">+ add food / drink item</button>
 
@@ -940,7 +946,10 @@
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Water intake</div>
-          <div id="waterBadge" style="font-family:var(--mono);font-size:11px;padding:2px 10px;border-radius:10px;background:var(--surface2);color:var(--text3);">0 / 2.5 L</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="clearSection(calDay,'water')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear</button>
+            <div id="waterBadge" style="font-family:var(--mono);font-size:11px;padding:2px 10px;border-radius:10px;background:var(--surface2);color:var(--text3);">0 / 2.5 L</div>
+          </div>
         </div>
 
         <!-- SLIDER -->
@@ -1536,18 +1545,27 @@ function renderDayDetail(day) {
     <div class="day-detail">
       <div class="detail-header">
         <div class="detail-day-name">${day} — Week ${currentWeek} <span style="font-size:12px;color:var(--text3);font-weight:400;">(planned: ${planned})</span></div>
-        <button class="detail-close" onclick="selectedDay=null;renderDays()">✕</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="clearDay('${day}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Clear day</button>
+          <button class="detail-close" onclick="selectedDay=null;renderDays()">✕</button>
+        </div>
       </div>
       <div class="detail-grid">
         <div class="detail-section">
-          <div class="detail-label">Activity completed</div>
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
+            Activity completed
+            ${dd.activity ? `<button onclick="clearSection('${day}','activity')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× clear</button>` : ''}
+          </div>
           <select class="activity-select" onchange="saveDayActivity('${day}', this.value)">
             <option value="">— select —</option>
             ${optHtml}
           </select>
         </div>
         <div class="detail-section">
-          <div class="detail-label">Calories burned</div>
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
+            Calories burned
+            ${customBurn !== '' ? `<button onclick="clearDayBurn('${day}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× reset</button>` : ''}
+          </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input
               type="number"
@@ -1560,14 +1578,16 @@ function renderDayDetail(day) {
               oninput="saveDayBurn('${day}', this.value)"
             >
             <span style="font-size:12px;color:var(--text3);">kcal</span>
-            ${customBurn !== '' ? `<button onclick="clearDayBurn('${day}')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;">reset</button>` : ''}
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:4px;">
             ${customBurn !== '' ? `Watch says: <strong style="color:var(--text2)">${customBurn} kcal</strong>` : `Estimate: <strong style="color:var(--text2)">${preloadedBurn} kcal</strong> — enter your watch reading to override`}
           </div>
         </div>
         <div class="detail-section">
-          <div class="detail-label">Checklist</div>
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
+            Checklist
+            ${dd.core || dd.backOk === false ? `<button onclick="clearSection('${day}','checklist')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× clear</button>` : ''}
+          </div>
           <div class="checklist">
             <label class="checklist-item">
               <input type="checkbox" ${dd.core ? 'checked' : ''} onchange="saveDayCore('${day}', this.checked)">
@@ -1580,7 +1600,10 @@ function renderDayDetail(day) {
           </div>
         </div>
         <div class="detail-section" style="grid-column: 1/-1;">
-          <div class="detail-label">Notes (back, energy, how it felt)</div>
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
+            Notes (back, energy, how it felt)
+            ${dd.notes ? `<button onclick="clearSection('${day}','notes')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× clear</button>` : ''}
+          </div>
           <textarea class="notes-input" placeholder="e.g. back a bit tight on run, felt strong in weights..." onchange="saveDayNotes('${day}', this.value)">${dd.notes || ''}</textarea>
         </div>
       </div>
@@ -1630,6 +1653,43 @@ function injectInlineSession(activity, week) {
   const src = document.getElementById(key);
   const dest = document.getElementById('inlineSessionContent');
   if (src && dest) dest.innerHTML = src.innerHTML;
+}
+
+function clearDay(day) {
+  if (!confirm(`Clear all logged data for ${day}? This cannot be undone.`)) return;
+  getWeekData(currentWeek).days[day] = { activity: '', core: false, backOk: true, notes: '', customBurn: undefined };
+  if (getWeekData(currentWeek).calories) delete getWeekData(currentWeek).calories[day];
+  if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
+  autoPersist();
+  pushToSheets();
+  renderDays();
+  renderSummary();
+  if (day === calDay) { renderCalorie(); renderWater(); }
+}
+
+function clearSection(day, section) {
+  const dd = getDayData(currentWeek, day);
+  if (section === 'activity') {
+    dd.activity = '';
+    dd.customBurn = undefined;
+    renderSummary();
+    if (day === calDay) updateCalTotals();
+  } else if (section === 'checklist') {
+    dd.core = false;
+    dd.backOk = true;
+    renderSummary();
+  } else if (section === 'notes') {
+    dd.notes = '';
+  } else if (section === 'calories') {
+    if (getWeekData(currentWeek).calories) delete getWeekData(currentWeek).calories[day];
+    if (day === calDay) { renderCalorie(); updateCalTotals(); }
+  } else if (section === 'water') {
+    if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
+    if (day === calDay) renderWater();
+  }
+  autoPersist();
+  pushToSheets();
+  renderDayDetail(day);
 }
 
 function saveDayActivity(day, val) {
