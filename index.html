@@ -812,6 +812,7 @@
     <div class="header-name">Arnav — Weight Loss Plan</div>
   </div>
   <div class="header-right">
+    <div style="font-family:var(--mono);font-size:11px;margin-bottom:6px;min-height:16px;text-align:right;" id="syncStatus"></div>
     <div class="week-nav">
       <button class="week-btn" onclick="changeWeek(-1)">‹</button>
       <div class="week-label" id="weekLabel">Week 1</div>
@@ -1275,12 +1276,10 @@ async function initAuth() {
   const unlocked = sessionStorage.getItem('ftUnlocked');
   if (unlocked === 'yes') {
     document.getElementById('lockScreen').classList.add('hidden');
-  } else {
-    document.getElementById('pwInput').focus();
-    await new Promise(resolve => {
-      window._authResolve = resolve;
-    });
+    return true;
   }
+  document.getElementById('pwInput').focus();
+  return false;
 }
 
 async function checkPassword() {
@@ -1293,6 +1292,7 @@ async function checkPassword() {
     sessionStorage.setItem('ftUnlocked', 'yes');
     document.getElementById('lockScreen').classList.add('hidden');
     errorEl.textContent = '';
+    await loadAndRender();
   } else {
     const inp = document.getElementById('pwInput');
     inp.classList.add('error');
@@ -1799,6 +1799,7 @@ function setSyncStatus(state, msg) {
 }
 
 async function pushToSheets() {
+  if (window.location.protocol === 'file:') return;
   setSyncStatus('saving');
   try {
     const resp = await fetch(SCRIPT_URL, {
@@ -1818,9 +1819,11 @@ async function pushToSheets() {
 }
 
 async function pullFromSheets() {
+  if (window.location.protocol === 'file:') return false;
   setSyncStatus('loading');
   try {
-    const resp = await fetch(SCRIPT_URL + '?action=read');
+    const resp = await fetch(SCRIPT_URL + '?action=read', { method: 'GET' });
+    if (!resp.ok) { setSyncStatus('error'); return false; }
     const json = await resp.json();
     if (json.ok && json.data && json.data.fitnessTracker) {
       allData = json.data.fitnessTracker;
@@ -1829,7 +1832,8 @@ async function pullFromSheets() {
       setTimeout(() => setSyncStatus('idle'), 3000);
       return true;
     }
-  } catch {
+    setSyncStatus('idle');
+  } catch(err) {
     setSyncStatus('error');
   }
   return false;
@@ -2157,14 +2161,16 @@ function importData(event) {
 }
 
 // ─── INIT ──────────────────────────────────────────────────
-async function init() {
-  await initAuth();
+async function loadAndRender() {
+  const local = localStorage.getItem('fitnessTracker');
+  if (local) { allData = JSON.parse(local); render(); }
   const pulled = await pullFromSheets();
-  if (!pulled) {
-    const local = localStorage.getItem('fitnessTracker');
-    if (local) allData = JSON.parse(local);
-  }
-  render();
+  if (pulled) render();
+}
+
+async function init() {
+  const authed = await initAuth();
+  if (authed) await loadAndRender();
 }
 
 init();
