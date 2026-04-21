@@ -1542,12 +1542,14 @@ function calcStreak() {
   const start = getStartDate();
   if (!start) return { current: 0, longest: 0 };
   const today = new Date(); today.setHours(0,0,0,0);
+  const actualStart = new Date(allData._startDate); actualStart.setHours(0,0,0,0);
   const days = [];
   for (let w = 1; w <= 20; w++) {
     for (let d = 0; d < 7; d++) {
       const date = getDayDate(w, d);
       if (!date) continue;
       date.setHours(0,0,0,0);
+      if (date < actualStart) continue; // skip days before plan started
       if (date > today) continue;
       const dayName = DAYS[d];
       const wd = peekWeekData(w);
@@ -1635,7 +1637,11 @@ function renderProgress() {
     document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
   } else {
     document.getElementById('currentWt').textContent = '—';
+    document.getElementById('wtDeltaText').textContent = 'Log below';
     document.getElementById('totalLost').textContent = '0';
+    document.getElementById('toGoText').textContent = '14 lbs to goal 1';
+    document.getElementById('goal1Bar').style.width = '0%';
+    document.getElementById('goal1Pct').textContent = '0% — target 154 lbs';
   }
 }
 
@@ -2527,6 +2533,7 @@ function renderCalendar() {
     return;
   }
   const today = new Date(); today.setHours(0,0,0,0);
+  const actualStart = new Date(allData._startDate); actualStart.setHours(0,0,0,0);
   let html = '';
   html += `<div class="cal-header-row"><div class="cal-header-cell"></div>${DAYS.map(d=>`<div class="cal-header-cell">${d}</div>`).join('')}</div>`;
 
@@ -2550,6 +2557,7 @@ function renderCalendar() {
       const dd = getDayData(w, dayName);
       const act = (dd.activity || '').toLowerCase();
       const isFuture = date > today;
+      const isBeforeStart = date < actualStart;
       const isToday = date.getTime() === today.getTime();
       const hasWeight = !!wd.weight && d === 0;
       let cellClass = 'cal-future';
@@ -2558,6 +2566,9 @@ function renderCalendar() {
         cellClass = act.includes('padel') ? 'cal-padel' : act && !act.includes('rest') ? 'cal-workout' : act.includes('rest') ? 'cal-rest' : 'cal-rest';
         tag = dd.activity || '';
         cellClass += ' cal-today';
+      } else if (isBeforeStart) {
+        cellClass = 'cal-future';
+        tag = '';
       } else if (!isFuture) {
         if (act.includes('padel')) {
           cellClass = 'cal-padel'; tag = 'Padel';
