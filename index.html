@@ -926,9 +926,13 @@
         <label>This week's weight:</label>
         <input class="weight-input" type="number" id="weekWeight" step="0.1" min="100" max="250" placeholder="—" oninput="updateWeightDelta()">
         <span class="weight-unit">lbs</span>
+        <button id="clearWeightBtn" onclick="clearWeekWeight()" style="display:none;font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);margin-left:4px;">× clear</button>
       </div>
       <div class="weight-delta" id="weightDelta" style="display:none"></div>
       <div style="font-size: 12px; color: var(--text3);">Weigh Monday morning, after toilet, before eating</div>
+      <div style="width:100%;margin-top:10px;">
+        <input type="text" id="weekWeightNote" placeholder="Add context — e.g. heavy dinner last night, back from trip, feeling bloated..." oninput="debounceWeightNote(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
     </div>
 
     <!-- DAYS -->
@@ -945,6 +949,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="font-size:13px; color:var(--text2);">Rules followed — <span id="dietDayLabel" style="font-weight:500;color:var(--text);"></span></div>
         <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="clearDietDay(dietDay)" style="font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear</button>
           <div id="dietScore" style="font-family:var(--mono); font-size:12px; color:var(--text3);">0/7</div>
           <select id="dietDaySelect" class="cal-day-select" style="font-size:11px;padding:3px 8px;" onchange="switchDietDay(this.value)">
             <option value="Mon">Mon</option><option value="Tue">Tue</option><option value="Wed">Wed</option>
@@ -1491,9 +1496,13 @@ function setStartDate(dateStr) {
 function getWeekStartDate(weekNum) {
   const start = getStartDate();
   if (!start) return null;
-  const d = new Date(start);
-  d.setDate(d.getDate() + (weekNum - 1) * 7);
-  return d;
+  // Anchor to the Monday of the week containing the start date
+  const monday = new Date(start);
+  const dow = monday.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const daysToMonday = dow === 0 ? -6 : 1 - dow; // go back to Monday
+  monday.setDate(monday.getDate() + daysToMonday);
+  monday.setDate(monday.getDate() + (weekNum - 1) * 7);
+  return monday;
 }
 
 function getDayDate(weekNum, dayIdx) {
@@ -1519,9 +1528,13 @@ function getCurrentWeekFromDate() {
   if (!start) return 1;
   const today = new Date();
   today.setHours(0,0,0,0);
-  const startDay = new Date(start);
-  startDay.setHours(0,0,0,0);
-  const diff = Math.floor((today - startDay) / (7 * 24 * 60 * 60 * 1000));
+  // Find Monday of the start week
+  const monday = new Date(start);
+  monday.setHours(0,0,0,0);
+  const dow = monday.getDay();
+  const daysToMonday = dow === 0 ? -6 : 1 - dow;
+  monday.setDate(monday.getDate() + daysToMonday);
+  const diff = Math.floor((today - monday) / (7 * 24 * 60 * 60 * 1000));
   return Math.min(20, Math.max(1, diff + 1));
 }
 
@@ -1595,6 +1608,9 @@ function render() {
 
   renderWeight();
   renderDays();
+  if (!dietDayManuallySet) {
+    dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  }
   renderDiet();
   renderCalorie();
   renderSummary();
@@ -1623,17 +1639,53 @@ function renderProgress() {
   }
 }
 
+let weightNoteTimer = null;
+function debounceWeightNote(val) {
+  clearTimeout(weightNoteTimer);
+  weightNoteTimer = setTimeout(() => saveWeightNote(val), 800);
+}
+
+function saveWeightNote(val) {
+  // Only save note if the week already has a weight entry, or create if typing
+  const wd = getWeekData(currentWeek);
+  wd.weightNote = val.trim();
+  autoPersist();
+}
+
+function clearWeekWeight() {
+  if (!confirm('Clear the weight entry for Week ' + currentWeek + '?')) return;
+  const wd = peekWeekData(currentWeek);
+  if (wd) { wd.weight = null; wd.weightNote = ''; }
+  document.getElementById('weekWeight').value = '';
+  document.getElementById('weekWeightNote').value = '';
+  document.getElementById('weightDelta').style.display = 'none';
+  document.getElementById('clearWeightBtn').style.display = 'none';
+  autoPersist();
+  renderProgress();
+}
+
 function renderWeight() {
   const wd = peekWeekData(currentWeek);
   const inp = document.getElementById('weekWeight');
-  inp.value = (wd && wd.weight) ? wd.weight : '';
+  const noteInp = document.getElementById('weekWeightNote');
+  const clearBtn = document.getElementById('clearWeightBtn');
+  const hasWeight = wd && wd.weight;
+  inp.value = hasWeight ? wd.weight : '';
+  if (noteInp) noteInp.value = (wd && wd.weightNote) ? wd.weightNote : '';
+  if (clearBtn) clearBtn.style.display = hasWeight ? 'inline-block' : 'none';
   updateWeightDelta();
 }
 
 function updateWeightDelta() {
   const val = parseFloat(document.getElementById('weekWeight').value);
   const delta = document.getElementById('weightDelta');
-  if (!val) { delta.style.display = 'none'; return; }
+  const clearBtn = document.getElementById('clearWeightBtn');
+  if (!val) {
+    delta.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
+    return;
+  }
+  if (clearBtn) clearBtn.style.display = 'inline-block';
   // Find previous week weight
   let prev = null;
   for (let w = currentWeek - 1; w >= 1; w--) {
@@ -1751,6 +1803,7 @@ function renderDayDetail(day) {
       <div class="detail-header">
         <div class="detail-day-name">${day}${dateLabel} <span style="font-size:12px;color:var(--text3);font-weight:400;">(planned: ${planned})</span></div>
         <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="clearWorkout('${day}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);">Clear workout</button>
           <button onclick="clearDay('${day}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Clear day</button>
           <button class="detail-close" onclick="selectedDay=null;renderDays()">✕</button>
         </div>
@@ -1861,14 +1914,43 @@ function injectInlineSession(activity, week) {
 }
 
 function clearDay(day) {
-  if (!confirm(`Clear all logged data for ${day}? This cannot be undone.`)) return;
+  if (!confirm(`Clear everything logged for ${day}? This cannot be undone.`)) return;
   getWeekData(currentWeek).days[day] = { activity: '', core: false, backOk: true, notes: '', customBurn: undefined };
   if (getWeekData(currentWeek).calories) delete getWeekData(currentWeek).calories[day];
   if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
+  if (getWeekData(currentWeek).diet) delete getWeekData(currentWeek).diet[day];
+  autoPersist();
+  // Close and re-render the detail panel to reflect cleared state
+  selectedDay = null;
+  renderDays();
+  renderSummary();
+  renderDiet();
+  if (day === calDay) { renderCalorie(); renderWater(); }
+}
+
+function clearWorkout(day) {
+  if (!confirm(`Clear workout data for ${day}?`)) return;
+  const dd = getDayData(currentWeek, day);
+  dd.activity = '';
+  dd.core = false;
+  dd.backOk = true;
+  dd.notes = '';
+  dd.customBurn = undefined;
   autoPersist();
   renderDays();
   renderSummary();
-  if (day === calDay) { renderCalorie(); renderWater(); }
+  if (day === calDay) updateCalTotals();
+  // Re-render the detail panel so it reflects cleared state
+  if (selectedDay === day) renderDayDetail(day);
+}
+
+function clearDietDay(day) {
+  if (!confirm(`Clear diet rules for ${day}?`)) return;
+  const wd = peekWeekData(currentWeek);
+  if (wd && wd.diet) delete wd.diet[day];
+  autoPersist();
+  renderDiet();
+  renderSummary();
 }
 
 function clearSection(day, section) {
@@ -1929,9 +2011,11 @@ function saveDayNotes(day, val) {
 }
 
 let dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+let dietDayManuallySet = false;
 
 function switchDietDay(day) {
   dietDay = day;
+  dietDayManuallySet = true;
   renderDiet();
 }
 
@@ -2489,7 +2573,7 @@ function renderCalendar() {
       html += `<div class="cal-day-cell ${cellClass}" onclick="goToWeekDay(${w},'${dayName}')" title="${formatDateFull(date)}${dd.activity ? ' · '+dd.activity : ''}">
         <div class="cal-day-num">${date.getDate()}</div>
         ${tag ? `<div class="cal-day-tag">${tag}</div>` : ''}
-        ${hasWeight ? `<div class="cal-weight-dot" title="${wd.weight} lbs"></div>` : ''}
+        ${hasWeight ? `<div class="cal-weight-dot" title="${wd.weight} lbs${wd.weightNote ? ' — ' + wd.weightNote : ''}"></div>` : ''}
       </div>`;
     }
     html += `</div>`;
@@ -2540,11 +2624,13 @@ function renderHistory() {
       }
       if (wt) {
         const milestone = wt <= GOAL2 ? '🎯 Goal 2 hit!' : wt <= GOAL1 ? '🎯 Goal 1 hit!' : '';
+        const note = wd.weightNote ? `<span style="font-size:11px;color:var(--text3);margin-left:8px;font-style:italic;">${wd.weightNote}</span>` : '';
         weightHtml += `<div class="history-row">
           <span class="history-week">Wk ${w} · ${weekLabel}</span>
           <span class="history-weight">${wt} lbs</span>
           ${deltaHtml}
           ${milestone ? `<span style="font-size:11px;color:var(--green);margin-left:6px;">${milestone}</span>` : ''}
+          ${note}
         </div>`;
         chartLabels.push(`Wk${w}${ws?' '+formatDate(ws,{day:'numeric',month:'short'}):''}` );
         chartData.push(wt);
