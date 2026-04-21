@@ -2353,7 +2353,7 @@ function renderMacroStats() {
   if (pb) pb.style.width = Math.min(100,Math.round((protein/75)*100))+'%';
 }
 
-// ─── FOOD SEARCH (Open Food Facts) ────────────────────────
+// ─── FOOD SEARCH (USDA FoodData Central) ─────────────────
 let searchDebounceTimer = null;
 
 async function searchFood() {
@@ -2363,81 +2363,79 @@ async function searchFood() {
   const results = document.getElementById('foodSearchResults');
 
   if (window.location.protocol === 'file:') {
-    status.textContent = 'Food search only works on the live site — open via GitHub Pages, not as a local file.';
+    status.textContent = 'Food search only works on the live site — open via GitHub Pages.';
     return;
   }
+
   status.textContent = 'Searching...';
   results.style.display = 'none';
+
   try {
-    const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(query)}&page_size=8&fields=product_name,brands,nutriments,serving_size,serving_quantity&sort_by=unique_scans_n`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=__USDA_API_KEY__&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'ArnavFitnessTracker/1.0 (personal health tracker)' },
-      signal: controller.signal,
-    });
+    const resp = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
+
     if (!resp.ok) {
-      if (resp.status === 503) {
-        status.textContent = 'Open Food Facts server is temporarily unavailable (503) — wait 30 seconds and try again.';
-      } else if (resp.status === 429) {
-        status.textContent = 'Too many searches — wait a moment and try again.';
-      } else {
-        status.textContent = `Search failed (${resp.status}) — try again or add manually.`;
-      }
+      status.textContent = resp.status === 429
+        ? 'Too many searches — wait a moment and try again.'
+        : `Search failed (${resp.status}) — try again or add manually.`;
       return;
     }
-    const products = (data.products || []).filter(p => p.product_name && p.nutriments);
-    if (products.length === 0) {
+
+    const data = await resp.json();
+    const foods = (data.foods || []).filter(f => f.description && f.foodNutrients && f.foodNutrients.length > 0);
+
+    if (foods.length === 0) {
       status.textContent = 'No results found — add it manually below.';
-      results.style.display = 'none';
       return;
     }
-    status.textContent = `${products.length} result${products.length>1?'s':''} found`;
-    results.innerHTML = products.map((p, idx) => {
-      const n = p.nutriments;
-      const kcal = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || (n['energy_100g'] ? n['energy_100g']/4.184 : 0));
-      const protein = Math.round((n['proteins_100g'] || 0) * 10) / 10;
-      const carbs = Math.round((n['carbohydrates_100g'] || 0) * 10) / 10;
-      const fats = Math.round((n['fat_100g'] || 0) * 10) / 10;
-      const sugar = Math.round((n['sugars_100g'] || 0) * 10) / 10;
-      const name = p.product_name + (p.brands ? ` (${p.brands.split(',')[0].trim()})` : '');
-      const serving = p.serving_quantity ? `${p.serving_quantity}g serving` : '100g';
-      return `<div onclick="selectFoodResult(${idx})" data-idx="${idx}" style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"
-        data-name="${name.replace(/"/g,'&quot;')}"
-        data-kcal100="${n['energy-kcal_100g']||n['energy-kcal']||0}"
-        data-prot100="${n['proteins_100g']||0}"
-        data-carb100="${n['carbohydrates_100g']||0}"
-        data-fat100="${n['fat_100g']||0}"
-        data-sugar100="${n['sugars_100g']||0}"
-        data-serving="${p.serving_quantity||100}">
-        <div style="font-size:13px;font-weight:500;color:var(--text);">${name}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">per 100g — ${kcal} kcal · ${protein}g protein · ${carbs}g carbs · ${fats}g fat · ${sugar}g sugar · <span style="color:var(--accent);">tap to add</span></div>
-      </div>`;
-    }).join('');
+
+    status.textContent = `${foods.length} result${foods.length > 1 ? 's' : ''} found`;
+
+    const getNut = (nutrients, ids) => {
+      for (const id of ids) {
+        const f = nutrients.find(x => String(x.nutrientNumber) === String(id) || x.nutrientId === id);
+        if (f && f.value != null) return f.value;
+      }
+      return 0;
+    };
+
+    // Store parsed results for serving picker
+    window._lastFoodResults = foods.map(f => ({
+      name:     f.description + (f.brandOwner ? ` (${f.brandOwner})` : ''),
+      kcal100:  getNut(f.foodNutrients, [1008, 2047, 2048]),
+      prot100:  getNut(f.foodNutrients, [1003]),
+      carb100:  getNut(f.foodNutrients, [1005]),
+      fat100:   getNut(f.foodNutrients, [1004]),
+      sugar100: getNut(f.foodNutrients, [1063]),
+      servingG: f.servingSize || 100,
+    }));
+
+    results.innerHTML = window._lastFoodResults.map((f, idx) => `
+      <div onclick="selectFoodResult(${idx})"
+        style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;"
+        onmouseover="this.style.background='var(--surface2)'"
+        onmouseout="this.style.background=''">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">${f.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">per 100g — ${Math.round(f.kcal100)} kcal · ${Math.round(f.prot100*10)/10}g protein · ${Math.round(f.carb100*10)/10}g carbs · ${Math.round(f.fat100*10)/10}g fat · <span style="color:var(--accent);">tap to add</span></div>
+      </div>`).join('');
+
     results.style.display = 'block';
+
   } catch(err) {
-    const status = document.getElementById('foodSearchStatus');
-    if (err.name === 'AbortError') {
-      status.textContent = 'Search timed out — Open Food Facts may be slow. Try again or add manually.';
-    } else {
-      status.textContent = 'Search failed — check your connection or add manually.';
-    }
+    status.textContent = err.name === 'AbortError'
+      ? 'Search timed out — try again or add manually.'
+      : 'Search failed — check your connection or add manually.';
   }
 }
 
 function selectFoodResult(idx) {
+  const food = (window._lastFoodResults || [])[idx];
+  if (!food) return;
+  const { name, kcal100, prot100, carb100, fat100, sugar100, servingG } = food;
   const results = document.getElementById('foodSearchResults');
-  const el = results.querySelector(`[data-idx="${idx}"]`);
-  if (!el) return;
-
-  const name = el.getAttribute('data-name');
-  const kcal100 = parseFloat(el.getAttribute('data-kcal100')) || 0;
-  const prot100 = parseFloat(el.getAttribute('data-prot100')) || 0;
-  const carb100 = parseFloat(el.getAttribute('data-carb100')) || 0;
-  const fat100  = parseFloat(el.getAttribute('data-fat100'))  || 0;
-  const sugar100= parseFloat(el.getAttribute('data-sugar100'))|| 0;
-  const servingG= parseFloat(el.getAttribute('data-serving')) || 100;
 
   // Show serving size picker inline
   results.innerHTML = `
