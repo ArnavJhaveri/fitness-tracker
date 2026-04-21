@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f2ee;
+    --surface: #ffffff;
+    --surface2: #f0ece6;
+    --border: #e0d9d0;
+    --border2: #cfc8bd;
+    --text: #1a1714;
+    --text2: #6b6259;
+    --text3: #a89e93;
+    --green: #2d6a4f;
+    --green-bg: #e8f4ef;
+    --amber: #92400e;
+    --amber-bg: #fef3c7;
+    --red: #991b1b;
+    --red-bg: #fee2e2;
+    --blue: #1e40af;
+    --blue-bg: #dbeafe;
+    --purple: #5b21b6;
+    --purple-bg: #ede9fe;
+    --accent: #c4501a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 20px 28px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-left {}
+  .header-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .header-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: #f5f2ee;
+    letter-spacing: -0.02em;
+  }
+  .header-right {
+    text-align: right;
+  }
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .week-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #f5f2ee;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .week-btn:hover { background: rgba(255,255,255,0.22); }
+  .week-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    min-width: 70px;
+    text-align: center;
+  }
+
+  /* MAIN */
+  .main { padding: 20px 28px 40px; max-width: 900px; margin: 0 auto; }
+
+  /* PROGRESS BANNER */
+  .progress-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+  }
+  .prog-stat {}
+  .prog-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .prog-val {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .prog-val span {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text3);
+    margin-left: 3px;
+  }
+  .prog-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .prog-bar-bg {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .prog-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.6s ease;
+  }
+
+  /* WEIGHT LOG */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+  }
+
+  .weight-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .weight-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .weight-input-group label {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .weight-input {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    border: none;
+    border-bottom: 2px solid var(--border2);
+    background: transparent;
+    width: 80px;
+    padding: 2px 4px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .weight-input:focus { border-color: var(--accent); }
+  .weight-unit { font-size: 13px; color: var(--text3); }
+  .weight-delta {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .delta-down { background: var(--green-bg); color: var(--green); }
+  .delta-up { background: var(--red-bg); color: var(--red); }
+  .delta-same { background: var(--surface2); color: var(--text3); }
+  .weight-note {
+    font-size: 11px;
+    color: var(--text3);
+    width: 100%;
+    margin-top: -8px;
+  }
+
+  /* DAYS GRID */
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 600px) {
+    .days-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .day-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    position: relative;
+  }
+  .day-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .day-card.selected { border-color: var(--accent); border-width: 2px; }
+
+  .day-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .day-type-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 7px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 6px;
+    width: 100%;
+    text-align: center;
+  }
+  .badge-run { background: var(--green-bg); color: var(--green); }
+  .badge-weights { background: var(--blue-bg); color: var(--blue); }
+  .badge-padel { background: var(--purple-bg); color: var(--purple); }
+  .badge-rest { background: var(--surface2); color: var(--text3); }
+  .badge-core { background: var(--amber-bg); color: var(--amber); }
+  .badge-empty { background: var(--surface2); color: var(--text3); }
+
+  .day-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text3);
+  }
+  .check-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .check-dot.checked { background: var(--green); border-color: var(--green); }
+  .check-dot.warn-checked { background: var(--red); border-color: var(--red); }
+
+  /* DAY DETAIL PANEL */
+  .day-detail {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .detail-day-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .detail-close {
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .detail-close:hover { background: var(--surface2); }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .detail-section { }
+  .detail-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  .activity-select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+  .activity-select:focus { border-color: var(--accent); }
+
+  .checklist { display: flex; flex-direction: column; gap: 6px; }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  .checklist-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+  .checklist-item label {
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .notes-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    resize: none;
+    outline: none;
+    height: 60px;
+    line-height: 1.5;
+  }
+  .notes-input:focus { border-color: var(--accent); }
+
+  /* DIET CHECKLIST */
+  .diet-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .diet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  @media (max-width: 500px) { .diet-grid { grid-template-columns: 1fr; } }
+  .diet-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .diet-item:hover { background: var(--surface2); }
+  .diet-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--green);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .diet-item label {
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    line-height: 1.4;
+  }
+
+  /* WEEKLY SUMMARY */
+  .summary-card {
+    background: var(--text);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 14px;
+  }
+  .sum-stat {}
+  .sum-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 3px;
+  }
+  .sum-val {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f5f2ee;
+    letter-spacing: -0.02em;
+  }
+  .sum-val small {
+    font-size: 11px;
+    font-weight: 400;
+    color: #a89e93;
+    margin-left: 2px;
+  }
+
+  /* HISTORY */
+  .history-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-week { color: var(--text2); font-family: var(--mono); font-size: 11px; }
+  .history-weight { font-weight: 600; color: var(--text); font-family: var(--mono); }
+  .history-delta { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-family: var(--mono); }
+
+  /* SAVE BTN */
+  /* CALORIE COUNTER */
+  .calorie-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .calorie-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .calorie-totals {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 500px) { .calorie-totals { grid-template-columns: repeat(2,1fr); } }
+  .cal-stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .cal-stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
+  .cal-stat-val { font-size: 18px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .cal-stat-val small { font-size: 11px; font-weight: 400; color: var(--text3); }
+  .cal-bar-wrap { margin-bottom: 14px; }
+  .cal-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .cal-bar-bg { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .cal-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease, background 0.3s; }
+  .meal-entry-grid {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .meal-entry-grid input[type="text"] {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+  .meal-entry-grid input[type="text"]:focus { border-color: var(--accent); }
+  .cal-num-input {
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    width: 72px;
+    text-align: right;
+  }
+  .cal-num-input:focus { border-color: var(--accent); }
+  .cal-unit { font-size: 12px; color: var(--text3); white-space: nowrap; }
+  .add-entry-btn {
+    background: none;
+    border: 1px dashed var(--border2);
+    color: var(--text3);
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s;
+    font-family: var(--sans);
+    margin-top: 4px;
+  }
+  .add-entry-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .del-entry-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .del-entry-btn:hover { background: var(--red-bg); color: var(--red); }
+  .meal-section { margin-bottom: 12px; }
+  .meal-section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .meal-section-kcal { font-weight: 500; color: var(--text2); }
+  .deficit-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: var(--mono);
+  }
+  .deficit-ok { background: var(--green-bg); color: var(--green); }
+  .deficit-warn { background: var(--amber-bg); color: var(--amber); }
+  .deficit-over { background: var(--red-bg); color: var(--red); }
+  .quick-add-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .quick-btn {
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: border-color 0.12s;
+  }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-day-select {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+  .target-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); }
+  .target-line strong { color: var(--text2); font-weight: 500; }
+
+  .save-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: -0.01em;
+  }
+  .save-btn:hover { opacity: 0.88; }
+  .save-msg {
+    font-size: 12px;
+    color: var(--green);
+    margin-left: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .save-msg.show { opacity: 1; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .plan-ref {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+  .plan-ref strong { color: var(--text); font-weight: 500; }
+  .plan-ref-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .phase-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .phase-1 { background: var(--green-bg); color: var(--green); }
+  .phase-2 { background: var(--blue-bg); color: var(--blue); }
+
+  /* WORKOUT SPLITS */
+  .wo-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .wo-tab { font-size: 12px; font-weight: 500; padding: 6px 12px; border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  .wo-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .wo-panel { display: none; }
+  .wo-panel.active { display: block; }
+  .wo-session-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .wo-session-title { font-size: 15px; font-weight: 500; color: var(--text); }
+  .wo-badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .badge-push { background: #FAECE7; color: #993C1D; }
+  .badge-pull { background: var(--blue-bg); color: var(--blue); }
+  .badge-full { background: var(--green-bg); color: var(--green); }
+  .badge-legs { background: var(--purple-bg); color: var(--purple); }
+  .badge-core-tag { background: var(--amber-bg); color: var(--amber); }
+  .wo-meta { font-size: 12px; color: var(--text2); margin-bottom: 1rem; line-height: 1.6; }
+  .wo-warmup { background: var(--surface2); border-radius: 8px; padding: 10px 14px; margin-bottom: 1rem; font-size: 12px; color: var(--text2); line-height: 1.7; }
+  .wo-warmup strong { color: var(--text); font-weight: 500; }
+  .ex-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ex-tbl th { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); padding: 0 8px 7px 0; text-align: left; border-bottom: 1px solid var(--border); }
+  .ex-tbl td { padding: 9px 8px 9px 0; vertical-align: top; border-bottom: 1px solid var(--border); }
+  .ex-tbl tr:last-child td { border-bottom: none; }
+  .ex-n { font-weight: 500; color: var(--text); margin-bottom: 2px; font-size: 12px; }
+  .ex-eq { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .ex-s { font-family: var(--mono); font-size: 11px; color: var(--text); white-space: nowrap; }
+  .ex-note-text { color: var(--text2); line-height: 1.5; font-size: 12px; }
+  .tag-safe { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: var(--green-bg); color: var(--green); display: inline-block; margin-top: 3px; }
+  .tag-caution { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); display: inline-block; margin-top: 3px; }
+  .tag-avoid { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: var(--red-bg); color: var(--red); display: inline-block; margin-top: 3px; }
+  .wo-prog-note { background: var(--surface2); border-radius: 8px; padding: 10px 14px; margin-top: 1rem; font-size: 12px; color: var(--text2); line-height: 1.7; }
+  .wo-prog-note strong { color: var(--text); font-weight: 500; }
+  .inline-session { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 12px; background: var(--surface); }
+  .inline-session-title { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+
+  /* PASSWORD GATE */
+  #lockScreen {
+    position: fixed; inset: 0; background: #1a1714;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; flex-direction: column;
+  }
+  #lockScreen.hidden { display: none; }
+  .lock-card {
+    background: #242018; border: 1px solid #3a3530;
+    border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 360px;
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .lock-logo {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; margin-bottom: 24px;
+  }
+  .lock-logo svg { width: 24px; height: 24px; fill: white; }
+  .lock-title { font-size: 18px; font-weight: 600; color: #f5f2ee; margin-bottom: 6px; letter-spacing: -0.02em; }
+  .lock-sub { font-size: 13px; color: #a89e93; margin-bottom: 28px; }
+  .lock-input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid #3a3530; background: #1a1714;
+    font-family: var(--mono); font-size: 15px; color: #f5f2ee;
+    letter-spacing: 0.15em; outline: none; margin-bottom: 12px;
+    text-align: center; transition: border-color 0.15s;
+  }
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-input.error { border-color: #991b1b; animation: shake 0.3s ease; }
+  .lock-btn {
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: none; background: var(--accent); color: white;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: opacity 0.15s; margin-bottom: 12px;
+  }
+  .lock-btn:hover { opacity: 0.88; }
+  .lock-error { font-size: 12px; color: #f87171; min-height: 18px; text-align: center; }
+  .lock-hint { font-size: 11px; color: #5f5e5a; margin-top: 20px; text-align: center; line-height: 1.6; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <div class="lock-logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+      </svg>
+    </div>
+    <div class="lock-title">Arnav's Tracker</div>
+    <div class="lock-sub">Enter your password to continue</div>
+    <input
+      class="lock-input"
+      type="password"
+      id="pwInput"
+      placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPassword()"
+      autocomplete="current-password"
+    >
+    <button class="lock-btn" onclick="checkPassword()">Unlock</button>
+    <div class="lock-error" id="lockError"></div>
+    <div class="lock-hint">Session stays unlocked until you close the tab.<br>Change password in the settings section below.</div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">Progress tracker</div>
+    <div class="header-name">Arnav — Weight Loss Plan</div>
+  </div>
+  <div class="header-right">
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">‹</button>
+      <div class="week-label" id="weekLabel">Week 1</div>
+      <button class="week-btn" onclick="changeWeek(1)">›</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('this-week')">This week</button>
+    <button class="tab-btn" onclick="showTab('history')">History</button>
+    <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
+    <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
+  </div>
+
+  <!-- THIS WEEK -->
+  <div id="this-week" class="tab-panel active">
+
+    <!-- PROGRESS BANNER -->
+    <div class="progress-banner">
+      <div class="prog-stat">
+        <div class="prog-label">Start weight</div>
+        <div class="prog-val" id="startWt">168 <span>lbs</span></div>
+        <div class="prog-sub">Your baseline</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">This week</div>
+        <div class="prog-val" id="currentWt">— <span>lbs</span></div>
+        <div class="prog-sub" id="wtDeltaText">Log below</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Total lost</div>
+        <div class="prog-val" id="totalLost">0 <span>lbs</span></div>
+        <div class="prog-sub" id="toGoText">14 lbs to goal 1</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Goal 1 progress</div>
+        <div style="margin-top: 8px;">
+          <div class="prog-bar-bg"><div class="prog-bar-fill" id="goal1Bar" style="width:0%"></div></div>
+        </div>
+        <div class="prog-sub" id="goal1Pct" style="margin-top: 4px;">0% — target 154 lbs</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Phase</div>
+        <div class="prog-val" id="currentPhase">1</div>
+        <div class="prog-sub" id="phaseDesc">168→154 lbs</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Week</div>
+        <div class="prog-val" id="weekNum">1 <span>of 20</span></div>
+        <div class="prog-sub" id="weekPhaseDesc">Phase 1, wk 1</div>
+      </div>
+    </div>
+
+    <!-- WEIGHT LOG -->
+    <div class="section-title">Weekly weigh-in (Monday morning, same conditions)</div>
+    <div class="weight-row">
+      <div class="weight-input-group">
+        <label>This week's weight:</label>
+        <input class="weight-input" type="number" id="weekWeight" step="0.1" min="100" max="250" placeholder="—" oninput="updateWeightDelta()">
+        <span class="weight-unit">lbs</span>
+      </div>
+      <div class="weight-delta" id="weightDelta" style="display:none"></div>
+      <div style="font-size: 12px; color: var(--text3);">Weigh Monday morning, after toilet, before eating</div>
+    </div>
+
+    <!-- DAYS -->
+    <div class="section-title">Daily log — click a day to log details</div>
+    <div class="days-grid" id="daysGrid"></div>
+    <div id="dayDetail" style="display:none"></div>
+
+    <!-- DIET CHECKLIST -->
+    <div class="section-title">Diet rules — did you stick to them today?</div>
+    <div class="diet-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+        <div style="font-size:13px; color:var(--text2);">Check off each rule you followed <strong style="color:var(--text);">today</strong></div>
+        <div id="dietScore" style="font-family:var(--mono); font-size:12px; color:var(--text3);">0/7</div>
+      </div>
+      <div class="diet-grid" id="dietChecklist"></div>
+    </div>
+
+    <!-- CALORIE COUNTER -->
+    <div class="section-title">Daily calorie counter</div>
+    <div class="calorie-card">
+      <div class="calorie-header">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:500;color:var(--text);">Logging for:</span>
+          <select class="cal-day-select" id="calDaySelect" onchange="switchCalDay(this.value)">
+            <option value="Mon">Monday</option><option value="Tue">Tuesday</option><option value="Wed">Wednesday</option>
+            <option value="Thu">Thursday</option><option value="Fri">Friday</option><option value="Sat">Saturday</option><option value="Sun">Sunday</option>
+          </select>
+        </div>
+        <div id="deficitBadge" class="deficit-badge deficit-ok">— deficit</div>
+      </div>
+      <div class="calorie-totals">
+        <div class="cal-stat"><div class="cal-stat-label">Consumed</div><div class="cal-stat-val" id="calConsumed">0 <small>kcal</small></div></div>
+        <div class="cal-stat"><div class="cal-stat-label">Burned (exercise)</div><div class="cal-stat-val" id="calBurned">0 <small>kcal</small></div></div>
+        <div class="cal-stat"><div class="cal-stat-label">Net intake</div><div class="cal-stat-val" id="calNet">0 <small>kcal</small></div></div>
+        <div class="cal-stat"><div class="cal-stat-label">Daily target</div><div class="cal-stat-val" id="calTarget">1,850 <small>kcal</small></div></div>
+      </div>
+      <div class="cal-bar-wrap">
+        <div class="cal-bar-labels"><span>0</span><span id="calBarMid">925</span><span id="calBarTarget">Target: 1,850</span></div>
+        <div class="cal-bar-bg"><div class="cal-bar-fill" id="calBarFill" style="width:0%;background:var(--green);"></div></div>
+      </div>
+
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Quick add — your regular meals</div>
+      <div class="quick-add-row" id="quickAddRow"></div>
+
+      <div id="mealSections"></div>
+      <button class="add-entry-btn" onclick="addCustomEntry()">+ add food / drink item</button>
+
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Protein today</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
+          <div class="cal-stat"><div class="cal-stat-label">Logged</div><div class="cal-stat-val" id="proteinLogged">0 <small>g</small></div></div>
+          <div class="cal-stat"><div class="cal-stat-label">Target</div><div class="cal-stat-val">75 <small>g</small></div></div>
+          <div class="cal-stat"><div class="cal-stat-label">Remaining</div><div class="cal-stat-val" id="proteinRemaining">75 <small>g</small></div></div>
+        </div>
+        <div class="cal-bar-bg"><div class="cal-bar-fill" id="proteinBar" style="width:0%;background:var(--blue);"></div></div>
+      </div>
+
+      <!-- WATER TRACKER -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Water intake</div>
+          <div id="waterBadge" style="font-family:var(--mono);font-size:11px;padding:2px 10px;border-radius:10px;background:var(--surface2);color:var(--text3);">0 / 2.5 L</div>
+        </div>
+
+        <!-- SLIDER -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap;">0 L</span>
+          <input
+            type="range"
+            id="waterSlider"
+            min="0" max="4000" step="250" value="0"
+            style="flex:1;"
+            oninput="setWaterFromSlider(this.value)"
+          >
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap;">4 L</span>
+        </div>
+
+        <!-- SLIDER READOUT + TICK MARKS -->
+        <div style="display:flex;justify-content:space-between;padding:0 2px;margin-bottom:14px;">
+          <span style="font-size:10px;color:var(--text3);">0</span>
+          <span style="font-size:10px;color:var(--text3);">500</span>
+          <span style="font-size:10px;color:var(--text3);">1L</span>
+          <span style="font-size:10px;color:var(--text3);">1.5L</span>
+          <span style="font-size:10px;color:var(--text3);">2L</span>
+          <span style="font-size:10px;color:var(--text3);">2.5L</span>
+          <span style="font-size:10px;color:var(--text3);">3L</span>
+          <span style="font-size:10px;color:var(--text3);">3.5L</span>
+          <span style="font-size:10px;color:var(--text3);">4L</span>
+        </div>
+
+        <!-- DROPLET VISUAL -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:28px;" id="waterGlasses"></div>
+
+        <!-- QUICK ADD BUTTONS (kept as secondary option) -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="quick-btn" onclick="addWaterIncrement(250)">+ 250 ml</button>
+          <button class="quick-btn" onclick="addWaterIncrement(500)">+ 500 ml</button>
+          <button class="quick-btn" onclick="addWaterIncrement(750)">+ 750 ml</button>
+          <button class="quick-btn" onclick="addWaterIncrement(1000)">+ 1 L</button>
+          <button class="quick-btn" style="border-color:var(--red-bg);color:var(--red);" onclick="addWaterIncrement(-250)">− 250 ml</button>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;">
+            <div class="cal-bar-bg" style="height:6px;">
+              <div class="cal-bar-fill" id="waterBar" style="width:0%;background:var(--blue);transition:width 0.4s ease;"></div>
+            </div>
+          </div>
+          <span id="waterPct" style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:32px;text-align:right;">0%</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Target: 2.5 L/day — more on workout days and in Bangkok heat</div>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section-title">Week at a glance</div>
+    <div class="summary-card">
+      <div class="sum-stat"><div class="sum-label">Runs</div><div class="sum-val" id="sumRuns">0<small>/3</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Weights</div><div class="sum-val" id="sumWeights">0<small>/2</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Core days</div><div class="sum-val" id="sumCore">0<small>/7</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
+      <div class="sum-stat"><div class="sum-label">No OJ</div><div class="sum-val" id="sumOJ">0<small>/7</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:32px; flex-wrap:wrap;">
+      <button class="save-btn" onclick="saveWeek()">Save week</button>
+      <span class="save-msg" id="saveMsg">Saved ✓</span>
+      <div style="flex:1;"></div>
+      <button onclick="exportData()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">↓</span> Export backup
+      </button>
+      <label style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">↑</span> Import backup
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+      </label>
+      <span class="save-msg" id="importMsg" style="color:var(--green);">Imported ✓</span>
+    </div>
+
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history" class="tab-panel">
+    <div class="section-title">Weight history</div>
+    <div class="history-card" id="historyCard">
+      <div style="font-size:13px; color:var(--text3); padding: 8px 0;">No history yet — complete your first week to see data here.</div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
+    <div class="history-card" id="activityHistory">
+      <div style="font-size:13px; color:var(--text3); padding: 8px 0;">Activity history will appear here after saving weeks.</div>
+    </div>
+  </div>
+
+  <!-- WORKOUTS -->
+  <div id="workouts" class="tab-panel">
+    <div class="wo-tabs">
+      <button class="wo-tab active" onclick="showWoTab('wo-p1a',this)">Phase 1 — Session A</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p1b',this)">Phase 1 — Session B</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2a',this)">Phase 2 — Session A</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2b',this)">Phase 2 — Session B</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2c',this)">Phase 2 — Session C</button>
+      <button class="wo-tab" onclick="showWoTab('wo-core',this)">Daily core</button>
+    </div>
+
+    <div id="wo-p1a" class="wo-panel active">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Session A — Push</div>
+        <span class="wo-badge badge-push">Chest · Shoulders · Triceps</span>
+        <span style="font-size:11px;color:var(--text3);">Tue · ~45 min</span>
+      </div>
+      <div class="wo-meta">Chest, shoulders, and triceps. All pushing movements. No spinal loading — bench press performed lying flat, shoulder press seated. Leg press at the end keeps lower body active without stressing the back.</div>
+      <div class="wo-warmup"><strong>Warm-up (5 min):</strong> 2 min light cross trainer · 10 arm circles each direction · 10 band pull-aparts or light lateral raises · 10 bodyweight squats</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Dumbbell flat bench press</div><div class="ex-eq">Dumbbells · mat or bench</div></td><td><div class="ex-s">3 × 10–12</div></td><td><div class="ex-note-text">Feet flat. Lower until elbows reach 90° — don't flare wide. Press straight up. Don't arch the lower back off the bench.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Pec fly machine</div><div class="ex-eq">Pec fly machine</div></td><td><div class="ex-s">3 × 12–15</div></td><td><div class="ex-note-text">Seat height: handles at mid-chest. Slight bend in elbows — never lock out. Squeeze at peak, return slowly (3 sec). Zero spinal load.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Seated dumbbell shoulder press</div><div class="ex-eq">Dumbbells · seat with back support</div></td><td><div class="ex-s">3 × 10–12</div></td><td><div class="ex-note-text">Back supported. Start at ear height, press up without locking out. Don't lean back to push — if you are, weight is too heavy.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell lateral raise</div><div class="ex-eq">Light dumbbells</div></td><td><div class="ex-s">3 × 12–15</div></td><td><div class="ex-note-text">Slight bend in elbows. Raise to shoulder height only. Lead with elbows, not wrists. Shoulders down throughout. Go lighter than you think.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Tricep cable pushdown</div><div class="ex-eq">Cable pulldown machine (rope or bar)</div></td><td><div class="ex-s">3 × 12–15</div></td><td><div class="ex-note-text">Cable at highest position. Elbows tucked to sides — they don't move. Push to full extension, squeeze, return slowly. Torso upright.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Overhead dumbbell tricep extension</div><div class="ex-eq">Single dumbbell (seated)</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Hold one dumbbell with both hands overhead. Lower behind head slowly, elbows forward. Extend back up. Good stretch at the bottom.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Leg press</div><div class="ex-eq">Leg press machine (or 3×15 bodyweight squats)</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Feet shoulder-width, mid-platform. Lower to 90° — no deeper. Don't lock out knees at top. Lower back pressed into seat throughout.</div><span class="tag-safe">Back-safe</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note"><strong>Rest:</strong> 60–75 sec for isolation · 90 sec for compound moves. <strong>Progressive overload:</strong> Complete all reps cleanly for 2 sessions in a row → add 1–2kg next session.</div>
+    </div>
+
+    <div id="wo-p1b" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Session B — Pull</div>
+        <span class="wo-badge badge-pull">Back · Biceps · Rear delts</span>
+        <span style="font-size:11px;color:var(--text3);">Fri · ~45 min</span>
+      </div>
+      <div class="wo-meta">Back, biceps, and rear delts. The cable pulldown is your primary back tool — it replaces pull-ups and is more controllable for building lat strength. Face pulls are non-negotiable for desk posture and shoulder health.</div>
+      <div class="wo-warmup"><strong>Warm-up (5 min):</strong> 2 min light cross trainer · 10 cat-cows · dead hang from pull-up bar 10–15 sec (spinal decompression) · 10 arm circles · shoulder rolls</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Cable lat pulldown (wide grip)</div><div class="ex-eq">Cable pulldown machine</div></td><td><div class="ex-s">4 × 10–12</div></td><td><div class="ex-note-text">Grip just outside shoulder width. Lean back 10–15° only. Pull bar to upper chest — never behind neck. Elbows drive down and back. Squeeze lats at bottom, return slowly. Your primary back builder.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Cable lat pulldown (close grip)</div><div class="ex-eq">Cable pulldown · neutral grip attachment</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Narrow neutral grip. Elbows drive to hips. Hits lower lat and teres major. Slightly heavier than wide grip for most people.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Single-arm dumbbell row</div><div class="ex-eq">Dumbbell · bench for support</div></td><td><div class="ex-s">3 × 10–12 each</div></td><td><div class="ex-note-text">Knee and hand on bench, back flat. Row dumbbell to hip — not shoulder. Think "elbow to ceiling". Don't rotate the torso to lift heavier. Squeeze 1 sec at top.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Cable face pull</div><div class="ex-eq">Cable pulldown · rope attachment at face height</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Pull rope to forehead, elbows flaring out and back. External rotation at the top. Light weight, full control. Directly counteracts desk posture. Do not skip.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell rear delt fly</div><div class="ex-eq">Light dumbbells</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Hinge forward ~45°, knees soft. Raise both arms to shoulder height. Return slowly. Very light weight. If lower back feels it, do seated bent-over instead.</div><span class="tag-caution">Keep torso braced</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell bicep curl (alternating)</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 12 each</div></td><td><div class="ex-note-text">Elbows pinned to sides. Supinate (rotate palm up) as you curl. Lower 2 sec. If you're swinging the torso, weight is too heavy.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Hammer curl</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">2 × 12</div></td><td><div class="ex-note-text">Palms face each other throughout. Works brachialis and brachioradialis. Can go slightly heavier than regular curl. Alternate arms.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Step-ups with dumbbells</div><div class="ex-eq">Dumbbells · sturdy bench or step</div></td><td><div class="ex-s">3 × 10 each leg</div></td><td><div class="ex-note-text">Drive through heel of front foot. Don't push off back foot. Step down with control. Loads glutes and quads without spinal compression. Alternate leading leg each set.</div><span class="tag-safe">Back-safe</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note"><strong>Rest:</strong> 60 sec for isolation · 90 sec for compound. <strong>Pull-up bar:</strong> Dead hang 10–15 sec as warm-up. From week 8: jump to top, lower slowly over 5 sec (assisted negative) as a bonus set.</div>
+    </div>
+
+    <div id="wo-p2a" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Session A — Full body (push emphasis)</div>
+        <span class="wo-badge badge-full">Chest · Shoulders · Legs · Triceps</span>
+        <span style="font-size:11px;color:var(--text3);">Tue · ~55 min</span>
+      </div>
+      <div class="wo-meta">Full body with push lead. Goblet squats as primary leg movement. Intensity increases from Phase 1 — heavier weights, lower reps on compound moves.</div>
+      <div class="wo-warmup"><strong>Warm-up (5–7 min):</strong> 3 min cross trainer (moderate) · 10 cat-cows · 10 bodyweight goblet squats · 10 arm circles · 10 band pull-aparts</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Goblet squat</div><div class="ex-eq">Single dumbbell at chest</div></td><td><div class="ex-s">4 × 10–12</div></td><td><div class="ex-note-text">Hold dumbbell vertically at chest. Feet shoulder-width, toes slightly out. Squat until thighs parallel — keep chest tall, heels flat. Elbows inside knees at bottom. Upright torso = minimal spinal load.</div><span class="tag-safe">Safest squat for lower back</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell bench press (heavier)</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">4 × 8–10</div></td><td><div class="ex-note-text">Same form as Phase 1, heavier weight. If you were doing 3×12 with 12kg, aim for 4×10 with 14–16kg. This is where progressive overload kicks in.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Pec fly machine</div><div class="ex-eq">Pec fly machine</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Slightly heavier than Phase 1. Use as finisher after bench, not before. Slow return — 3 sec eccentric.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Seated shoulder press (heavier)</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">4 × 8–10</div></td><td><div class="ex-note-text">Add a 1-sec pause at the bottom before pressing — increases time under tension. Heavier than Phase 1.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Lateral raise (drop set option)</div><div class="ex-eq">Dumbbells (light)</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Last set: do 10 reps, drop weight, immediately do 10 more with no rest between (drop set).</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Tricep cable pushdown + overhead superset</div><div class="ex-eq">Cable machine + dumbbell</div></td><td><div class="ex-s">3 × 12 each</div></td><td><div class="ex-note-text">Pushdown 12 reps → rest 15 sec → overhead extension 12 reps → rest 60 sec. Saves time and increases tricep fatigue.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Romanian deadlift (dumbbell)</div><div class="ex-eq">Dumbbells — moderate weight</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Hinge at hips, lower along shins to mid-shin. Back flat throughout. Start light (8–10kg each). Only increase weight when form is perfect. Stop immediately if back complains.</div><span class="tag-caution">Phase 2 only — form before weight</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note"><strong>Rest:</strong> 90–120 sec after goblet squat and RDL · 60–90 sec for upper body compound · 45–60 sec for isolation. <strong>Deload every 4th week:</strong> drop weights 20%, reduce sets by 1.</div>
+    </div>
+
+    <div id="wo-p2b" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Session B — Full body (pull emphasis)</div>
+        <span class="wo-badge badge-pull">Back · Biceps · Legs · Rear delts</span>
+        <span style="font-size:11px;color:var(--text3);">Thu · ~55 min</span>
+      </div>
+      <div class="wo-meta">Pull-led full body. Higher volume on back and biceps. Lunges as primary leg movement — loads glutes and quads without spinal compression. Rear delt and face pull keeps shoulder health on track.</div>
+      <div class="wo-warmup"><strong>Warm-up (5 min):</strong> 2 min cross trainer · dead hang 15 sec · 10 cat-cows · 10 glute bridges · arm circles</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Cable lat pulldown (wide grip)</div><div class="ex-eq">Cable pulldown machine</div></td><td><div class="ex-s">4 × 8–10</div></td><td><div class="ex-note-text">Heavier than Phase 1. Full range. 2-sec hold at the bottom of each rep. From wk 8: add assisted negative chin-up as bonus set if back is strong.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Single-arm dumbbell row</div><div class="ex-eq">Dumbbell · bench</div></td><td><div class="ex-s">4 × 10 each</div></td><td><div class="ex-note-text">Heavier than Phase 1. Row to hip, pause 1 sec. Last set: strip set — finish at heavy weight, drop 4kg, do as many more as possible.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Cable face pull</div><div class="ex-eq">Cable pulldown · rope at face height</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Keep consistent throughout both phases. Posture corrector. Never sacrifice form for weight here.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell forward lunge</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 10 each leg</div></td><td><div class="ex-note-text">Step forward, lower back knee toward floor. Front knee stays over ankle. Keep torso strictly upright — leaning forward loads the lower back. Drive through front heel. Alternate legs.</div><span class="tag-caution">Keep torso upright</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell bicep curl</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Heavier than Phase 1. Option: incline dumbbell curl (sit on incline bench, arms hanging straight) for greater stretch at the bottom.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Hammer curl superset</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 12</div></td><td><div class="ex-note-text">Superset with bicep curls — curl, switch to hammer immediately, rest 60 sec. Neutral grip throughout.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Seated rear delt fly</div><div class="ex-eq">Light dumbbells</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Sit on bench edge, torso leaning on thighs — eliminates lower back involvement. Raise arms to shoulder height, slow return.</div><span class="tag-safe">Back-safe seated version</span></td></tr>
+        <tr><td><div class="ex-n">Glute bridge with dumbbell</div><div class="ex-eq">Single dumbbell on hips</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Dumbbell on hip creases. Drive hips up, squeeze hard, hold 2 sec, lower slowly. Loaded progression from daily core routine. Directly strengthens glutes that protect your lower back.</div><span class="tag-safe">Back rehab movement</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note"><strong>Rest:</strong> 90 sec for pulldowns and rows · 90 sec for lunges · 60 sec for bicep work · 45 sec for rear delt and glute bridge.</div>
+    </div>
+
+    <div id="wo-p2c" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Session C — Full body (leg emphasis)</div>
+        <span class="wo-badge badge-legs">Legs · Glutes · Shoulders · Arms</span>
+        <span style="font-size:11px;color:var(--text3);">Sat · ~55 min</span>
+      </div>
+      <div class="wo-meta">Dedicated leg emphasis session — the answer to Phase 1 having no dedicated leg day. Step-ups, goblet squats, and glute bridges form a complete lower body routine with no barbell or spinal compression. If Sat is a padel day, swap Session C to Fri and take Sat as rest.</div>
+      <div class="wo-warmup"><strong>Warm-up (5–7 min):</strong> 3 min treadmill incline walk (10%, 5.5 km/h) · 10 cat-cows · 15 bodyweight glute bridges · 10 bodyweight goblet squats · 10 leg swings each side</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Goblet squat (heavy, with pause)</div><div class="ex-eq">Heavy single dumbbell</div></td><td><div class="ex-s">4 × 10</div></td><td><div class="ex-note-text">Heavier than Session A. 2-sec pause at the bottom (pause squat) to increase difficulty without adding more weight. This is the primary quad and glute builder today.</div><span class="tag-safe">Safest squat variant</span></td></tr>
+        <tr><td><div class="ex-n">Step-ups (heavy)</div><div class="ex-eq">Heavy dumbbells · bench</div></td><td><div class="ex-s">4 × 10 each leg</div></td><td><div class="ex-note-text">Heaviest step-ups in the programme. 1-sec pause at the top (standing on bench). Drive through heel. No pushing off back foot at all. Alternate leading legs between sets.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Romanian deadlift (heavier)</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 10</div></td><td><div class="ex-note-text">Slightly heavier than Session A. Only increase if form was perfect last session. Feel the stretch in the hamstrings — not a pull in the lower back.</div><span class="tag-caution">Form before weight always</span></td></tr>
+        <tr><td><div class="ex-n">Dumbbell lateral lunge</div><div class="ex-eq">Single dumbbell (goblet hold)</div></td><td><div class="ex-s">3 × 10 each side</div></td><td><div class="ex-note-text">Step wide to one side, sit into that hip — other leg stays straight. Push back to centre. Hits inner thighs and glute medius — often weak from desk sitting.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Single-leg glute bridge</div><div class="ex-eq">Mat · bodyweight or dumbbell on hip</div></td><td><div class="ex-s">3 × 12 each</div></td><td><div class="ex-note-text">One leg extended, drive hips up with planted foot. Hold 2 sec at top. If hips drop to one side, keep working on it — that's a weakness to fix. Add dumbbell once bodyweight is easy.</div><span class="tag-safe">Core & back rehab</span></td></tr>
+        <tr><td><div class="ex-n">Seated shoulder press</div><div class="ex-eq">Dumbbells</div></td><td><div class="ex-s">3 × 10</div></td><td><div class="ex-note-text">Secondary shoulder volume. Superset with lateral raises to save time: press 10 reps → lateral raise 12 reps immediately → rest 75 sec.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Bicep curl + tricep pushdown superset</div><div class="ex-eq">Dumbbells + cable</div></td><td><div class="ex-s">3 × 12 each</div></td><td><div class="ex-note-text">Alternate curl and pushdown with no rest between — rest 60 sec after both. Arms get volume without a dedicated session. Efficient finisher.</div><span class="tag-safe">Back-safe</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note"><strong>Rest:</strong> 120 sec after goblet squat and step-ups (heavy leg work needs more recovery) · 90 sec after RDL · 60 sec for upper body.</div>
+    </div>
+
+    <div id="wo-core" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Daily core routine</div>
+        <span class="wo-badge badge-core-tag">Every day · 10–15 min</span>
+      </div>
+      <div class="wo-meta">Do every morning before eating if possible. These exercises build deep spinal stabilisers without loading or flexing the spine — the foundation of back rehab. Order matters: cat-cow first, then progress through the list.</div>
+      <div class="wo-warmup"><strong>Order matters:</strong> Cat-cow (mobilise) → dead bug → bird dog → glute bridge → plank → side plank. Never skip cat-cow — 90 seconds of spinal mobilisation before anything else.</div>
+      <table class="ex-tbl">
+        <thead><tr><th style="width:32%">Exercise</th><th style="width:15%">Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><div class="ex-n">Cat-cow</div><div class="ex-eq">Mat · bodyweight</div></td><td><div class="ex-s">2 × 10 breaths</div></td><td><div class="ex-note-text">Inhale: drop belly, lift head and tailbone (cow). Exhale: round spine up, tuck chin (cat). 3 sec each direction. Spinal mobilisation — do even on rest days.</div><span class="tag-safe">Do every single morning</span></td></tr>
+        <tr><td><div class="ex-n">Dead bug</div><div class="ex-eq">Mat · bodyweight</div></td><td><div class="ex-s">3 × 8 each side</div></td><td><div class="ex-note-text">Arms up, knees at 90°. Lower opposite arm and leg — lower back stays pressed into mat throughout. If it arches, you've gone too far. Teaches core to stabilise while limbs move — exactly what running demands.</div><span class="tag-safe">Primary back rehab</span></td></tr>
+        <tr><td><div class="ex-n">Bird dog</div><div class="ex-eq">Mat · bodyweight</div></td><td><div class="ex-s">3 × 8 each side</div></td><td><div class="ex-note-text">On hands and knees, back flat. Extend opposite arm and leg, hold 3 sec. Imagine balancing a glass of water on your lower back — don't let it tip. Builds the multifidus — deepest spinal stabiliser.</div><span class="tag-safe">Primary back rehab</span></td></tr>
+        <tr><td><div class="ex-n">Glute bridge</div><div class="ex-eq">Mat (add dumbbell on hips from wk 4)</div></td><td><div class="ex-s">3 × 15</div></td><td><div class="ex-note-text">Drive hips up, squeeze glutes hard, hold 2 sec, lower slowly. Progress to single-leg from wk 5. Weak glutes = primary cause of lower back pain. This directly fixes it.</div><span class="tag-safe">Back rehab — glute strength</span></td></tr>
+        <tr><td><div class="ex-n">Forearm plank</div><div class="ex-eq">Mat · bodyweight</div></td><td><div class="ex-s">3 × 20–60 sec</div></td><td><div class="ex-note-text">Squeeze everything — glutes, abs, quads. Breathe normally. Hips don't sag or rise. Add 5 sec each week. Once at 60 sec, switch to harder variations rather than going longer.</div><span class="tag-safe">Back-safe</span></td></tr>
+        <tr><td><div class="ex-n">Side plank</div><div class="ex-eq">Mat · bodyweight</div></td><td><div class="ex-s">3 × 20–45 sec each</div></td><td><div class="ex-note-text">Add from week 3. Body in a straight line — hips don't sag. Works quadratus lumborum, the muscle along the side of your lumbar spine. Weak QL is a common cause of one-sided back pain.</div><span class="tag-safe">Add from week 3</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wo-prog-note" style="background:var(--red-bg);"><strong style="color:var(--red);">Permanently avoid:</strong> <span style="color:var(--red);">Sit-ups · Crunches · Russian twists · Straight-leg raises · Any exercise causing or worsening back pain</span></div>
+    </div>
+  </div>
+
+  <!-- PLAN REFERENCE -->
+  <div id="plan-ref" class="tab-panel">
+    <div class="section-title">Your plan at a glance</div>
+
+    <span class="phase-badge phase-1">Phase 1 — Weeks 1–10</span>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Goal & calories</div>
+      <strong>Target:</strong> 168 → 154 lbs at ~1 lb/week<br>
+      <strong>Calories:</strong> 1,750–1,850 kcal/day · <strong>Protein:</strong> 70–80g/day (aim higher if dal available)
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Weekly training</div>
+      <strong>Mon/Wed/Sat:</strong> Easy run (25–35 min, building to 5km by wk 8)<br>
+      <strong>Tue/Fri:</strong> Upper body weights — Session A (push) and Session B (pull)<br>
+      <strong>Thu:</strong> Rest + 20–30 min brisk walk<br>
+      <strong>Sun:</strong> Full rest<br>
+      <strong>Every day:</strong> 10 min core routine (dead bug, bird dog, glute bridge, plank, cat-cow)
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Diet rules</div>
+      <strong>Cut:</strong> OJ at lunch, extra chai sugar, second fruit at breakfast<br>
+      <strong>Lunch:</strong> 2 chapattis (not 3), fruit moved to mid-morning, water instead of OJ<br>
+      <strong>Afternoon:</strong> Meiji shake only (no chai)<br>
+      <strong>Dinner:</strong> Plate rule — ½ veg, ¼ protein, ¼ carbs. Finish by 8pm.<br>
+      <strong>Both shakes:</strong> Keep daily — anchors protein at 60g minimum
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Padel rule</div>
+      1 hour padel = substitute for a running day. 2 hours padel = running day + extra recovery next day. Don't add it on top of a full training day.
+    </div>
+
+    <span class="phase-badge phase-2" style="margin-top:8px;">Phase 2 — Weeks 11–20</span>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Goal & calories</div>
+      <strong>Target:</strong> 154 → 143 lbs at ~0.75 lb/week<br>
+      <strong>Calories:</strong> 1,600–1,750 kcal/day · <strong>Protein:</strong> 90–100g/day<br>
+      <strong>Refeed:</strong> 1 meal at maintenance per week
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Weekly training</div>
+      <strong>Mon/Fri:</strong> Easy run 5–6km · <strong>Wed:</strong> Tempo run 4–5km<br>
+      <strong>Tue/Thu/Sat:</strong> Full body weights (3 sessions)<br>
+      <strong>Sun:</strong> Full rest · <strong>Every day:</strong> 15 min core (harder progressions)<br>
+      Deload every 4th week — reduce weight 20%, volume 30%
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Running milestones</div>
+      <strong>Wk 4:</strong> Running 20–25 min continuously<br>
+      <strong>Wk 8:</strong> 5km continuously, down ~5–7 lbs<br>
+      <strong>Wk 12:</strong> Goal 1 hit (154 lbs), tempo runs started<br>
+      <strong>Wk 20:</strong> Goal 2 hit (143 lbs)
+    </div>
+    <div class="plan-ref">
+      <div class="plan-ref-title">Back safety rules</div>
+      Pain during run → stop immediately, walk home. Avoid sit-ups, crunches, Russian twists, straight-leg raises throughout both phases. RDLs reintroduced in Phase 2 with dumbbells only. Max 10% weekly mileage increase.
+    </div>
+
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
+      <div class="section-title">Security</div>
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="plan-ref-title">Change password</div>
+        <input type="password" id="pwCurrent" placeholder="Current password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
+        <input type="password" id="pwNew" placeholder="New password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
+        <input type="password" id="pwConfirm" placeholder="Confirm new password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="changePassword()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update password</button>
+          <span id="pwChangeMsg" style="font-size:12px;opacity:0;transition:opacity 0.3s;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── AUTH ─────────────────────────────────────────────────
+const DEFAULT_PASSWORD = 'Arnav2024!';
+const PW_KEY = 'ftPwHash';
+
+async function hashStr(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function initAuth() {
+  if (!localStorage.getItem(PW_KEY)) {
+    const h = await hashStr(DEFAULT_PASSWORD);
+    localStorage.setItem(PW_KEY, h);
+  }
+  const unlocked = sessionStorage.getItem('ftUnlocked');
+  if (unlocked === 'yes') {
+    document.getElementById('lockScreen').classList.add('hidden');
+  } else {
+    document.getElementById('pwInput').focus();
+  }
+}
+
+async function checkPassword() {
+  const input = document.getElementById('pwInput').value;
+  const errorEl = document.getElementById('lockError');
+  if (!input) return;
+  const h = await hashStr(input);
+  const stored = localStorage.getItem(PW_KEY);
+  if (h === stored) {
+    sessionStorage.setItem('ftUnlocked', 'yes');
+    document.getElementById('lockScreen').classList.add('hidden');
+    errorEl.textContent = '';
+  } else {
+    const inp = document.getElementById('pwInput');
+    inp.classList.add('error');
+    errorEl.textContent = 'Incorrect password — try again';
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+}
+
+async function changePassword() {
+  const current = document.getElementById('pwCurrent').value;
+  const newPw = document.getElementById('pwNew').value;
+  const confirm = document.getElementById('pwConfirm').value;
+  const msg = document.getElementById('pwChangeMsg');
+
+  const currentHash = await hashStr(current);
+  const stored = localStorage.getItem(PW_KEY);
+
+  if (currentHash !== stored) {
+    msg.textContent = 'Current password is incorrect';
+    msg.style.color = 'var(--red)'; msg.style.opacity = '1';
+    setTimeout(() => msg.style.opacity = '0', 3000);
+    return;
+  }
+  if (newPw.length < 6) {
+    msg.textContent = 'New password must be at least 6 characters';
+    msg.style.color = 'var(--red)'; msg.style.opacity = '1';
+    setTimeout(() => msg.style.opacity = '0', 3000);
+    return;
+  }
+  if (newPw !== confirm) {
+    msg.textContent = 'Passwords do not match';
+    msg.style.color = 'var(--red)'; msg.style.opacity = '1';
+    setTimeout(() => msg.style.opacity = '0', 3000);
+    return;
+  }
+  const newHash = await hashStr(newPw);
+  localStorage.setItem(PW_KEY, newHash);
+  document.getElementById('pwCurrent').value = '';
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwConfirm').value = '';
+  msg.textContent = 'Password updated ✓';
+  msg.style.color = 'var(--green)'; msg.style.opacity = '1';
+  setTimeout(() => msg.style.opacity = '0', 3000);
+}
+
+// ─── STATE ───────────────────────────────────────────────
+const START_WEIGHT = 168;
+const GOAL1 = 154;
+const GOAL2 = 143;
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const PHASE1_PLAN = ['Run','Weights A','Run','Rest','Weights B','Run','Rest'];
+const PHASE2_PLAN = ['Run','Weights A','Tempo','Weights B','Run','Weights C','Rest'];
+
+const DIET_RULES = [
+  'No orange juice',
+  'Only 2 chapattis at lunch',
+  'Fruit as mid-morning snack (not at lunch)',
+  'Afternoon: shake only, no chai',
+  'Dinner plate rule (½ veg, ¼ protein, ¼ carbs)',
+  'Finished dinner before 8pm',
+  'Both protein shakes taken',
+];
+
+let currentWeek = 1;
+let selectedDay = null;
+let allData = JSON.parse(localStorage.getItem('fitnessTracker') || '{}');
+
+function getWeekData(w) {
+  if (!allData[w]) allData[w] = { weight: null, days: {}, diet: {} };
+  return allData[w];
+}
+
+function getDayData(w, d) {
+  const wd = getWeekData(w);
+  if (!wd.days[d]) wd.days[d] = { activity: '', core: false, notes: '' };
+  return wd.days[d];
+}
+
+function getDietData(w, d) {
+  const wd = getWeekData(w);
+  if (!wd.diet[d]) wd.diet[d] = {};
+  return wd.diet[d];
+}
+
+// ─── WEEK NAV ────────────────────────────────────────────
+function changeWeek(dir) {
+  currentWeek = Math.max(1, Math.min(20, currentWeek + dir));
+  selectedDay = null;
+  render();
+}
+
+// ─── RENDER ──────────────────────────────────────────────
+function render() {
+  document.getElementById('weekLabel').textContent = 'Week ' + currentWeek;
+  document.getElementById('weekNum').textContent = currentWeek;
+  document.getElementById('weekPhaseDesc').textContent = currentWeek <= 10 ? 'Phase 1, wk ' + currentWeek : 'Phase 2, wk ' + (currentWeek - 10);
+
+  const phase = currentWeek <= 10 ? 1 : 2;
+  document.getElementById('currentPhase').textContent = phase;
+  document.getElementById('phaseDesc').textContent = phase === 1 ? '168→154 lbs' : '154→143 lbs';
+
+  renderWeight();
+  renderDays();
+  renderDiet();
+  renderCalorie();
+  renderSummary();
+  renderProgress();
+}
+
+function renderProgress() {
+  // Find latest weight logged
+  let latestWt = null;
+  for (let w = currentWeek; w >= 1; w--) {
+    const d = getWeekData(w);
+    if (d.weight) { latestWt = d.weight; break; }
+  }
+  if (latestWt) {
+    document.getElementById('currentWt').textContent = latestWt;
+    const lost = START_WEIGHT - latestWt;
+    document.getElementById('totalLost').textContent = Math.max(0, lost).toFixed(1);
+    document.getElementById('wtDeltaText').textContent = lost > 0 ? '↓ ' + lost.toFixed(1) + ' lbs lost' : lost < 0 ? '↑ gained' : 'no change';
+    const pct = Math.min(100, Math.max(0, (lost / (START_WEIGHT - GOAL1)) * 100));
+    document.getElementById('goal1Bar').style.width = pct.toFixed(0) + '%';
+    document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target 154 lbs';
+    const toGo = Math.max(0, latestWt - GOAL1);
+    document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
+  } else {
+    document.getElementById('currentWt').textContent = '—';
+    document.getElementById('totalLost').textContent = '0';
+  }
+}
+
+function renderWeight() {
+  const wd = getWeekData(currentWeek);
+  const inp = document.getElementById('weekWeight');
+  inp.value = wd.weight || '';
+  updateWeightDelta();
+}
+
+function updateWeightDelta() {
+  const val = parseFloat(document.getElementById('weekWeight').value);
+  const delta = document.getElementById('weightDelta');
+  if (!val) { delta.style.display = 'none'; return; }
+  // Find previous week weight
+  let prev = null;
+  for (let w = currentWeek - 1; w >= 1; w--) {
+    const d = getWeekData(w);
+    if (d.weight) { prev = d.weight; break; }
+  }
+  if (!prev) prev = START_WEIGHT;
+  const diff = val - prev;
+  delta.style.display = 'inline-block';
+  if (diff < 0) {
+    delta.textContent = '↓ ' + Math.abs(diff).toFixed(1) + ' lbs';
+    delta.className = 'weight-delta delta-down';
+  } else if (diff > 0) {
+    delta.textContent = '↑ +' + diff.toFixed(1) + ' lbs';
+    delta.className = 'weight-delta delta-up';
+  } else {
+    delta.textContent = '= same';
+    delta.className = 'weight-delta delta-same';
+  }
+  // Store
+  getWeekData(currentWeek).weight = val;
+  autoPersist();
+  renderProgress();
+}
+
+function renderDays() {
+  const plan = currentWeek <= 10 ? PHASE1_PLAN : PHASE2_PLAN;
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+
+  DAYS.forEach((day, i) => {
+    const dd = getDayData(currentWeek, day);
+    const planned = plan[i];
+    const activity = dd.activity || planned;
+    const card = document.createElement('div');
+    card.className = 'day-card' + (selectedDay === day ? ' selected' : '');
+    card.onclick = () => selectDay(day);
+
+    const badgeClass = getBadgeClass(activity);
+    const badgeLabel = activity || 'Log';
+
+    let checksHtml = '';
+    if (dd.core) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Core ✓</span></div>`;
+    if (dd.activity) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Done</span></div>`;
+    if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal</span></div>`;
+
+    card.innerHTML = `
+      <div class="day-name">${day}</div>
+      <div class="day-type-badge ${badgeClass}">${badgeLabel}</div>
+      ${checksHtml ? `<div class="day-checks">${checksHtml}</div>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+
+  // Day detail
+  const detailDiv = document.getElementById('dayDetail');
+  if (selectedDay) {
+    detailDiv.style.display = 'block';
+    renderDayDetail(selectedDay);
+  } else {
+    detailDiv.style.display = 'none';
+  }
+}
+
+function getBadgeClass(activity) {
+  if (!activity) return 'badge-empty';
+  const a = activity.toLowerCase();
+  if (a.includes('run') || a.includes('tempo')) return 'badge-run';
+  if (a.includes('weights') || a.includes('weight')) return 'badge-weights';
+  if (a.includes('padel')) return 'badge-padel';
+  if (a.includes('rest')) return 'badge-rest';
+  return 'badge-core';
+}
+
+function selectDay(day) {
+  selectedDay = selectedDay === day ? null : day;
+  renderDays();
+}
+
+function renderDayDetail(day) {
+  const dd = getDayData(currentWeek, day);
+  const plan = currentWeek <= 10 ? PHASE1_PLAN : PHASE2_PLAN;
+  const dayIdx = DAYS.indexOf(day);
+  const planned = PHASE1_PLAN[dayIdx];
+
+  const activityOptions = ['Run','Tempo run','Weights A','Weights B','Weights C','Padel (1hr)','Padel (2hr)','Rest','Walk','Rest day + walk'];
+  const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
+
+  const preloadedBurn = EXERCISE_BURN[dd.activity] || 0;
+  const customBurn = dd.customBurn !== undefined ? dd.customBurn : '';
+  const displayBurn = customBurn !== '' ? customBurn : preloadedBurn;
+
+  document.getElementById('dayDetail').innerHTML = `
+    <div class="day-detail">
+      <div class="detail-header">
+        <div class="detail-day-name">${day} — Week ${currentWeek} <span style="font-size:12px;color:var(--text3);font-weight:400;">(planned: ${planned})</span></div>
+        <button class="detail-close" onclick="selectedDay=null;renderDays()">✕</button>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-section">
+          <div class="detail-label">Activity completed</div>
+          <select class="activity-select" onchange="saveDayActivity('${day}', this.value)">
+            <option value="">— select —</option>
+            ${optHtml}
+          </select>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Calories burned</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input
+              type="number"
+              class="cal-num-input"
+              id="burnInput_${day}"
+              placeholder="${preloadedBurn || '0'}"
+              value="${customBurn}"
+              min="0" max="2000"
+              style="width:80px;"
+              oninput="saveDayBurn('${day}', this.value)"
+            >
+            <span style="font-size:12px;color:var(--text3);">kcal</span>
+            ${customBurn !== '' ? `<button onclick="clearDayBurn('${day}')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;">reset</button>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+            ${customBurn !== '' ? `Watch says: <strong style="color:var(--text2)">${customBurn} kcal</strong>` : `Estimate: <strong style="color:var(--text2)">${preloadedBurn} kcal</strong> — enter your watch reading to override`}
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Checklist</div>
+          <div class="checklist">
+            <label class="checklist-item">
+              <input type="checkbox" ${dd.core ? 'checked' : ''} onchange="saveDayCore('${day}', this.checked)">
+              <label>Core routine done (10–15 min)</label>
+            </label>
+            <label class="checklist-item">
+              <input type="checkbox" ${dd.backOk !== false ? 'checked' : ''} onchange="saveDayBackOk('${day}', this.checked)">
+              <label>Back felt fine</label>
+            </label>
+          </div>
+        </div>
+        <div class="detail-section" style="grid-column: 1/-1;">
+          <div class="detail-label">Notes (back, energy, how it felt)</div>
+          <textarea class="notes-input" placeholder="e.g. back a bit tight on run, felt strong in weights..." onchange="saveDayNotes('${day}', this.value)">${dd.notes || ''}</textarea>
+        </div>
+      </div>
+      ${getSessionLinkHTML(dd.activity || planned, currentWeek)}
+    </div>
+  `;
+  injectInlineSession(dd.activity || planned, currentWeek);
+}
+
+function getSessionKey(activity, week) {
+  const phase = week <= 10 ? 1 : 2;
+  const a = (activity || '').toLowerCase();
+  if (a.includes('weights a')) return phase === 1 ? 'wo-p1a' : 'wo-p2a';
+  if (a.includes('weights b')) return phase === 1 ? 'wo-p1b' : 'wo-p2b';
+  if (a.includes('weights c')) return 'wo-p2c';
+  if (a.includes('core')) return 'wo-core';
+  return null;
+}
+
+function getSessionLinkHTML(activity, week) {
+  const key = getSessionKey(activity, week);
+  if (!key) return '';
+  const labels = {
+    'wo-p1a': 'Session A — Push (Phase 1)',
+    'wo-p1b': 'Session B — Pull (Phase 1)',
+    'wo-p2a': 'Session A — Full body push (Phase 2)',
+    'wo-p2b': 'Session B — Full body pull (Phase 2)',
+    'wo-p2c': 'Session C — Leg emphasis (Phase 2)',
+    'wo-core': 'Daily core routine',
+  };
+  return `
+    <div class="inline-session">
+      <div class="inline-session-title">
+        <span style="font-size:14px;">Today's session</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--blue-bg);color:var(--blue);">${labels[key]}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">Full exercise breakdown for today's session:</div>
+      <div id="inlineSessionContent"></div>
+      <button onclick="showTab('workouts');showWoTab('${key}',null)" style="margin-top:10px;font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);">Open full session in Workouts tab →</button>
+    </div>
+  `;
+}
+
+function injectInlineSession(activity, week) {
+  const key = getSessionKey(activity, week);
+  if (!key) return;
+  const src = document.getElementById(key);
+  const dest = document.getElementById('inlineSessionContent');
+  if (src && dest) dest.innerHTML = src.innerHTML;
+}
+
+function saveDayActivity(day, val) {
+  getDayData(currentWeek, day).activity = val;
+  autoPersist();
+  renderSummary();
+  renderDays();
+  if (day === calDay) updateCalTotals();
+}
+function saveDayBurn(day, val) {
+  const parsed = parseInt(val);
+  getDayData(currentWeek, day).customBurn = isNaN(parsed) ? '' : parsed;
+  autoPersist();
+  if (day === calDay) updateCalTotals();
+}
+function clearDayBurn(day) {
+  getDayData(currentWeek, day).customBurn = undefined;
+  autoPersist();
+  renderDayDetail(day);
+  if (day === calDay) updateCalTotals();
+}
+function saveDayCore(day, val) {
+  getDayData(currentWeek, day).core = val;
+  autoPersist();
+  renderSummary();
+}
+function saveDayBackOk(day, val) {
+  getDayData(currentWeek, day).backOk = val;
+  autoPersist();
+}
+function saveDayNotes(day, val) {
+  getDayData(currentWeek, day).notes = val;
+  autoPersist();
+}
+
+function renderDiet() {
+  const today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const dd = getDietData(currentWeek, today);
+  const container = document.getElementById('dietChecklist');
+  container.innerHTML = '';
+  let checked = 0;
+  DIET_RULES.forEach((rule, i) => {
+    const id = 'diet_' + i;
+    const isChecked = dd[i] || false;
+    if (isChecked) checked++;
+    const item = document.createElement('label');
+    item.className = 'diet-item';
+    item.innerHTML = `<input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="saveDiet(${i}, this.checked)"><label for="${id}">${rule}</label>`;
+    container.appendChild(item);
+  });
+  document.getElementById('dietScore').textContent = checked + '/' + DIET_RULES.length;
+}
+
+function saveDiet(idx, val) {
+  const today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  getDietData(currentWeek, today)[idx] = val;
+  autoPersist();
+  renderDiet();
+  renderSummary();
+}
+
+function renderSummary() {
+  const wd = getWeekData(currentWeek);
+  let runs = 0, weights = 0, core = 0, padel = 0, noOJ = 0, dietTotal = 0, dietPossible = 0;
+
+  DAYS.forEach(day => {
+    const dd = getDayData(currentWeek, day);
+    const act = (dd.activity || '').toLowerCase();
+    if (act.includes('run') || act.includes('tempo')) runs++;
+    if (act.includes('weight')) weights++;
+    if (act.includes('padel')) padel++;
+    if (dd.core) core++;
+
+    const diet = getDietData(currentWeek, day);
+    DIET_RULES.forEach((_, i) => {
+      dietPossible++;
+      if (diet[i]) {
+        dietTotal++;
+        if (i === 0) noOJ++; // no OJ rule
+      }
+    });
+  });
+
+  document.getElementById('sumRuns').innerHTML = runs + '<small>/' + (currentWeek <= 10 ? '3' : '4') + '</small>';
+  document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (currentWeek <= 10 ? '2' : '3') + '</small>';
+  document.getElementById('sumCore').innerHTML = core + '<small>/7</small>';
+  document.getElementById('sumPadel').textContent = padel;
+  document.getElementById('sumOJ').innerHTML = noOJ + '<small>/7</small>';
+  const pct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
+  document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
+}
+
+// ─── HISTORY ─────────────────────────────────────────────
+function renderHistory() {
+  const card = document.getElementById('historyCard');
+  const actCard = document.getElementById('activityHistory');
+  let hasHistory = false;
+  let weightHtml = '';
+  let actHtml = '';
+  let prevWt = START_WEIGHT;
+
+  for (let w = 1; w <= 20; w++) {
+    const wd = getWeekData(w);
+    if (wd.weight || Object.keys(wd.days).some(d => wd.days[d].activity)) {
+      hasHistory = true;
+      const wt = wd.weight;
+      const diff = wt ? wt - prevWt : null;
+      let deltaHtml = '';
+      if (diff !== null) {
+        const cls = diff < 0 ? 'delta-down' : diff > 0 ? 'delta-up' : 'delta-same';
+        deltaHtml = `<span class="history-delta ${cls}">${diff < 0 ? '↓' : diff > 0 ? '↑+' : '='} ${Math.abs(diff).toFixed(1)} lbs</span>`;
+      }
+      if (wt) {
+        weightHtml += `<div class="history-row"><span class="history-week">Week ${w}</span><span class="history-weight">${wt} lbs</span>${deltaHtml}</div>`;
+        prevWt = wt;
+      }
+
+      let acts = DAYS.map(d => wd.days[d]?.activity).filter(Boolean);
+      if (acts.length) {
+        actHtml += `<div class="history-row"><span class="history-week">Week ${w}</span><span style="font-size:12px;color:var(--text2);">${acts.join(' · ')}</span></div>`;
+      }
+    }
+  }
+
+  card.innerHTML = hasHistory ? (weightHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No weights logged yet.</div>') : '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No history yet.</div>';
+  actCard.innerHTML = actHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No activity logged yet.</div>';
+}
+
+// ─── TABS ─────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btn = [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'"));
+  if (btn) btn.classList.add('active');
+  if (id === 'history') renderHistory();
+}
+
+function showWoTab(id, btn) {
+  document.querySelectorAll('.wo-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.wo-tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    const found = [...document.querySelectorAll('.wo-tab')].find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes("'"+id+"'"));
+    if (found) found.classList.add('active');
+  }
+}
+
+// ─── SAVE ─────────────────────────────────────────────────
+function autoPersist() {
+  localStorage.setItem('fitnessTracker', JSON.stringify(allData));
+}
+
+function saveWeek() {
+  const wv = parseFloat(document.getElementById('weekWeight').value);
+  if (wv) getWeekData(currentWeek).weight = wv;
+  autoPersist();
+  const msg = document.getElementById('saveMsg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 2000);
+}
+
+// ─── CALORIE COUNTER ──────────────────────────────────────
+
+const DAILY_TARGET = 1850; // Phase 1 target
+const WATER_TARGET_ML = 2500;
+
+// Quick-add presets based on Arnav's actual diet
+const QUICK_PRESETS = [
+  { label: 'Banana', kcal: 90, protein: 1 },
+  { label: '6 almonds', kcal: 40, protein: 1 },
+  { label: '6 raisins', kcal: 30, protein: 0 },
+  { label: 'Meiji shake', kcal: 200, protein: 30 },
+  { label: '2 chapattis', kcal: 200, protein: 5 },
+  { label: '1 chapatti', kcal: 100, protein: 2 },
+  { label: 'Dal (1 cup)', kcal: 180, protein: 14 },
+  { label: 'Sabzi (1 cup)', kcal: 100, protein: 3 },
+  { label: 'Rice (¾ cup)', kcal: 170, protein: 3 },
+  { label: 'Paneer (100g)', kcal: 265, protein: 18 },
+  { label: 'Greek yoghurt', kcal: 100, protein: 15 },
+  { label: 'Apple/pear', kcal: 80, protein: 0 },
+  { label: 'Mango (1 cup)', kcal: 100, protein: 1 },
+  { label: 'Ovaltine sachet', kcal: 100, protein: 2 },
+  { label: 'Masala chai', kcal: 80, protein: 2 },
+  { label: 'OJ (250ml)', kcal: 120, protein: 1 },
+];
+
+// Exercise calorie estimates
+const EXERCISE_BURN = {
+  'Run': 320, 'Tempo run': 380, 'Weights A': 220, 'Weights B': 220,
+  'Weights C': 220, 'Padel (1hr)': 500, 'Padel (2hr)': 950,
+  'Rest': 0, 'Walk': 160, 'Rest day + walk': 160,
+  'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
+};
+
+let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+function getCalData(w, d) {
+  const wd = getWeekData(w);
+  if (!wd.calories) wd.calories = {};
+  if (!wd.calories[d]) wd.calories[d] = { entries: [] };
+  return wd.calories[d];
+}
+
+function getWaterData(w, d) {
+  const wd = getWeekData(w);
+  if (!wd.water) wd.water = {};
+  if (wd.water[d] === undefined) wd.water[d] = 0;
+  return wd.water;
+}
+
+function getWaterMl() {
+  return getWaterData(currentWeek, calDay)[calDay] || 0;
+}
+
+function setWaterMl(ml) {
+  ml = Math.max(0, Math.min(4000, Math.round(ml / 250) * 250));
+  getWaterData(currentWeek, calDay)[calDay] = ml;
+  autoPersist();
+  renderWater();
+}
+
+function setWaterFromSlider(val) {
+  setWaterMl(parseInt(val));
+}
+
+function addWaterIncrement(ml) {
+  const current = getWaterMl();
+  setWaterMl(current + ml);
+}
+
+function addWater(ml) { addWaterIncrement(ml); }
+function removeWater() { addWaterIncrement(-250); }
+function removeSpecificWater() { addWaterIncrement(-250); }
+
+function renderWater() {
+  const totalMl = getWaterMl();
+  const totalL = totalMl / 1000;
+  const pct = Math.min(100, Math.round((totalMl / WATER_TARGET_ML) * 100));
+
+  const slider = document.getElementById('waterSlider');
+  if (slider && parseInt(slider.value) !== totalMl) slider.value = totalMl;
+
+  const badge = document.getElementById('waterBadge');
+  if (badge) {
+    const display = totalL % 1 === 0 ? totalL.toFixed(0) : totalL.toFixed(2).replace(/0+$/, '');
+    badge.textContent = display + ' / 2.5 L';
+    if (totalMl >= WATER_TARGET_ML) {
+      badge.style.background = 'var(--green-bg)'; badge.style.color = 'var(--green)';
+    } else if (totalMl >= 1500) {
+      badge.style.background = 'var(--blue-bg)'; badge.style.color = 'var(--blue)';
+    } else {
+      badge.style.background = 'var(--surface2)'; badge.style.color = 'var(--text3)';
+    }
+  }
+
+  const glassDiv = document.getElementById('waterGlasses');
+  if (glassDiv) {
+    if (totalMl === 0) {
+      glassDiv.innerHTML = `<span style="font-size:12px;color:var(--text3);">No water logged yet — drag the slider above</span>`;
+    } else {
+      const count = totalMl / 250;
+      glassDiv.innerHTML = Array.from({length: count}).map((_, i) => {
+        const filled = i < count;
+        return `<div title="250ml" style="width:18px;height:18px;border-radius:50%;background:${filled ? 'var(--blue)' : 'var(--border)'};opacity:${filled ? 0.6 + (i / count) * 0.4 : 0.3};flex-shrink:0;"></div>`;
+      }).join('');
+    }
+  }
+
+  const bar = document.getElementById('waterBar');
+  if (bar) bar.style.width = pct + '%';
+  const pctEl = document.getElementById('waterPct');
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+function switchCalDay(day) {
+  calDay = day;
+  renderCalorie();
+  renderWater();
+  const slider = document.getElementById('waterSlider');
+  if (slider) slider.value = getWaterMl();
+}
+
+function renderCalorie() {
+  // Set day selector
+  const sel = document.getElementById('calDaySelect');
+  if (sel) sel.value = calDay;
+
+  // Render quick add buttons
+  const qRow = document.getElementById('quickAddRow');
+  if (qRow) {
+    qRow.innerHTML = QUICK_PRESETS.map(p =>
+      `<button class="quick-btn" onclick="quickAdd('${p.label}',${p.kcal},${p.protein})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`
+    ).join('');
+  }
+
+  renderCalEntries();
+  updateCalTotals();
+  renderWater();
+}
+
+function renderCalEntries() {
+  const cd = getCalData(currentWeek, calDay);
+  const container = document.getElementById('mealSections');
+  if (!container) return;
+
+  if (cd.entries.length === 0) {
+    container.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:10px 0 6px;">No items logged yet — use quick add or add a custom item below.</div>`;
+    return;
+  }
+
+  container.innerHTML = cd.entries.map((e, i) => `
+    <div class="meal-entry-grid" id="entry_${i}">
+      <span style="font-size:13px;color:var(--text);">${e.name}</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">${e.kcal} kcal</span>
+      <span style="font-size:11px;color:var(--text3);">${e.protein}g prot</span>
+      <button class="del-entry-btn" onclick="deleteCalEntry(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function quickAdd(name, kcal, protein) {
+  const cd = getCalData(currentWeek, calDay);
+  cd.entries.push({ name, kcal, protein });
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+}
+
+function addCustomEntry() {
+  const cd = getCalData(currentWeek, calDay);
+  // Insert a temporary input row
+  const container = document.getElementById('mealSections');
+  const tempId = 'temp_entry_' + Date.now();
+  const div = document.createElement('div');
+  div.id = tempId;
+  div.className = 'meal-entry-grid';
+  div.style.marginBottom = '6px';
+  div.innerHTML = `
+    <input type="text" placeholder="Food name..." id="${tempId}_name" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;">
+    <input type="number" placeholder="kcal" id="${tempId}_kcal" class="cal-num-input" min="0" max="2000">
+    <input type="number" placeholder="g prot" id="${tempId}_prot" class="cal-num-input" min="0" max="200" style="width:72px;">
+    <button class="save-btn" style="padding:6px 10px;font-size:12px;" onclick="confirmCustomEntry('${tempId}')">Add</button>
+  `;
+  container.appendChild(div);
+  document.getElementById(tempId + '_name').focus();
+}
+
+function confirmCustomEntry(tempId) {
+  const name = document.getElementById(tempId + '_name').value.trim() || 'Custom item';
+  const kcal = parseInt(document.getElementById(tempId + '_kcal').value) || 0;
+  const protein = parseInt(document.getElementById(tempId + '_prot').value) || 0;
+  const cd = getCalData(currentWeek, calDay);
+  cd.entries.push({ name, kcal, protein });
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+}
+
+function deleteCalEntry(idx) {
+  const cd = getCalData(currentWeek, calDay);
+  cd.entries.splice(idx, 1);
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+}
+
+function updateCalTotals() {
+  const cd = getCalData(currentWeek, calDay);
+  const consumed = cd.entries.reduce((s, e) => s + (e.kcal || 0), 0);
+  const protein = cd.entries.reduce((s, e) => s + (e.protein || 0), 0);
+
+  // Get exercise burn — custom watch value takes priority over preset
+  const dayActData = getDayData(currentWeek, calDay);
+  const dayAct = dayActData.activity || '';
+  const burned = dayActData.customBurn !== undefined && dayActData.customBurn !== ''
+    ? dayActData.customBurn
+    : (EXERCISE_BURN[dayAct] || 0);
+
+  const net = consumed - burned;
+  const target = currentWeek <= 10 ? 1850 : 1700;
+  const deficit = target - net;
+
+  // Update DOM
+  const fmt = n => Math.round(n).toLocaleString();
+  document.getElementById('calConsumed').innerHTML = fmt(consumed) + ' <small>kcal</small>';
+  document.getElementById('calBurned').innerHTML = fmt(burned) + ' <small>kcal</small>';
+  document.getElementById('calNet').innerHTML = fmt(net) + ' <small>kcal</small>';
+  document.getElementById('calTarget').innerHTML = fmt(target) + ' <small>kcal</small>';
+  document.getElementById('calBarMid').textContent = fmt(target / 2);
+  document.getElementById('calBarTarget').textContent = 'Target: ' + fmt(target);
+
+  // Bar — based on net vs target
+  const pct = Math.min(120, Math.round((net / target) * 100));
+  const bar = document.getElementById('calBarFill');
+  bar.style.width = Math.min(100, pct) + '%';
+  bar.style.background = pct > 105 ? 'var(--red)' : pct > 90 ? 'var(--amber)' : 'var(--green)';
+
+  // Deficit badge
+  const badge = document.getElementById('deficitBadge');
+  if (net === 0) {
+    badge.textContent = '— deficit';
+    badge.className = 'deficit-badge deficit-ok';
+  } else if (deficit >= 400) {
+    badge.textContent = fmt(deficit) + ' kcal deficit';
+    badge.className = 'deficit-badge deficit-ok';
+  } else if (deficit > 0) {
+    badge.textContent = fmt(deficit) + ' kcal deficit';
+    badge.className = 'deficit-badge deficit-warn';
+  } else {
+    badge.textContent = fmt(Math.abs(deficit)) + ' kcal over';
+    badge.className = 'deficit-badge deficit-over';
+  }
+
+  // Protein
+  const protPct = Math.min(100, Math.round((protein / 75) * 100));
+  document.getElementById('proteinLogged').innerHTML = protein + ' <small>g</small>';
+  document.getElementById('proteinRemaining').innerHTML = Math.max(0, 75 - protein) + ' <small>g</small>';
+  document.getElementById('proteinBar').style.width = protPct + '%';
+}
+
+// ─── EXPORT / IMPORT ──────────────────────────────────────
+function exportData() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    data: allData,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `fitness-tracker-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = parsed.data || parsed;
+      if (typeof incoming !== 'object' || Array.isArray(incoming)) {
+        alert('Invalid backup file — could not restore data.');
+        return;
+      }
+      allData = incoming;
+      autoPersist();
+      render();
+      renderHistory();
+      const msg = document.getElementById('importMsg');
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    } catch {
+      alert('Could not read file. Make sure it is a valid fitness tracker backup (.json).');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ─── INIT ──────────────────────────────────────────────────
+initAuth();
+render();
+</script>
+</body>
+</html>
