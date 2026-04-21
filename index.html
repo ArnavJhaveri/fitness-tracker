@@ -2371,7 +2371,7 @@ async function searchFood() {
   results.style.display = 'none';
 
   try {
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=__USDA_API_KEY__&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=PJygmDRllSrraLskIaJ9pT0lQyFnBJzu7euenKgO&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     const resp = await fetch(url, { signal: controller.signal });
