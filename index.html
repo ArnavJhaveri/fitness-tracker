@@ -1787,7 +1787,7 @@ function setSyncStatus(state, msg) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
   const configs = {
-    idle:    { text: '',                  color: 'transparent' },
+    idle:    { text: '✓ Synced',          color: '#9FE1CB' },
     saving:  { text: '↑ Syncing...',      color: '#FAC775' },
     saved:   { text: '✓ Synced',          color: '#9FE1CB' },
     error:   { text: '⚠ Saved locally',   color: '#F09595' },
@@ -1796,6 +1796,32 @@ function setSyncStatus(state, msg) {
   const cfg = configs[state] || configs.idle;
   el.textContent = msg || cfg.text;
   el.style.color = cfg.color;
+}
+
+let retryInterval = null;
+
+function startRetry() {
+  if (retryInterval) return;
+  retryInterval = setInterval(async () => {
+    const el = document.getElementById('syncStatus');
+    if (!el || !el.textContent.includes('locally')) {
+      clearInterval(retryInterval);
+      retryInterval = null;
+      return;
+    }
+    try {
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'write', data: { fitnessTracker: allData } }),
+      });
+      const json = await resp.json();
+      if (json.ok) {
+        clearInterval(retryInterval);
+        retryInterval = null;
+        setSyncStatus('saved');
+      }
+    } catch { }
+  }, 30000);
 }
 
 async function pushToSheets() {
@@ -1809,12 +1835,14 @@ async function pushToSheets() {
     const json = await resp.json();
     if (json.ok) {
       setSyncStatus('saved');
-      setTimeout(() => setSyncStatus('idle'), 3000);
+      if (retryInterval) { clearInterval(retryInterval); retryInterval = null; }
     } else {
       setSyncStatus('error');
+      startRetry();
     }
   } catch {
     setSyncStatus('error');
+    startRetry();
   }
 }
 
@@ -1830,11 +1858,9 @@ async function pullFromSheets() {
       allData = json.data.fitnessTracker;
       localStorage.setItem('fitnessTracker', JSON.stringify(allData));
       setSyncStatus('saved');
-      setTimeout(() => setSyncStatus('idle'), 3000);
       return true;
     }
     setSyncStatus('saved');
-    setTimeout(() => setSyncStatus('idle'), 3000);
     return false;
   } catch(err) {
     console.error('Sheets pull error:', err);
