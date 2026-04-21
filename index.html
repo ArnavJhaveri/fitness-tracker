@@ -1787,11 +1787,11 @@ function setSyncStatus(state, msg) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
   const configs = {
-    idle:    { text: '',                color: 'var(--text3)' },
-    saving:  { text: '↑ Syncing...',    color: 'var(--amber)' },
-    saved:   { text: '✓ Synced',        color: 'var(--green)' },
-    error:   { text: '⚠ Sync failed — saved locally', color: 'var(--red)' },
-    loading: { text: '↓ Loading data…', color: 'var(--blue)' },
+    idle:    { text: '',                  color: 'transparent' },
+    saving:  { text: '↑ Syncing...',      color: '#FAC775' },
+    saved:   { text: '✓ Synced',          color: '#9FE1CB' },
+    error:   { text: '⚠ Saved locally',   color: '#F09595' },
+    loading: { text: '↓ Loading data...', color: '#B5D4F4' },
   };
   const cfg = configs[state] || configs.idle;
   el.textContent = msg || cfg.text;
@@ -1823,8 +1823,9 @@ async function pullFromSheets() {
   setSyncStatus('loading');
   try {
     const resp = await fetch(SCRIPT_URL + '?action=read', { method: 'GET' });
-    if (!resp.ok) { setSyncStatus('error'); return false; }
+    if (!resp.ok) { console.error('Sheets pull failed:', resp.status); setSyncStatus('error'); return false; }
     const json = await resp.json();
+    console.log('Sheets pull response:', json);
     if (json.ok && json.data && json.data.fitnessTracker) {
       allData = json.data.fitnessTracker;
       localStorage.setItem('fitnessTracker', JSON.stringify(allData));
@@ -1832,8 +1833,11 @@ async function pullFromSheets() {
       setTimeout(() => setSyncStatus('idle'), 3000);
       return true;
     }
-    setSyncStatus('idle');
+    setSyncStatus('saved');
+    setTimeout(() => setSyncStatus('idle'), 3000);
+    return false;
   } catch(err) {
+    console.error('Sheets pull error:', err);
     setSyncStatus('error');
   }
   return false;
