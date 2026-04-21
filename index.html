@@ -1744,9 +1744,38 @@ function renderDays() {
     `;
   }
 
+  const actualStart = allData._startDate ? new Date(allData._startDate) : null;
+  if (actualStart) actualStart.setHours(0,0,0,0);
+
   DAYS.forEach((day, i) => {
     const dd = getDayData(currentWeek, day);
     const planned = plan[i];
+    const dayDate = getDayDate(currentWeek, i);
+    const dateStr = dayDate ? formatDate(dayDate, { day: 'numeric', month: 'short' }) : '';
+
+    // Check if this day is before the plan start date
+    const dayDateNorm = dayDate ? new Date(dayDate) : null;
+    if (dayDateNorm) dayDateNorm.setHours(0,0,0,0);
+    const isBeforeStart = actualStart && dayDateNorm && dayDateNorm < actualStart;
+
+    const isToday = dayDate ? (() => { const t = new Date(); return dayDate.getDate()===t.getDate() && dayDate.getMonth()===t.getMonth() && dayDate.getFullYear()===t.getFullYear(); })() : false;
+
+    // Before start date — muted, non-clickable, no planned activity
+    if (isBeforeStart) {
+      const card = document.createElement('div');
+      card.className = 'day-card';
+      card.style.opacity = '0.35';
+      card.style.cursor = 'default';
+      card.style.pointerEvents = 'none';
+      card.innerHTML = `
+        <div class="day-name" style="color:var(--text3);">${day}</div>
+        ${dateStr ? `<div style="font-size:10px;color:var(--text3);margin-bottom:4px;">${dateStr}</div>` : ''}
+        <div class="day-type-badge badge-empty" style="color:var(--text3);">—</div>
+      `;
+      grid.appendChild(card);
+      return;
+    }
+
     const activity = dd.activity || planned;
     const card = document.createElement('div');
     card.className = 'day-card' + (selectedDay === day ? ' selected' : '');
@@ -1754,9 +1783,6 @@ function renderDays() {
 
     const badgeClass = getBadgeClass(activity);
     const badgeLabel = activity || 'Log';
-    const dayDate = getDayDate(currentWeek, i);
-    const dateStr = dayDate ? formatDate(dayDate, { day: 'numeric', month: 'short' }) : '';
-    const isToday = dayDate ? (() => { const t = new Date(); return dayDate.getDate()===t.getDate() && dayDate.getMonth()===t.getMonth() && dayDate.getFullYear()===t.getFullYear(); })() : false;
 
     let checksHtml = '';
     if (dd.core) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Core ✓</span></div>`;
@@ -1793,6 +1819,14 @@ function getBadgeClass(activity) {
 }
 
 function selectDay(day) {
+  const dayIdx = DAYS.indexOf(day);
+  const dayDate = getDayDate(currentWeek, dayIdx);
+  const actualStart = allData._startDate ? new Date(allData._startDate) : null;
+  if (actualStart && dayDate) {
+    const dn = new Date(dayDate); dn.setHours(0,0,0,0);
+    const as = new Date(actualStart); as.setHours(0,0,0,0);
+    if (dn < as) return; // do nothing for pre-start days
+  }
   selectedDay = selectedDay === day ? null : day;
   renderDays();
 }
@@ -2589,9 +2623,9 @@ function renderCalendar() {
           cellClass = 'cal-skipped'; tag = 'Skipped';
         }
       }
-      html += `<div class="cal-day-cell ${cellClass}" onclick="goToWeekDay(${w},'${dayName}')" title="${formatDateFull(date)}${dd.activity ? ' · '+dd.activity : ''}">
+      html += `<div class="cal-day-cell ${cellClass}" ${isBeforeStart ? '' : `onclick="goToWeekDay(${w},'${dayName}')"`} style="${isBeforeStart ? 'cursor:default;pointer-events:none;' : ''}" title="${isBeforeStart ? 'Before plan start' : formatDateFull(date)+(dd.activity ? ' · '+dd.activity : '')}">
         <div class="cal-day-num">${date.getDate()}</div>
-        ${tag ? `<div class="cal-day-tag">${tag}</div>` : ''}
+        ${!isBeforeStart && tag ? `<div class="cal-day-tag">${tag}</div>` : ''}
         ${hasWeight ? `<div class="cal-weight-dot" title="${wd.weight} lbs${wd.weightNote ? ' — ' + wd.weightNote : ''}"></div>` : ''}
       </div>`;
     }
