@@ -1,0 +1,25 @@
+{
+  "name": "Arnav's Fitness Tracker",
+  "short_name": "Fitness",
+  "description": "Personal fitness and nutrition tracker",
+  "start_url": "/fitness-tracker/",
+  "scope": "/fitness-tracker/",
+  "display": "standalone",
+  "background_color": "#1a1714",
+  "theme_color": "#1a1714",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
