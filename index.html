@@ -2369,8 +2369,14 @@ async function searchFood() {
   status.textContent = 'Searching...';
   results.style.display = 'none';
   try {
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,serving_size,serving_quantity&sort_by=unique_scans_n`;
-    const resp = await fetch(url);
+    const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(query)}&page_size=8&fields=product_name,brands,nutriments,serving_size,serving_quantity&sort_by=unique_scans_n`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'ArnavFitnessTracker/1.0 (personal health tracker)' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
     if (!resp.ok) {
       if (resp.status === 503) {
         status.textContent = 'Open Food Facts server is temporarily unavailable (503) — wait 30 seconds and try again.';
@@ -2410,8 +2416,13 @@ async function searchFood() {
       </div>`;
     }).join('');
     results.style.display = 'block';
-  } catch {
-    status.textContent = 'Search failed — check your connection or add manually.';
+  } catch(err) {
+    const status = document.getElementById('foodSearchStatus');
+    if (err.name === 'AbortError') {
+      status.textContent = 'Search timed out — Open Food Facts may be slow. Try again or add manually.';
+    } else {
+      status.textContent = 'Search failed — check your connection or add manually.';
+    }
   }
 }
 
