@@ -993,6 +993,18 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Search food database</div>
+      </div>
+      <div style="position:relative;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="foodSearchInput" placeholder="Search for a food — e.g. banana, dal, paneer, greek yoghurt..." style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')searchFood()">
+          <button onclick="searchFood()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;">Search</button>
+        </div>
+        <div id="foodSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:100;max-height:280px;overflow-y:auto;margin-top:4px;box-shadow:0 4px 16px rgba(0,0,0,0.08);"></div>
+      </div>
+      <div id="foodSearchStatus" style="font-size:12px;color:var(--text3);margin-bottom:8px;min-height:16px;"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Quick add — your regular meals</div>
       </div>
       <div class="quick-add-row" id="quickAddRow"></div>
@@ -1002,16 +1014,18 @@
         <button onclick="clearSection(calDay,'calories')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear all</button>
       </div>
       <div id="mealSections"></div>
-      <button class="add-entry-btn" onclick="addCustomEntry()">+ add food / drink item</button>
+      <button class="add-entry-btn" onclick="addCustomEntry()">+ add manually (food not found)</button>
 
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Protein today</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
-          <div class="cal-stat"><div class="cal-stat-label">Logged</div><div class="cal-stat-val" id="proteinLogged">0 <small>g</small></div></div>
-          <div class="cal-stat"><div class="cal-stat-label">Target</div><div class="cal-stat-val">75 <small>g</small></div></div>
-          <div class="cal-stat"><div class="cal-stat-label">Remaining</div><div class="cal-stat-val" id="proteinRemaining">75 <small>g</small></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Macro tracking</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;"><input type="checkbox" id="trackCarbs" onchange="saveMacroPrefs()" style="accent-color:var(--accent);"> Carbs</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;"><input type="checkbox" id="trackFats" onchange="saveMacroPrefs()" style="accent-color:var(--accent);"> Fats</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;"><input type="checkbox" id="trackSugar" onchange="saveMacroPrefs()" style="accent-color:var(--accent);"> Sugar</label>
+          </div>
         </div>
-        <div class="cal-bar-bg"><div class="cal-bar-fill" id="proteinBar" style="width:0%;background:var(--blue);"></div></div>
+        <div id="macroStats"></div>
       </div>
 
       <!-- WATER TRACKER -->
@@ -2276,6 +2290,208 @@ function saveWeek() {
   setTimeout(() => msg.classList.remove('show'), 2000);
 }
 
+// ─── MACRO PREFERENCES ───────────────────────────────────
+function getMacroPrefs() {
+  return allData._macroPrefs || { carbs: false, fats: false, sugar: false };
+}
+
+function saveMacroPrefs() {
+  allData._macroPrefs = {
+    carbs: document.getElementById('trackCarbs').checked,
+    fats:  document.getElementById('trackFats').checked,
+    sugar: document.getElementById('trackSugar').checked,
+  };
+  autoPersist();
+  renderMacroStats();
+}
+
+function loadMacroPrefs() {
+  const p = getMacroPrefs();
+  const c = document.getElementById('trackCarbs');
+  const f = document.getElementById('trackFats');
+  const s = document.getElementById('trackSugar');
+  if (c) c.checked = !!p.carbs;
+  if (f) f.checked = !!p.fats;
+  if (s) s.checked = !!p.sugar;
+}
+
+function renderMacroStats() {
+  const cd = getCalData(currentWeek, calDay);
+  const p = getMacroPrefs();
+  const protein = cd.entries.reduce((s,e) => s+(e.protein||0), 0);
+  const carbs   = cd.entries.reduce((s,e) => s+(e.carbs||0), 0);
+  const fats    = cd.entries.reduce((s,e) => s+(e.fats||0), 0);
+  const sugar   = cd.entries.reduce((s,e) => s+(e.sugar||0), 0);
+
+  const macros = [
+    { key:'protein', label:'Protein', val:protein, target:75, color:'var(--blue)', always:true },
+    { key:'carbs',   label:'Carbs',   val:carbs,   target:200, color:'var(--amber)', always:false },
+    { key:'fats',    label:'Fats',    val:fats,    target:60,  color:'var(--purple)', always:false },
+    { key:'sugar',   label:'Sugar',   val:sugar,   target:40,  color:'var(--red)', always:false },
+  ];
+
+  const container = document.getElementById('macroStats');
+  if (!container) return;
+  container.innerHTML = macros
+    .filter(m => m.always || p[m.key])
+    .map(m => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:12px;font-weight:500;color:var(--text);">${m.label}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text2);">${Math.round(m.val)}g <span style="color:var(--text3);">/ ${m.target}g target</span></span>
+        </div>
+        <div class="cal-bar-bg"><div class="cal-bar-fill" style="width:${Math.min(100,Math.round((m.val/m.target)*100))}%;background:${m.color};transition:width 0.4s ease;"></div></div>
+      </div>
+    `).join('');
+
+  // Legacy protein elements (kept for compatibility)
+  const pl = document.getElementById('proteinLogged');
+  const pr = document.getElementById('proteinRemaining');
+  const pb = document.getElementById('proteinBar');
+  if (pl) pl.innerHTML = Math.round(protein) + ' <small>g</small>';
+  if (pr) pr.innerHTML = Math.max(0, 75-Math.round(protein)) + ' <small>g</small>';
+  if (pb) pb.style.width = Math.min(100,Math.round((protein/75)*100))+'%';
+}
+
+// ─── FOOD SEARCH (Open Food Facts) ────────────────────────
+let searchDebounceTimer = null;
+
+async function searchFood() {
+  const query = document.getElementById('foodSearchInput').value.trim();
+  if (!query) return;
+  const status = document.getElementById('foodSearchStatus');
+  const results = document.getElementById('foodSearchResults');
+
+  if (window.location.protocol === 'file:') {
+    status.textContent = 'Food search only works on the live site — open via GitHub Pages, not as a local file.';
+    return;
+  }
+  status.textContent = 'Searching...';
+  results.style.display = 'none';
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,serving_size,serving_quantity&sort_by=unique_scans_n`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      if (resp.status === 503) {
+        status.textContent = 'Open Food Facts server is temporarily unavailable (503) — wait 30 seconds and try again.';
+      } else if (resp.status === 429) {
+        status.textContent = 'Too many searches — wait a moment and try again.';
+      } else {
+        status.textContent = `Search failed (${resp.status}) — try again or add manually.`;
+      }
+      return;
+    }
+    const products = (data.products || []).filter(p => p.product_name && p.nutriments);
+    if (products.length === 0) {
+      status.textContent = 'No results found — add it manually below.';
+      results.style.display = 'none';
+      return;
+    }
+    status.textContent = `${products.length} result${products.length>1?'s':''} found`;
+    results.innerHTML = products.map((p, idx) => {
+      const n = p.nutriments;
+      const kcal = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || (n['energy_100g'] ? n['energy_100g']/4.184 : 0));
+      const protein = Math.round((n['proteins_100g'] || 0) * 10) / 10;
+      const carbs = Math.round((n['carbohydrates_100g'] || 0) * 10) / 10;
+      const fats = Math.round((n['fat_100g'] || 0) * 10) / 10;
+      const sugar = Math.round((n['sugars_100g'] || 0) * 10) / 10;
+      const name = p.product_name + (p.brands ? ` (${p.brands.split(',')[0].trim()})` : '');
+      const serving = p.serving_quantity ? `${p.serving_quantity}g serving` : '100g';
+      return `<div onclick="selectFoodResult(${idx})" data-idx="${idx}" style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"
+        data-name="${name.replace(/"/g,'&quot;')}"
+        data-kcal100="${n['energy-kcal_100g']||n['energy-kcal']||0}"
+        data-prot100="${n['proteins_100g']||0}"
+        data-carb100="${n['carbohydrates_100g']||0}"
+        data-fat100="${n['fat_100g']||0}"
+        data-sugar100="${n['sugars_100g']||0}"
+        data-serving="${p.serving_quantity||100}">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">${name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">per 100g — ${kcal} kcal · ${protein}g protein · ${carbs}g carbs · ${fats}g fat · ${sugar}g sugar · <span style="color:var(--accent);">tap to add</span></div>
+      </div>`;
+    }).join('');
+    results.style.display = 'block';
+  } catch {
+    status.textContent = 'Search failed — check your connection or add manually.';
+  }
+}
+
+function selectFoodResult(idx) {
+  const results = document.getElementById('foodSearchResults');
+  const el = results.querySelector(`[data-idx="${idx}"]`);
+  if (!el) return;
+
+  const name = el.getAttribute('data-name');
+  const kcal100 = parseFloat(el.getAttribute('data-kcal100')) || 0;
+  const prot100 = parseFloat(el.getAttribute('data-prot100')) || 0;
+  const carb100 = parseFloat(el.getAttribute('data-carb100')) || 0;
+  const fat100  = parseFloat(el.getAttribute('data-fat100'))  || 0;
+  const sugar100= parseFloat(el.getAttribute('data-sugar100'))|| 0;
+  const servingG= parseFloat(el.getAttribute('data-serving')) || 100;
+
+  // Show serving size picker inline
+  results.innerHTML = `
+    <div style="padding:14px;">
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px;">${name}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <label style="font-size:12px;color:var(--text2);">Amount:</label>
+        <input type="number" id="foodServingG" value="${servingG}" min="1" max="2000" step="1"
+          style="width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;"
+          oninput="previewServing(${kcal100},${prot100},${carb100},${fat100},${sugar100})">
+        <span style="font-size:12px;color:var(--text3);">g</span>
+        <button onclick="addServingSize(${servingG})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);">1 serving (${servingG}g)</button>
+        <button onclick="addServingSize(100)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);">100g</button>
+      </div>
+      <div id="foodPreview" style="font-size:12px;color:var(--text2);margin-bottom:10px;"></div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="confirmFoodAdd('${name.replace(/'/g,'\\\'').replace(/"/g,'&quot;')}',${kcal100},${prot100},${carb100},${fat100},${sugar100})"
+          style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Add to log</button>
+        <button onclick="document.getElementById('foodSearchResults').style.display='none';document.getElementById('foodSearchStatus').textContent='';"
+          style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  `;
+  previewServing(kcal100, prot100, carb100, fat100, sugar100);
+}
+
+function previewServing(kcal100, prot100, carb100, fat100, sugar100) {
+  const g = parseFloat(document.getElementById('foodServingG').value) || 100;
+  const f = v => Math.round(v * g / 100 * 10) / 10;
+  const p = getMacroPrefs();
+  let parts = [`${Math.round(kcal100*g/100)} kcal`, `${f(prot100)}g protein`];
+  if (p.carbs) parts.push(`${f(carb100)}g carbs`);
+  if (p.fats)  parts.push(`${f(fat100)}g fat`);
+  if (p.sugar) parts.push(`${f(sugar100)}g sugar`);
+  const el = document.getElementById('foodPreview');
+  if (el) el.textContent = parts.join(' · ');
+}
+
+function addServingSize(g) {
+  const inp = document.getElementById('foodServingG');
+  if (inp) { inp.value = g; inp.dispatchEvent(new Event('input')); }
+}
+
+function confirmFoodAdd(name, kcal100, prot100, carb100, fat100, sugar100) {
+  const g = parseFloat(document.getElementById('foodServingG').value) || 100;
+  const scale = g / 100;
+  const entry = {
+    name: `${name} (${g}g)`,
+    kcal:    Math.round(kcal100  * scale),
+    protein: Math.round(prot100  * scale * 10) / 10,
+    carbs:   Math.round(carb100  * scale * 10) / 10,
+    fats:    Math.round(fat100   * scale * 10) / 10,
+    sugar:   Math.round(sugar100 * scale * 10) / 10,
+  };
+  const cd = getCalData(currentWeek, calDay);
+  cd.entries.push(entry);
+  autoPersist();
+  document.getElementById('foodSearchResults').style.display = 'none';
+  document.getElementById('foodSearchInput').value = '';
+  document.getElementById('foodSearchStatus').textContent = `✓ Added: ${entry.name}`;
+  setTimeout(() => { const s = document.getElementById('foodSearchStatus'); if(s) s.textContent=''; }, 3000);
+  renderCalEntries();
+  updateCalTotals();
+}
+
 // ─── CALORIE COUNTER ──────────────────────────────────────
 
 const DAILY_TARGET = 1850; // Phase 1 target
@@ -2412,27 +2628,33 @@ function renderCalorie() {
 
   renderCalEntries();
   updateCalTotals();
+  loadMacroPrefs();
   renderWater();
 }
 
 function renderCalEntries() {
   const cd = getCalData(currentWeek, calDay);
+  const p = getMacroPrefs();
   const container = document.getElementById('mealSections');
   if (!container) return;
 
   if (cd.entries.length === 0) {
-    container.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:10px 0 6px;">No items logged yet — use quick add or add a custom item below.</div>`;
+    container.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:10px 0 6px;">No items logged yet — search above, use quick add, or add manually.</div>`;
     return;
   }
 
-  container.innerHTML = cd.entries.map((e, i) => `
+  container.innerHTML = cd.entries.map((e, i) => {
+    let macroStr = `${e.kcal} kcal · ${e.protein || 0}g prot`;
+    if (p.carbs && e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
+    if (p.fats  && e.fats  != null) macroStr += ` · ${e.fats}g fat`;
+    if (p.sugar && e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
+    return `
     <div class="meal-entry-grid" id="entry_${i}">
       <span style="font-size:13px;color:var(--text);">${e.name}</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text2);">${e.kcal} kcal</span>
-      <span style="font-size:11px;color:var(--text3);">${e.protein}g prot</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text2);grid-column:span 2;">${macroStr}</span>
       <button class="del-entry-btn" onclick="deleteCalEntry(${i})">×</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function quickAdd(name, kcal, protein) {
@@ -2450,13 +2672,23 @@ function addCustomEntry() {
   const tempId = 'temp_entry_' + Date.now();
   const div = document.createElement('div');
   div.id = 'customEntryRow';
-  div.className = 'meal-entry-grid';
-  div.style.marginBottom = '6px';
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;';
   div.innerHTML = `
-    <input type="text" placeholder="Food name..." id="${tempId}_name" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;" onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');if(event.key==='Escape')document.getElementById('customEntryRow').remove();">
-    <input type="number" placeholder="kcal" id="${tempId}_kcal" class="cal-num-input" min="0" max="5000" onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <input type="number" placeholder="g prot" id="${tempId}_prot" class="cal-num-input" min="0" max="200" style="width:72px;" onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <button class="save-btn" style="padding:6px 10px;font-size:12px;" onclick="confirmCustomEntry('${tempId}')">Add</button>
+    <input type="text" placeholder="Food name..." id="${tempId}_name"
+      style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');if(event.key==='Escape')document.getElementById('customEntryRow').remove();">
+    <input type="number" placeholder="kcal *" id="${tempId}_kcal" class="cal-num-input" min="0" max="5000" style="width:72px;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
+    <input type="number" placeholder="protein g *" id="${tempId}_prot" class="cal-num-input" min="0" max="500" style="width:82px;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
+    <input type="number" placeholder="carbs g" id="${tempId}_carbs" class="cal-num-input" min="0" max="500" style="width:72px;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
+    <input type="number" placeholder="fats g" id="${tempId}_fats" class="cal-num-input" min="0" max="500" style="width:68px;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
+    <input type="number" placeholder="sugar g" id="${tempId}_sugar" class="cal-num-input" min="0" max="500" style="width:72px;"
+      onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
+    <button class="save-btn" style="padding:6px 12px;font-size:12px;" onclick="confirmCustomEntry('${tempId}')">Add</button>
+    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">* required · carbs, fats, sugar optional — leave blank if unknown</div>
   `;
   container.appendChild(div);
   document.getElementById(tempId + '_name').focus();
@@ -2464,14 +2696,18 @@ function addCustomEntry() {
 
 function confirmCustomEntry(tempId) {
   const nameEl = document.getElementById(tempId + '_name');
-  const kcalEl = document.getElementById(tempId + '_kcal');
-  const protEl = document.getElementById(tempId + '_prot');
   if (!nameEl) return;
-  const name = nameEl.value.trim() || 'Custom item';
-  const kcal = parseInt(kcalEl.value) || 0;
-  const protein = parseInt(protEl.value) || 0;
+  const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
+  const entry = {
+    name:    nameEl.value.trim() || 'Custom item',
+    kcal:    get(tempId + '_kcal') || 0,
+    protein: get(tempId + '_prot') || 0,
+    carbs:   get(tempId + '_carbs'),
+    fats:    get(tempId + '_fats'),
+    sugar:   get(tempId + '_sugar'),
+  };
   const cd = getCalData(currentWeek, calDay);
-  cd.entries.push({ name, kcal, protein });
+  cd.entries.push(entry);
   autoPersist();
   const row = document.getElementById('customEntryRow');
   if (row) row.remove();
@@ -2490,7 +2726,6 @@ function deleteCalEntry(idx) {
 function updateCalTotals() {
   const cd = getCalData(currentWeek, calDay);
   const consumed = cd.entries.reduce((s, e) => s + (e.kcal || 0), 0);
-  const protein = cd.entries.reduce((s, e) => s + (e.protein || 0), 0);
 
   // Get exercise burn — custom watch value takes priority over preset
   const dayActData = getDayData(currentWeek, calDay);
@@ -2503,7 +2738,6 @@ function updateCalTotals() {
   const target = currentWeek <= 10 ? DAILY_TARGET : 1700;
   const deficit = target - net;
 
-  // Update DOM
   const fmt = n => Math.round(n).toLocaleString();
   document.getElementById('calConsumed').innerHTML = fmt(consumed) + ' <small>kcal</small>';
   document.getElementById('calBurned').innerHTML = fmt(burned) + ' <small>kcal</small>';
@@ -2512,33 +2746,23 @@ function updateCalTotals() {
   document.getElementById('calBarMid').textContent = fmt(target / 2);
   document.getElementById('calBarTarget').textContent = 'Target: ' + fmt(target);
 
-  // Bar — based on net vs target
   const pct = Math.min(120, Math.round((net / target) * 100));
   const bar = document.getElementById('calBarFill');
   bar.style.width = Math.min(100, pct) + '%';
   bar.style.background = pct > 105 ? 'var(--red)' : pct > 90 ? 'var(--amber)' : 'var(--green)';
 
-  // Deficit badge
   const badge = document.getElementById('deficitBadge');
   if (net === 0) {
-    badge.textContent = '— deficit';
-    badge.className = 'deficit-badge deficit-ok';
+    badge.textContent = '— deficit'; badge.className = 'deficit-badge deficit-ok';
   } else if (deficit >= 400) {
-    badge.textContent = fmt(deficit) + ' kcal deficit';
-    badge.className = 'deficit-badge deficit-ok';
+    badge.textContent = fmt(deficit) + ' kcal deficit'; badge.className = 'deficit-badge deficit-ok';
   } else if (deficit > 0) {
-    badge.textContent = fmt(deficit) + ' kcal deficit';
-    badge.className = 'deficit-badge deficit-warn';
+    badge.textContent = fmt(deficit) + ' kcal deficit'; badge.className = 'deficit-badge deficit-warn';
   } else {
-    badge.textContent = fmt(Math.abs(deficit)) + ' kcal over';
-    badge.className = 'deficit-badge deficit-over';
+    badge.textContent = fmt(Math.abs(deficit)) + ' kcal over'; badge.className = 'deficit-badge deficit-over';
   }
 
-  // Protein
-  const protPct = Math.min(100, Math.round((protein / 75) * 100));
-  document.getElementById('proteinLogged').innerHTML = protein + ' <small>g</small>';
-  document.getElementById('proteinRemaining').innerHTML = Math.max(0, 75 - protein) + ' <small>g</small>';
-  document.getElementById('proteinBar').style.width = protPct + '%';
+  renderMacroStats();
 }
 
 // ─── START DATE ───────────────────────────────────────────
@@ -2828,6 +3052,15 @@ function importData(event) {
   reader.readAsText(file);
   event.target.value = '';
 }
+
+// Close food search dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const results = document.getElementById('foodSearchResults');
+  const input = document.getElementById('foodSearchInput');
+  if (results && !results.contains(e.target) && e.target !== input && !e.target.closest('.calorie-card')) {
+    results.style.display = 'none';
+  }
+});
 
 // ─── INIT ──────────────────────────────────────────────────
 async function loadAndRender() {
