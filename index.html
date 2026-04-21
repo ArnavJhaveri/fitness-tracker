@@ -779,6 +779,31 @@
     25% { transform: translateX(-6px); }
     75% { transform: translateX(6px); }
   }
+
+  /* CALENDAR */
+  .cal-week-row { display: grid; grid-template-columns: 56px repeat(7, 1fr); gap: 3px; margin-bottom: 3px; align-items: center; }
+  .cal-week-label { font-family: var(--mono); font-size: 9px; color: var(--text3); text-align: right; padding-right: 6px; line-height: 1.3; }
+  .cal-day-cell { border-radius: 5px; padding: 4px 2px; text-align: center; cursor: pointer; border: 1px solid transparent; min-height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+  .cal-day-cell:hover { opacity: 0.78; }
+  .cal-day-num { font-size: 11px; font-weight: 500; line-height: 1; }
+  .cal-day-tag { font-size: 8px; line-height: 1.2; letter-spacing: 0; }
+  .cal-header-row { display: grid; grid-template-columns: 56px repeat(7, 1fr); gap: 3px; margin-bottom: 4px; }
+  .cal-header-cell { font-family: var(--mono); font-size: 9px; color: var(--text3); text-align: center; letter-spacing: 0.04em; text-transform: uppercase; }
+  .cal-month-label { font-size: 11px; font-weight: 500; color: var(--text2); margin: 12px 0 5px; font-family: var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+  .cal-workout { background: var(--green-bg); border-color: #9FE1CB; }
+  .cal-workout .cal-day-num { color: var(--green); }
+  .cal-workout .cal-day-tag { color: #0F6E56; }
+  .cal-padel { background: var(--blue-bg); border-color: #B5D4F4; }
+  .cal-padel .cal-day-num { color: var(--blue); }
+  .cal-rest { background: var(--surface2); border-color: var(--border); }
+  .cal-rest .cal-day-num { color: var(--text3); }
+  .cal-skipped { background: var(--red-bg); border-color: #F7C1C1; }
+  .cal-skipped .cal-day-num { color: var(--red); }
+  .cal-today { border-color: var(--accent) !important; border-width: 2px !important; }
+  .cal-today .cal-day-num { color: var(--accent); font-weight: 600; }
+  .cal-future { background: var(--surface); border-color: var(--border); opacity: 0.35; cursor: default; }
+  .cal-empty { opacity: 0; pointer-events: none; }
+  .cal-weight-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 1px; }
 </style>
 </head>
 <body>
@@ -818,6 +843,7 @@
       <div class="week-label" id="weekLabel">Week 1</div>
       <button class="week-btn" onclick="changeWeek(1)">›</button>
     </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;margin-top:4px;" id="weekDateRange"></div>
   </div>
 </div>
 
@@ -826,6 +852,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('this-week')">This week</button>
     <button class="tab-btn" onclick="showTab('history')">History</button>
+    <button class="tab-btn" onclick="showTab('calendar')">Calendar</button>
     <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
     <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
   </div>
@@ -866,6 +893,28 @@
         <div class="prog-label">Week</div>
         <div class="prog-val" id="weekNum">1 <span>of 20</span></div>
         <div class="prog-sub" id="weekPhaseDesc">Phase 1, wk 1</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Workout streak</div>
+        <div class="prog-val" id="currentStreak">0 <span>days</span></div>
+        <div class="prog-sub">current</div>
+      </div>
+      <div class="prog-stat">
+        <div class="prog-label">Longest streak</div>
+        <div class="prog-val" id="longestStreak">0 <span>days</span></div>
+        <div class="prog-sub">all time</div>
+      </div>
+    </div>
+
+    <!-- START DATE SETUP -->
+    <div id="startDateSetup" style="display:none;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;padding:14px 18px;margin-bottom:16px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:3px;">Set your plan start date</div>
+        <div style="font-size:12px;color:var(--text2);">This anchors every week and day to real calendar dates, enables streaks, and auto-detects your current week.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="date" id="startDateInput" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+        <button onclick="saveStartDate()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save</button>
       </div>
     </div>
 
@@ -1036,11 +1085,27 @@
     <div class="history-card" id="historyCard">
       <div style="font-size:13px; color:var(--text3); padding: 8px 0;">No history yet — complete your first week to see data here.</div>
     </div>
-
+    <div class="section-title" style="margin-top:8px;">Weight trend</div>
+    <div class="history-card" style="padding:16px;">
+      <canvas id="weightChart" style="width:100%;height:180px;display:block;"></canvas>
+    </div>
     <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
     <div class="history-card" id="activityHistory">
       <div style="font-size:13px; color:var(--text3); padding: 8px 0;">Activity history will appear here after saving weeks.</div>
     </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="calendar" class="tab-panel">
+    <div class="section-title">20-week plan calendar</div>
+    <div id="calendarLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid var(--green);"></div>Workout</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Padel</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid var(--amber);"></div>Today</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid var(--red);"></div>Skipped</div>
+    </div>
+    <div id="calendarGrid"></div>
   </div>
 
   <!-- WORKOUTS -->
@@ -1251,7 +1316,17 @@
     </div>
 
     <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
-      <div class="section-title">Security</div>
+      <div class="section-title">Settings</div>
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+        <div class="plan-ref-title">Change plan start date</div>
+        <div style="font-size:12px;color:var(--text2);">Current: <span id="currentStartDate">not set</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="date" id="changeStartDateInput" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+          <button onclick="changeStartDate()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
+      </div>
+      <div class="section-title" style="margin-top:16px;">Security</div>
       <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;">
         <div class="plan-ref-title">Change password</div>
         <input type="password" id="pwCurrent" placeholder="Current password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
@@ -1302,6 +1377,7 @@ async function checkPassword() {
     document.getElementById('lockScreen').classList.add('hidden');
     errorEl.textContent = '';
     await loadAndRender();
+    checkStartDateSetup();
   } else {
     const inp = document.getElementById('pwInput');
     inp.classList.add('error');
@@ -1390,6 +1466,85 @@ function getDietData(w, d) {
   return wd.diet[d];
 }
 
+// ─── DATE UTILITIES ──────────────────────────────────────
+function getStartDate() {
+  return allData._startDate ? new Date(allData._startDate) : null;
+}
+
+function setStartDate(dateStr) {
+  allData._startDate = dateStr;
+}
+
+function getWeekStartDate(weekNum) {
+  const start = getStartDate();
+  if (!start) return null;
+  const d = new Date(start);
+  d.setDate(d.getDate() + (weekNum - 1) * 7);
+  return d;
+}
+
+function getDayDate(weekNum, dayIdx) {
+  const ws = getWeekStartDate(weekNum);
+  if (!ws) return null;
+  const d = new Date(ws);
+  d.setDate(d.getDate() + dayIdx);
+  return d;
+}
+
+function formatDate(d, opts) {
+  if (!d) return '';
+  return d.toLocaleDateString('en-GB', opts || { day: 'numeric', month: 'short' });
+}
+
+function formatDateFull(d) {
+  if (!d) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function getCurrentWeekFromDate() {
+  const start = getStartDate();
+  if (!start) return 1;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const startDay = new Date(start);
+  startDay.setHours(0,0,0,0);
+  const diff = Math.floor((today - startDay) / (7 * 24 * 60 * 60 * 1000));
+  return Math.min(20, Math.max(1, diff + 1));
+}
+
+function calcStreak() {
+  const start = getStartDate();
+  if (!start) return { current: 0, longest: 0 };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = [];
+  for (let w = 1; w <= 20; w++) {
+    for (let d = 0; d < 7; d++) {
+      const date = getDayDate(w, d);
+      if (!date) continue;
+      date.setHours(0,0,0,0);
+      if (date > today) continue;
+      const dayName = DAYS[d];
+      const dd = getDayData(w, dayName);
+      const act = (dd.activity || '').toLowerCase();
+      const isWorkout = dd.activity && !act.includes('rest');
+      days.push(isWorkout);
+    }
+  }
+  let longest = 0, running = 0;
+  for (const worked of days) {
+    if (worked) { running++; longest = Math.max(longest, running); }
+    else running = 0;
+  }
+  // Current streak = count backwards from last logged day
+  let current = 0;
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i]) current++;
+    else break;
+  }
+  return { current, longest };
+}
+
+
 // ─── WEEK NAV ────────────────────────────────────────────
 function changeWeek(dir) {
   currentWeek = Math.max(1, Math.min(20, currentWeek + dir));
@@ -1399,13 +1554,24 @@ function changeWeek(dir) {
 
 // ─── RENDER ──────────────────────────────────────────────
 function render() {
+  const ws = getWeekStartDate(currentWeek);
+  const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
+  const dateRange = ws ? formatDate(ws) + ' – ' + formatDate(we) : 'Set start date →';
   document.getElementById('weekLabel').textContent = 'Week ' + currentWeek;
   document.getElementById('weekNum').textContent = currentWeek;
   document.getElementById('weekPhaseDesc').textContent = currentWeek <= 10 ? 'Phase 1, wk ' + currentWeek : 'Phase 2, wk ' + (currentWeek - 10);
+  const wdr = document.getElementById('weekDateRange');
+  if (wdr) wdr.textContent = dateRange;
 
   const phase = currentWeek <= 10 ? 1 : 2;
   document.getElementById('currentPhase').textContent = phase;
   document.getElementById('phaseDesc').textContent = phase === 1 ? '168→154 lbs' : '154→143 lbs';
+
+  const streak = calcStreak();
+  const cs = document.getElementById('currentStreak');
+  const ls = document.getElementById('longestStreak');
+  if (cs) cs.textContent = streak.current;
+  if (ls) ls.textContent = streak.longest;
 
   renderWeight();
   renderDays();
@@ -1489,6 +1655,9 @@ function renderDays() {
 
     const badgeClass = getBadgeClass(activity);
     const badgeLabel = activity || 'Log';
+    const dayDate = getDayDate(currentWeek, i);
+    const dateStr = dayDate ? formatDate(dayDate, { day: 'numeric', month: 'short' }) : '';
+    const isToday = dayDate ? (() => { const t = new Date(); return dayDate.getDate()===t.getDate() && dayDate.getMonth()===t.getMonth() && dayDate.getFullYear()===t.getFullYear(); })() : false;
 
     let checksHtml = '';
     if (dd.core) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Core ✓</span></div>`;
@@ -1496,7 +1665,8 @@ function renderDays() {
     if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal</span></div>`;
 
     card.innerHTML = `
-      <div class="day-name">${day}</div>
+      <div class="day-name" style="${isToday ? 'color:var(--accent);font-weight:500;' : ''}">${day}${isToday ? ' ·today' : ''}</div>
+      ${dateStr ? `<div style="font-size:10px;color:var(--text3);margin-bottom:4px;">${dateStr}</div>` : ''}
       <div class="day-type-badge ${badgeClass}">${badgeLabel}</div>
       ${checksHtml ? `<div class="day-checks">${checksHtml}</div>` : ''}
     `;
@@ -1532,7 +1702,9 @@ function renderDayDetail(day) {
   const dd = getDayData(currentWeek, day);
   const plan = currentWeek <= 10 ? PHASE1_PLAN : PHASE2_PLAN;
   const dayIdx = DAYS.indexOf(day);
-  const planned = PHASE1_PLAN[dayIdx];
+  const planned = plan[dayIdx];
+  const dayDate = getDayDate(currentWeek, dayIdx);
+  const dateLabel = dayDate ? ' · ' + formatDateFull(dayDate) : '';
 
   const activityOptions = ['Run','Tempo run','Weights A','Weights B','Weights C','Padel (1hr)','Padel (2hr)','Rest','Walk','Rest day + walk'];
   const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
@@ -1544,7 +1716,7 @@ function renderDayDetail(day) {
   document.getElementById('dayDetail').innerHTML = `
     <div class="day-detail">
       <div class="detail-header">
-        <div class="detail-day-name">${day} — Week ${currentWeek} <span style="font-size:12px;color:var(--text3);font-weight:400;">(planned: ${planned})</span></div>
+        <div class="detail-day-name">${day}${dateLabel} <span style="font-size:12px;color:var(--text3);font-weight:400;">(planned: ${planned})</span></div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="clearDay('${day}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Clear day</button>
           <button class="detail-close" onclick="selectedDay=null;renderDays()">✕</button>
@@ -1782,43 +1954,20 @@ function renderSummary() {
   document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
 }
 
-// ─── HISTORY ─────────────────────────────────────────────
-function renderHistory() {
-  const card = document.getElementById('historyCard');
-  const actCard = document.getElementById('activityHistory');
-  let hasHistory = false;
-  let weightHtml = '';
-  let actHtml = '';
-  let prevWt = START_WEIGHT;
-
-  for (let w = 1; w <= 20; w++) {
-    const wd = getWeekData(w);
-    if (wd.weight || Object.keys(wd.days).some(d => wd.days[d].activity)) {
-      hasHistory = true;
-      const wt = wd.weight;
-      const diff = wt ? wt - prevWt : null;
-      let deltaHtml = '';
-      if (diff !== null) {
-        const cls = diff < 0 ? 'delta-down' : diff > 0 ? 'delta-up' : 'delta-same';
-        deltaHtml = `<span class="history-delta ${cls}">${diff < 0 ? '↓' : diff > 0 ? '↑+' : '='} ${Math.abs(diff).toFixed(1)} lbs</span>`;
-      }
-      if (wt) {
-        weightHtml += `<div class="history-row"><span class="history-week">Week ${w}</span><span class="history-weight">${wt} lbs</span>${deltaHtml}</div>`;
-        prevWt = wt;
-      }
-
-      let acts = DAYS.map(d => wd.days[d]?.activity).filter(Boolean);
-      if (acts.length) {
-        actHtml += `<div class="history-row"><span class="history-week">Week ${w}</span><span style="font-size:12px;color:var(--text2);">${acts.join(' · ')}</span></div>`;
-      }
-    }
-  }
-
-  card.innerHTML = hasHistory ? (weightHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No weights logged yet.</div>') : '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No history yet.</div>';
-  actCard.innerHTML = actHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No activity logged yet.</div>';
+// ─── TABS ─────────────────────────────────────────────────
+function changeStartDate() {
+  const inp = document.getElementById('changeStartDateInput');
+  if (!inp || !inp.value) return;
+  if (!confirm('Update start date to ' + inp.value + '? All week dates will shift accordingly.')) return;
+  setStartDate(inp.value);
+  currentWeek = getCurrentWeekFromDate();
+  autoPersist();
+  pushToSheets();
+  render();
+  const el = document.getElementById('currentStartDate');
+  if (el) el.textContent = formatDateFull(getStartDate());
 }
 
-// ─── TABS ─────────────────────────────────────────────────
 function showTab(id) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1826,6 +1975,14 @@ function showTab(id) {
   const btn = [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'"));
   if (btn) btn.classList.add('active');
   if (id === 'history') renderHistory();
+  if (id === 'calendar') renderCalendar();
+  if (id === 'plan-ref') {
+    const sd = getStartDate();
+    const el = document.getElementById('currentStartDate');
+    if (el) el.textContent = sd ? formatDateFull(sd) : 'not set';
+    const inp = document.getElementById('changeStartDateInput');
+    if (inp && sd) inp.value = allData._startDate;
+  }
 }
 
 function showWoTab(id, btn) {
@@ -2205,6 +2362,224 @@ function updateCalTotals() {
   document.getElementById('proteinBar').style.width = protPct + '%';
 }
 
+// ─── START DATE ───────────────────────────────────────────
+function saveStartDate() {
+  const inp = document.getElementById('startDateInput');
+  if (!inp || !inp.value) return;
+  setStartDate(inp.value);
+  currentWeek = getCurrentWeekFromDate();
+  document.getElementById('startDateSetup').style.display = 'none';
+  pushToSheets();
+  render();
+}
+
+function checkStartDateSetup() {
+  const setup = document.getElementById('startDateSetup');
+  if (!setup) return;
+  if (!getStartDate()) {
+    setup.style.display = 'flex';
+    const inp = document.getElementById('startDateInput');
+    if (inp) inp.value = new Date().toISOString().slice(0,10);
+  } else {
+    setup.style.display = 'none';
+    currentWeek = getCurrentWeekFromDate();
+  }
+}
+
+// ─── CALENDAR RENDER ──────────────────────────────────────
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  if (!grid) return;
+  const start = getStartDate();
+  if (!start) {
+    grid.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:20px 0;">Set your plan start date (in the This Week tab) to enable the calendar view.</div>`;
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = '';
+  html += `<div class="cal-header-row"><div class="cal-header-cell"></div>${DAYS.map(d=>`<div class="cal-header-cell">${d}</div>`).join('')}</div>`;
+
+  let lastMonth = -1;
+  for (let w = 1; w <= 20; w++) {
+    const ws = getWeekStartDate(w);
+    if (!ws) continue;
+    const month = ws.getMonth();
+    if (month !== lastMonth) {
+      html += `<div class="cal-month-label">${ws.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</div>`;
+      lastMonth = month;
+    }
+    const wd = getWeekData(w);
+    const wLabel = `Wk ${w}<br>${formatDate(ws,{day:'numeric',month:'short'})}`;
+    html += `<div class="cal-week-row"><div class="cal-week-label">${wLabel}</div>`;
+    for (let d = 0; d < 7; d++) {
+      const date = getDayDate(w, d);
+      if (!date) { html += `<div class="cal-day-cell cal-empty"></div>`; continue; }
+      date.setHours(0,0,0,0);
+      const dayName = DAYS[d];
+      const dd = getDayData(w, dayName);
+      const act = (dd.activity || '').toLowerCase();
+      const isFuture = date > today;
+      const isToday = date.getTime() === today.getTime();
+      const hasWeight = !!wd.weight && d === 0;
+      let cellClass = 'cal-future';
+      let tag = '';
+      if (!isFuture || isToday) {
+        if (act.includes('padel')) {
+          cellClass = 'cal-padel'; tag = 'Padel';
+        } else if (act && !act.includes('rest')) {
+          cellClass = 'cal-workout';
+          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
+        } else if (act.includes('rest')) {
+          cellClass = 'cal-rest'; tag = 'Rest';
+        } else {
+          // Past day with no activity logged = skipped
+          cellClass = isToday ? 'cal-rest' : 'cal-skipped';
+          tag = isToday ? '' : 'Skipped';
+        }
+      }
+      if (isToday) cellClass += ' cal-today';
+      html += `<div class="cal-day-cell ${cellClass}" onclick="goToWeekDay(${w},'${dayName}')" title="${formatDateFull(date)}${dd.activity ? ' · '+dd.activity : ''}">
+        <div class="cal-day-num">${date.getDate()}</div>
+        ${tag ? `<div class="cal-day-tag">${tag}</div>` : ''}
+        ${hasWeight ? `<div class="cal-weight-dot" title="${wd.weight} lbs"></div>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function goToWeekDay(week, day) {
+  currentWeek = week;
+  selectedDay = day;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('this-week');
+  if (panel) panel.classList.add('active');
+  const btn = [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes("'this-week'"));
+  if (btn) btn.classList.add('active');
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('dayDetail');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 150);
+}
+
+// ─── HISTORY RENDER (updated with dates + chart) ──────────
+function renderHistory() {
+  const card = document.getElementById('historyCard');
+  const actCard = document.getElementById('activityHistory');
+  let hasHistory = false;
+  let weightHtml = '';
+  let actHtml = '';
+  let prevWt = START_WEIGHT;
+  const chartLabels = [];
+  const chartData = [];
+
+  for (let w = 1; w <= 20; w++) {
+    const wd = getWeekData(w);
+    const ws = getWeekStartDate(w);
+    const weekLabel = ws ? formatDate(ws, {day:'numeric',month:'short'}) : `Week ${w}`;
+    if (wd.weight || Object.keys(wd.days).some(d => wd.days[d] && wd.days[d].activity)) {
+      hasHistory = true;
+      const wt = wd.weight;
+      const diff = wt ? wt - prevWt : null;
+      let deltaHtml = '';
+      if (diff !== null) {
+        const cls = diff < 0 ? 'delta-down' : diff > 0 ? 'delta-up' : 'delta-same';
+        deltaHtml = `<span class="history-delta ${cls}">${diff < 0 ? '↓' : diff > 0 ? '↑+' : '='} ${Math.abs(diff).toFixed(1)} lbs</span>`;
+      }
+      if (wt) {
+        const milestone = wt <= GOAL2 ? '🎯 Goal 2 hit!' : wt <= GOAL1 ? '🎯 Goal 1 hit!' : '';
+        weightHtml += `<div class="history-row">
+          <span class="history-week">Wk ${w} · ${weekLabel}</span>
+          <span class="history-weight">${wt} lbs</span>
+          ${deltaHtml}
+          ${milestone ? `<span style="font-size:11px;color:var(--green);margin-left:6px;">${milestone}</span>` : ''}
+        </div>`;
+        chartLabels.push(`Wk${w}${ws?' '+formatDate(ws,{day:'numeric',month:'short'}):''}` );
+        chartData.push(wt);
+        prevWt = wt;
+      }
+      let acts = DAYS.map(d => wd.days[d]?.activity).filter(Boolean);
+      if (acts.length) {
+        actHtml += `<div class="history-row"><span class="history-week">Wk ${w} · ${weekLabel}</span><span style="font-size:12px;color:var(--text2);">${acts.join(' · ')}</span></div>`;
+      }
+    }
+  }
+
+  card.innerHTML = hasHistory ? (weightHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No weights logged yet.</div>') : '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No history yet.</div>';
+  actCard.innerHTML = actHtml || '<div style="font-size:13px;color:var(--text3);padding:8px 0;">No activity logged yet.</div>';
+
+  // Draw weight chart
+  const canvas = document.getElementById('weightChart');
+  if (canvas && chartData.length > 1) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth || 500;
+    const H = 180;
+    canvas.width = W * window.devicePixelRatio;
+    canvas.height = H * window.devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.clearRect(0,0,W,H);
+    const pad = { t:16, r:16, b:32, l:44 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const minY = Math.min(...chartData, GOAL2) - 2;
+    const maxY = Math.max(...chartData, START_WEIGHT) + 2;
+    const xStep = cW / (chartData.length - 1);
+    const yScale = v => pad.t + cH - ((v - minY) / (maxY - minY)) * cH;
+    const xScale = i => pad.l + i * xStep;
+    // Goal lines
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#2d6a4f44';
+    ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL1)); ctx.lineTo(pad.l+cW, yScale(GOAL1)); ctx.stroke();
+    ctx.strokeStyle = '#1e40af44';
+    ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL2)); ctx.lineTo(pad.l+cW, yScale(GOAL2)); ctx.stroke();
+    ctx.setLineDash([]);
+    // Weight line
+    ctx.beginPath();
+    chartData.forEach((v,i) => { if(i===0) ctx.moveTo(xScale(i),yScale(v)); else ctx.lineTo(xScale(i),yScale(v)); });
+    ctx.strokeStyle = '#c4501a';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    // Dots
+    chartData.forEach((v,i) => {
+      ctx.beginPath();
+      ctx.arc(xScale(i), yScale(v), 3.5, 0, Math.PI*2);
+      ctx.fillStyle = '#c4501a';
+      ctx.fill();
+    });
+    // Y labels
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    [START_WEIGHT, GOAL1, GOAL2].forEach(v => {
+      ctx.fillText(v+'lb', pad.l-4, yScale(v)+3);
+    });
+    // X labels — first and last
+    ctx.textAlign = 'center';
+    ctx.fillText(chartLabels[0], xScale(0), H-6);
+    ctx.fillText(chartLabels[chartLabels.length-1], xScale(chartData.length-1), H-6);
+    // Goal labels
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#2d6a4f88';
+    ctx.fillText('Goal 1', pad.l+cW, yScale(GOAL1)-3);
+    ctx.fillStyle = '#1e40af88';
+    ctx.fillText('Goal 2', pad.l+cW, yScale(GOAL2)-3);
+  } else if (canvas && chartData.length <= 1) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '13px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Log at least 2 weekly weights to see the trend chart', (canvas.offsetWidth||300)/2, 90);
+  }
+}
+
 // ─── EXPORT / IMPORT ──────────────────────────────────────
 function exportData() {
   const payload = {
@@ -2253,9 +2628,9 @@ function importData(event) {
 // ─── INIT ──────────────────────────────────────────────────
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
-  if (local) { allData = JSON.parse(local); render(); }
+  if (local) { allData = JSON.parse(local); checkStartDateSetup(); render(); }
   const pulled = await pullFromSheets();
-  if (pulled) render();
+  if (pulled) { checkStartDateSetup(); render(); }
 }
 
 async function init() {
