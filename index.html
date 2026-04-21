@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weekly Tracker</title>
+<title>Arnav — Fitness Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -815,7 +815,7 @@
         <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
       </svg>
     </div>
-    <div class="lock-title">Arnav's Tracker</div>
+    <div class="lock-title">Arnav's Fitness Tracker</div>
     <div class="lock-sub">Enter your password to continue</div>
     <input
       class="lock-input"
@@ -834,7 +834,7 @@
 <div class="header">
   <div class="header-left">
     <div class="header-title">Progress tracker</div>
-    <div class="header-name">Arnav — Weight Loss Plan</div>
+    <div class="header-name">Arnav — Fitness Tracker</div>
   </div>
   <div class="header-right">
     <div style="font-family:var(--mono);font-size:11px;margin-bottom:6px;min-height:16px;text-align:right;" id="syncStatus"></div>
@@ -1087,7 +1087,7 @@
     </div>
     <div class="section-title" style="margin-top:8px;">Weight trend</div>
     <div class="history-card" style="padding:16px;">
-      <canvas id="weightChart" style="width:100%;height:180px;display:block;"></canvas>
+      <canvas id="weightChart" style="width:100%;height:200px;display:block;"></canvas>
     </div>
     <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
     <div class="history-card" id="activityHistory">
@@ -1344,7 +1344,7 @@
 
 <script>
 // ─── AUTH ─────────────────────────────────────────────────
-const DEFAULT_PASSWORD = 'Arnav2024!';
+const DEFAULT_PASSWORD = 'Arnav2002!';
 const PW_KEY = 'ftPwHash';
 
 async function hashStr(str) {
@@ -2513,71 +2513,87 @@ function renderHistory() {
 
   // Draw weight chart
   const canvas = document.getElementById('weightChart');
-  if (canvas && chartData.length > 1) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.offsetWidth || 500;
-    const H = 180;
-    canvas.width = W * window.devicePixelRatio;
-    canvas.height = H * window.devicePixelRatio;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    ctx.clearRect(0,0,W,H);
-    const pad = { t:16, r:16, b:32, l:44 };
-    const cW = W - pad.l - pad.r;
-    const cH = H - pad.t - pad.b;
-    const minY = Math.min(...chartData, GOAL2) - 2;
-    const maxY = Math.max(...chartData, START_WEIGHT) + 2;
-    const xStep = cW / (chartData.length - 1);
-    const yScale = v => pad.t + cH - ((v - minY) / (maxY - minY)) * cH;
-    const xScale = i => pad.l + i * xStep;
-    // Goal lines
-    ctx.setLineDash([4,4]);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#2d6a4f44';
-    ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL1)); ctx.lineTo(pad.l+cW, yScale(GOAL1)); ctx.stroke();
-    ctx.strokeStyle = '#1e40af44';
-    ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL2)); ctx.lineTo(pad.l+cW, yScale(GOAL2)); ctx.stroke();
-    ctx.setLineDash([]);
-    // Weight line
-    ctx.beginPath();
-    chartData.forEach((v,i) => { if(i===0) ctx.moveTo(xScale(i),yScale(v)); else ctx.lineTo(xScale(i),yScale(v)); });
-    ctx.strokeStyle = '#c4501a';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    // Dots
-    chartData.forEach((v,i) => {
-      ctx.beginPath();
-      ctx.arc(xScale(i), yScale(v), 3.5, 0, Math.PI*2);
-      ctx.fillStyle = '#c4501a';
-      ctx.fill();
-    });
-    // Y labels
-    ctx.fillStyle = '#a89e93';
-    ctx.font = '10px DM Mono, monospace';
-    ctx.textAlign = 'right';
-    [START_WEIGHT, GOAL1, GOAL2].forEach(v => {
-      ctx.fillText(v+'lb', pad.l-4, yScale(v)+3);
-    });
-    // X labels — first and last
-    ctx.textAlign = 'center';
-    ctx.fillText(chartLabels[0], xScale(0), H-6);
-    ctx.fillText(chartLabels[chartLabels.length-1], xScale(chartData.length-1), H-6);
-    // Goal labels
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#2d6a4f88';
-    ctx.fillText('Goal 1', pad.l+cW, yScale(GOAL1)-3);
-    ctx.fillStyle = '#1e40af88';
-    ctx.fillText('Goal 2', pad.l+cW, yScale(GOAL2)-3);
-  } else if (canvas && chartData.length <= 1) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const W = container ? container.clientWidth - 32 : 500;
+  const H = 180;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0, 0, W, H);
+
+  if (chartData.length < 2) {
     ctx.fillStyle = '#a89e93';
     ctx.font = '13px DM Sans, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Log at least 2 weekly weights to see the trend chart', (canvas.offsetWidth||300)/2, 90);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Log at least 2 weekly weights to see the trend chart', W / 2, H / 2);
+    return;
   }
+
+  const pad = { t: 16, r: 60, b: 32, l: 44 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+  const minY = Math.min(...chartData, GOAL2) - 2;
+  const maxY = Math.max(...chartData, START_WEIGHT) + 2;
+  const xScale = i => pad.l + (i / (chartData.length - 1)) * cW;
+  const yScale = v => pad.t + cH - ((v - minY) / (maxY - minY)) * cH;
+
+  // Goal lines
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#2d6a4f55';
+  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL1)); ctx.lineTo(pad.l + cW, yScale(GOAL1)); ctx.stroke();
+  ctx.strokeStyle = '#1e40af55';
+  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL2)); ctx.lineTo(pad.l + cW, yScale(GOAL2)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Weight line
+  ctx.beginPath();
+  chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(xScale(i), yScale(v)); else ctx.lineTo(xScale(i), yScale(v)); });
+  ctx.strokeStyle = '#c4501a';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Dots + value labels
+  chartData.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(xScale(i), yScale(v), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#c4501a';
+    ctx.fill();
+    ctx.fillStyle = '#6b6259';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(v + 'lb', xScale(i), yScale(v) - 5);
+  });
+
+  // Y axis labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '10px DM Mono, monospace';
+  [[START_WEIGHT, 'Start'], [GOAL1, 'Goal 1'], [GOAL2, 'Goal 2']].forEach(([v, label]) => {
+    ctx.fillText(v + 'lb', pad.l - 4, yScale(v));
+  });
+
+  // Goal line labels (right side)
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#2d6a4f88';
+  ctx.fillText('Goal 1', pad.l + cW + 4, yScale(GOAL1));
+  ctx.fillStyle = '#1e40af88';
+  ctx.fillText('Goal 2', pad.l + cW + 4, yScale(GOAL2));
+
+  // X labels — first, last, and any milestone weeks
+  ctx.fillStyle = '#a89e93';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(chartLabels[0], xScale(0), H - 16);
+  if (chartData.length > 1) ctx.fillText(chartLabels[chartLabels.length - 1], xScale(chartData.length - 1), H - 16);
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────
