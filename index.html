@@ -1277,6 +1277,9 @@ async function initAuth() {
     document.getElementById('lockScreen').classList.add('hidden');
   } else {
     document.getElementById('pwInput').focus();
+    await new Promise(resolve => {
+      window._authResolve = resolve;
+    });
   }
 }
 
@@ -1358,6 +1361,8 @@ const DIET_RULES = [
 let currentWeek = 1;
 let selectedDay = null;
 let allData = JSON.parse(localStorage.getItem('fitnessTracker') || '{}');
+let syncPending = false;
+let syncTimer = null;
 
 function getWeekData(w) {
   if (!allData[w]) allData[w] = { weight: null, days: {}, diet: {} };
@@ -1775,15 +1780,73 @@ function showWoTab(id, btn) {
   }
 }
 
+// ─── GOOGLE SHEETS SYNC ───────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLm8q4MF3SzERGbk4KV46mazsqQPVmu5AdN_AuWYfTa_J5GQupXnR3gzpq-NiEUG3cqQ/exec';
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const configs = {
+    idle:    { text: '',                color: 'var(--text3)' },
+    saving:  { text: '↑ Syncing...',    color: 'var(--amber)' },
+    saved:   { text: '✓ Synced',        color: 'var(--green)' },
+    error:   { text: '⚠ Sync failed — saved locally', color: 'var(--red)' },
+    loading: { text: '↓ Loading data…', color: 'var(--blue)' },
+  };
+  const cfg = configs[state] || configs.idle;
+  el.textContent = msg || cfg.text;
+  el.style.color = cfg.color;
+}
+
+async function pushToSheets() {
+  setSyncStatus('saving');
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'write', data: { fitnessTracker: allData } }),
+    });
+    const json = await resp.json();
+    if (json.ok) {
+      setSyncStatus('saved');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    } else {
+      setSyncStatus('error');
+    }
+  } catch {
+    setSyncStatus('error');
+  }
+}
+
+async function pullFromSheets() {
+  setSyncStatus('loading');
+  try {
+    const resp = await fetch(SCRIPT_URL + '?action=read');
+    const json = await resp.json();
+    if (json.ok && json.data && json.data.fitnessTracker) {
+      allData = json.data.fitnessTracker;
+      localStorage.setItem('fitnessTracker', JSON.stringify(allData));
+      setSyncStatus('saved');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+      return true;
+    }
+  } catch {
+    setSyncStatus('error');
+  }
+  return false;
+}
+
 // ─── SAVE ─────────────────────────────────────────────────
 function autoPersist() {
   localStorage.setItem('fitnessTracker', JSON.stringify(allData));
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushToSheets, 1500);
 }
 
 function saveWeek() {
   const wv = parseFloat(document.getElementById('weekWeight').value);
   if (wv) getWeekData(currentWeek).weight = wv;
   autoPersist();
+  pushToSheets();
   const msg = document.getElementById('saveMsg');
   msg.classList.add('show');
   setTimeout(() => msg.classList.remove('show'), 2000);
@@ -2079,6 +2142,7 @@ function importData(event) {
       }
       allData = incoming;
       autoPersist();
+      pushToSheets();
       render();
       renderHistory();
       const msg = document.getElementById('importMsg');
@@ -2093,8 +2157,17 @@ function importData(event) {
 }
 
 // ─── INIT ──────────────────────────────────────────────────
-initAuth();
-render();
+async function init() {
+  await initAuth();
+  const pulled = await pullFromSheets();
+  if (!pulled) {
+    const local = localStorage.getItem('fitnessTracker');
+    if (local) allData = JSON.parse(local);
+  }
+  render();
+}
+
+init();
 </script>
 </body>
 </html>
