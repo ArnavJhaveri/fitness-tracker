@@ -2690,12 +2690,77 @@ function renderCalEntries() {
     if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
     if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
     return `
-    <div class="meal-entry-grid" id="entry_${i}">
-      <span style="font-size:13px;color:var(--text);">${e.name}</span>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text2);grid-column:span 2;">${macroStr}</span>
-      <button class="del-entry-btn" onclick="deleteCalEntry(${i})">×</button>
+    <div id="entry_${i}" style="border-bottom:1px solid var(--border);padding:8px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name}</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${macroStr}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="editCalEntry(${i})" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
+          <button class="del-entry-btn" onclick="deleteCalEntry(${i})">×</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
+}
+
+function editCalEntry(idx) {
+  const cd = getCalData(currentWeek, calDay);
+  const e = cd.entries[idx];
+  if (!e) return;
+
+  const row = document.getElementById('entry_' + idx);
+  if (!row) return;
+
+  row.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;">
+      <input type="text" id="edit_name_${idx}" value="${e.name.replace(/"/g,'&quot;')}"
+        style="flex:1;min-width:140px;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+      <input type="number" id="edit_kcal_${idx}" value="${e.kcal || ''}" placeholder="kcal"
+        class="cal-num-input" min="0" max="5000" style="width:68px;">
+      <input type="number" id="edit_prot_${idx}" value="${e.protein || ''}" placeholder="protein g"
+        class="cal-num-input" min="0" max="500" style="width:80px;">
+      <input type="number" id="edit_carbs_${idx}" value="${e.carbs != null ? e.carbs : ''}" placeholder="carbs g"
+        class="cal-num-input" min="0" max="500" style="width:72px;">
+      <input type="number" id="edit_fats_${idx}" value="${e.fats != null ? e.fats : ''}" placeholder="fats g"
+        class="cal-num-input" min="0" max="500" style="width:68px;">
+      <input type="number" id="edit_sugar_${idx}" value="${e.sugar != null ? e.sugar : ''}" placeholder="sugar g"
+        class="cal-num-input" min="0" max="500" style="width:72px;">
+      <button onclick="saveCalEntry(${idx})"
+        style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+      <button onclick="renderCalEntries()"
+        style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:3px;">Leave carbs / fats / sugar blank if unknown</div>
+  `;
+  document.getElementById('edit_name_' + idx).focus();
+
+  // Save on Enter key
+  row.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') saveCalEntry(idx);
+      if (ev.key === 'Escape') renderCalEntries();
+    });
+  });
+}
+
+function saveCalEntry(idx) {
+  const cd = getCalData(currentWeek, calDay);
+  const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
+  const nameEl = document.getElementById('edit_name_' + idx);
+  if (!nameEl) return;
+  cd.entries[idx] = {
+    name:    nameEl.value.trim() || cd.entries[idx].name,
+    kcal:    get('edit_kcal_'  + idx) || 0,
+    protein: get('edit_prot_'  + idx) || 0,
+    carbs:   get('edit_carbs_' + idx),
+    fats:    get('edit_fats_'  + idx),
+    sugar:   get('edit_sugar_' + idx),
+  };
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
 }
 
 function quickAdd(name, kcal, protein) {
@@ -2729,7 +2794,8 @@ function addCustomEntry() {
     <input type="number" placeholder="sugar g" id="${tempId}_sugar" class="cal-num-input" min="0" max="500" style="width:72px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
     <button class="save-btn" style="padding:6px 12px;font-size:12px;" onclick="confirmCustomEntry('${tempId}')">Add</button>
-    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">* required · carbs, fats, sugar optional — leave blank if unknown</div>
+    <button onclick="document.getElementById('customEntryRow').remove()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">* required · carbs, fats, sugar optional — leave blank if unknown · Esc to cancel</div>
   `;
   container.appendChild(div);
   document.getElementById(tempId + '_name').focus();
