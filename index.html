@@ -1029,8 +1029,10 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);" id="quickAddLabel">Quick add → Breakfast</div>
+        <button onclick="openMealTemplates()" style="font-size:10px;padding:2px 9px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">⊕ manage templates</button>
       </div>
       <div class="quick-add-row" id="quickAddRow"></div>
+      <div id="mealTemplateRow" style="margin-bottom:6px;"></div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Today's food log</div>
@@ -2462,6 +2464,193 @@ function saveWeek() {
   setTimeout(() => msg.classList.remove('show'), 2000);
 }
 
+// ─── MEAL TEMPLATES ──────────────────────────────────────
+function getMealTemplates() {
+  return allData._mealTemplates || [];
+}
+
+function saveMealTemplates(templates) {
+  allData._mealTemplates = templates;
+  autoPersist();
+}
+
+function renderMealTemplateRow() {
+  const row = document.getElementById('mealTemplateRow');
+  if (!row) return;
+  const templates = getMealTemplates();
+  if (templates.length === 0) { row.innerHTML = ''; return; }
+  row.innerHTML = templates.map((t, i) => {
+    const totalKcal = (t.items || []).reduce((s, e) => s + (e.kcal || 0), 0);
+    return `<button onclick="addMealTemplate(${i})"
+      style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer;font-family:var(--sans);margin-bottom:4px;margin-right:4px;">
+      ★ ${t.name} <span style="opacity:0.7;">${totalKcal} kcal</span>
+    </button>`;
+  }).join('');
+}
+
+function addMealTemplate(idx) {
+  const templates = getMealTemplates();
+  const t = templates[idx];
+  if (!t || !t.items) return;
+  const cd = getCalData(currentWeek, calDay);
+  t.items.forEach(item => cd[activeMeal].push({ ...item }));
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+}
+
+function openMealTemplates() {
+  const existing = document.getElementById('mealTemplateEditor');
+  if (existing) { existing.remove(); return; }
+
+  const templates = getMealTemplates();
+  const container = document.getElementById('mealTemplateRow').parentElement;
+  const editor = document.createElement('div');
+  editor.id = 'mealTemplateEditor';
+  editor.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;';
+
+  const renderEditor = () => {
+    const tpls = getMealTemplates();
+    editor.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Meal templates</div>
+        <button onclick="document.getElementById('mealTemplateEditor').remove()" style="font-size:18px;line-height:1;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Build templates for meals you eat regularly. One tap adds all items to the active meal section.</div>
+      ${tpls.map((t, ti) => `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <input type="text" value="${t.name.replace(/"/g,'&quot;')}" onchange="renameMealTemplate(${ti},this.value)"
+              style="font-size:13px;font-weight:500;color:var(--text);background:none;border:none;border-bottom:1px solid var(--border);outline:none;padding:2px 4px;width:160px;">
+            <button onclick="deleteMealTemplate(${ti})" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Delete</button>
+          </div>
+          ${(t.items || []).map((item, ii) => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px;color:var(--text2);">
+              <span style="flex:1;">${item.name}</span>
+              <span style="font-family:var(--mono);color:var(--text3);">${item.kcal} kcal · ${item.protein||0}g prot</span>
+              <button onclick="removeTemplateItem(${ti},${ii})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;">×</button>
+            </div>`).join('')}
+          <button onclick="addItemToTemplate(${ti})" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);margin-top:4px;">+ add item</button>
+        </div>`).join('')}
+      <button onclick="createMealTemplate()" style="width:100%;padding:8px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:12px;margin-top:4px;">+ create new template</button>
+    `;
+  };
+
+  renderEditor();
+  container.insertBefore(editor, document.getElementById('mealTemplateRow').nextSibling);
+
+  // Re-expose renderEditor so sub-functions can refresh it
+  window._reRenderTemplateEditor = renderEditor;
+}
+
+function createMealTemplate() {
+  const templates = getMealTemplates();
+  templates.push({ name: 'My meal ' + (templates.length + 1), items: [] });
+  saveMealTemplates(templates);
+  renderMealTemplateRow();
+  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+}
+
+function renameMealTemplate(idx, name) {
+  const templates = getMealTemplates();
+  if (templates[idx]) templates[idx].name = name.trim() || templates[idx].name;
+  saveMealTemplates(templates);
+  renderMealTemplateRow();
+}
+
+function deleteMealTemplate(idx) {
+  if (!confirm('Delete this template?')) return;
+  const templates = getMealTemplates();
+  templates.splice(idx, 1);
+  saveMealTemplates(templates);
+  renderMealTemplateRow();
+  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+}
+
+function addItemToTemplate(templateIdx) {
+  const templates = getMealTemplates();
+  const t = templates[templateIdx];
+  if (!t) return;
+
+  const editor = document.getElementById('mealTemplateEditor');
+  if (!editor) return;
+
+  // Find or create an inline input row at the bottom of this template's section
+  const inputId = `templateItemInput_${templateIdx}`;
+  if (document.getElementById(inputId)) return;
+
+  const tempId = 'tpl_' + Date.now();
+  const div = document.createElement('div');
+  div.id = inputId;
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);';
+  div.innerHTML = `
+    <input type="text" id="${tempId}_name" placeholder="Item name..." style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;">
+    <input type="number" id="${tempId}_kcal" placeholder="kcal" class="cal-num-input" min="0" max="5000" style="width:60px;">
+    <input type="number" id="${tempId}_prot" placeholder="prot g" class="cal-num-input" min="0" max="500" style="width:62px;">
+    <input type="number" id="${tempId}_carbs" placeholder="carbs" class="cal-num-input" min="0" max="500" style="width:55px;">
+    <input type="number" id="${tempId}_fats" placeholder="fats" class="cal-num-input" min="0" max="500" style="width:52px;">
+    <input type="number" id="${tempId}_sugar" placeholder="sugar" class="cal-num-input" min="0" max="500" style="width:55px;">
+    <button onclick="confirmTemplateItem(${templateIdx},'${tempId}')" style="padding:5px 10px;border-radius:6px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:11px;cursor:pointer;">Add</button>
+    <button onclick="document.getElementById('${inputId}').remove()" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:11px;cursor:pointer;">Cancel</button>
+  `;
+  // Append to this template's container
+  editor.querySelectorAll('[style*="border:1px solid var(--border)"]')[templateIdx]?.appendChild(div);
+  document.getElementById(tempId + '_name')?.focus();
+}
+
+function confirmTemplateItem(templateIdx, tempId) {
+  const nameEl = document.getElementById(tempId + '_name');
+  if (!nameEl || !nameEl.value.trim()) return;
+  const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
+  const templates = getMealTemplates();
+  const item = {
+    name:    nameEl.value.trim(),
+    kcal:    get(tempId + '_kcal')  || 0,
+    protein: get(tempId + '_prot')  || 0,
+    carbs:   get(tempId + '_carbs'),
+    fats:    get(tempId + '_fats'),
+    sugar:   get(tempId + '_sugar'),
+  };
+  templates[templateIdx].items.push(item);
+  saveMealTemplates(templates);
+  renderMealTemplateRow();
+  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+}
+
+function removeTemplateItem(templateIdx, itemIdx) {
+  const templates = getMealTemplates();
+  templates[templateIdx].items.splice(itemIdx, 1);
+  saveMealTemplates(templates);
+  renderMealTemplateRow();
+  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+}
+
+// ─── COPY FROM PREVIOUS DAY ──────────────────────────────
+function copyMealFromPrevDay(meal) {
+  // Find the previous day (could be previous week's Sunday if today is Monday)
+  const todayIdx = DAYS.indexOf(calDay);
+  let prevWeek = currentWeek;
+  let prevDayIdx = todayIdx - 1;
+  if (prevDayIdx < 0) { prevDayIdx = 6; prevWeek = currentWeek - 1; }
+  if (prevWeek < 1) { alert('No previous day available.'); return; }
+
+  const prevDay = DAYS[prevDayIdx];
+  const prevWd = peekWeekData(prevWeek);
+  const prevCal = prevWd && prevWd.calories && prevWd.calories[prevDay];
+  if (!prevCal) { alert(`No ${MEAL_LABELS[meal]} logged for ${prevDay} (Week ${prevWeek}).`); return; }
+
+  const prevEntries = MEALS.flatMap(m => m === meal ? (prevCal[meal] || []) : []);
+  if (prevEntries.length === 0) { alert(`No items in ${MEAL_LABELS[meal]} from ${prevDay}.`); return; }
+
+  if (!confirm(`Copy ${prevEntries.length} item${prevEntries.length > 1 ? 's' : ''} from ${prevDay}'s ${MEAL_LABELS[meal]}?`)) return;
+
+  const cd = getCalData(currentWeek, calDay);
+  prevEntries.forEach(item => cd[meal].push({ ...item }));
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+}
+
 // ─── MACRO PREFERENCES ───────────────────────────────────
 function getMacroPrefs() {
   return allData._macroPrefs || { carbs: false, fats: false, sugar: false };
@@ -2874,6 +3063,7 @@ function renderCalorie() {
   }
 
   renderCalEntries();
+  renderMealTemplateRow();
   updateCalTotals();
   loadMacroPrefs();
   renderWater();
@@ -2886,7 +3076,11 @@ function renderCalEntries() {
 
   const allEntries = MEALS.flatMap(m => (cd[m] || []));
   if (allEntries.length === 0) {
-    container.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:10px 0 6px;">No items logged yet — search above, use quick add, or add manually.</div>`;
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--text3);padding:8px 0 4px;">No items logged yet — search above, use quick add, or add manually.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:8px;">
+        ${MEALS.map(m => `<button onclick="copyMealFromPrevDay('${m}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Copy prev ${MEAL_LABELS[m]}</button>`).join('')}
+      </div>`;
     return;
   }
 
@@ -2918,7 +3112,10 @@ function renderCalEntries() {
     <div style="margin-bottom:10px;">
       <div class="meal-section-header meal-header-${meal}">
         <span class="meal-section-title">${MEAL_LABELS[meal]}</span>
-        <span class="meal-section-kcal">${mealKcal} kcal</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="copyMealFromPrevDay('${meal}')" style="font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid currentColor;opacity:0.6;background:none;cursor:pointer;font-family:var(--sans);">copy prev day</button>
+          <span class="meal-section-kcal">${mealKcal} kcal</span>
+        </div>
       </div>
       <div>${rows}</div>
     </div>`;
