@@ -811,7 +811,12 @@
   .cal-today .cal-day-num { color: var(--accent); font-weight: 600; }
   .cal-future { background: var(--surface); border-color: var(--border); opacity: 0.35; cursor: default; }
   .cal-empty { opacity: 0; pointer-events: none; }
-  .cal-weight-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 1px; }
+  .meal-tab-btn { font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:all 0.15s; }
+  .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent); }
+  .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important; }
+  .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px; }
+  .meal-section-title { font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.04em;text-transform:uppercase; }
+  .meal-section-kcal { font-family:var(--mono);font-size:10px;color:var(--text3); }
 </style>
 </head>
 <body>
@@ -913,6 +918,11 @@
         <div class="prog-val" id="longestStreak">0 <span>days</span></div>
         <div class="prog-sub">all time</div>
       </div>
+      <div class="prog-stat">
+        <div class="prog-label">Week deficit</div>
+        <div class="prog-val" id="weeklyDeficit">— <span>kcal</span></div>
+        <div class="prog-sub" id="weeklyDeficitSub">Mon–Sun total</div>
+      </div>
     </div>
 
     <!-- START DATE SETUP -->
@@ -996,6 +1006,15 @@
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Search food database</div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--text2);">Adding to:</span>
+          <div style="display:flex;gap:4px;">
+            <button id="mealBtn_breakfast" onclick="setActiveMeal('breakfast')" class="meal-tab-btn meal-tab-active">Breakfast</button>
+            <button id="mealBtn_lunch" onclick="setActiveMeal('lunch')" class="meal-tab-btn">Lunch</button>
+            <button id="mealBtn_dinner" onclick="setActiveMeal('dinner')" class="meal-tab-btn">Dinner</button>
+            <button id="mealBtn_snacks" onclick="setActiveMeal('snacks')" class="meal-tab-btn">Snacks</button>
+          </div>
+        </div>
         <div style="display:flex;gap:6px;">
           <input type="text" id="foodSearchInput" placeholder="Search for a food — e.g. banana, dal, paneer, greek yoghurt..." style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')searchFood()">
           <button onclick="searchFood()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;">Search</button>
@@ -1005,13 +1024,16 @@
       <div id="foodSearchStatus" style="font-size:12px;color:var(--text3);margin-bottom:8px;min-height:16px;"></div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Quick add — your regular meals</div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);" id="quickAddLabel">Quick add → Breakfast</div>
       </div>
       <div class="quick-add-row" id="quickAddRow"></div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Today's food log</div>
-        <button onclick="clearSection(calDay,'calories')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear all</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="remainingKcalBadge" style="font-size:11px;font-family:var(--mono);padding:2px 10px;border-radius:10px;background:var(--surface2);color:var(--text3);">— kcal remaining</div>
+          <button onclick="clearSection(calDay,'calories')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear all</button>
+        </div>
       </div>
       <div id="mealSections"></div>
       <button class="add-entry-btn" onclick="addCustomEntry()">+ add manually (food not found)</button>
@@ -1098,6 +1120,13 @@
       <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
       <div class="sum-stat"><div class="sum-label">No OJ</div><div class="sum-val" id="sumOJ">0<small>/7</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
+      <div class="sum-stat"><div class="sum-label">On target days</div><div class="sum-val" id="sumOnTarget">—</div></div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div class="section-title" style="margin-bottom:6px;">Weekly notes</div>
+      <textarea id="weekNotesInput" placeholder="How did this week go? Travel, illness, social events, anything that affected training or diet..." oninput="debounceWeekNotes(this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:72px;line-height:1.5;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
     </div>
 
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:32px; flex-wrap:wrap;">
@@ -1600,12 +1629,20 @@ function calcStreak() {
 function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
   selectedDay = null;
+  dietDayManuallySet = false;
+  calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   render();
 }
 
 function changeWeek(dir) {
   currentWeek = Math.max(1, Math.min(20, currentWeek + dir));
   selectedDay = null;
+  dietDayManuallySet = false;
+  // Feature 10 — reset calDay to today when navigating to current week
+  const cwk = getCurrentWeekFromDate();
+  if (currentWeek === cwk) {
+    calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  }
   render();
 }
 
@@ -1632,6 +1669,7 @@ function render() {
 
   renderWeight();
   renderDays();
+  renderWeekNotes();
   if (!dietDayManuallySet) {
     dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   }
@@ -1639,6 +1677,50 @@ function render() {
   renderCalorie();
   renderSummary();
   renderProgress();
+}
+
+function calcWeeklyDeficit(weekNum) {
+  const target = weekNum <= 10 ? DAILY_TARGET : 1700;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const actualStart = allData._startDate ? new Date(allData._startDate) : null;
+  if (actualStart) actualStart.setHours(0,0,0,0);
+
+  let totalDeficit = 0;
+  let daysWithData = 0;
+  let daysWithFood = 0;
+
+  DAYS.forEach((day, i) => {
+    const dayDate = getDayDate(weekNum, i);
+    if (!dayDate) return;
+    dayDate.setHours(0,0,0,0);
+    if (actualStart && dayDate < actualStart) return;
+    if (dayDate > today) return;
+
+    const wd = peekWeekData(weekNum);
+    const calDayData = wd && wd.calories && wd.calories[day];
+    const entries = calDayData
+      ? MEALS.flatMap(m => calDayData[m] || []).concat(
+          (calDayData.entries && !calDayData.breakfast) ? calDayData.entries : []
+        )
+      : [];
+    const consumed = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+
+    const dd = (wd && wd.days && wd.days[day]) || {};
+    const act = dd.activity || '';
+    const burned = dd.customBurn !== undefined
+      ? dd.customBurn
+      : (EXERCISE_BURN[act] || 0);
+
+    // Fix #2 — count day if food OR activity logged
+    if (consumed > 0 || burned > 0 || act) {
+      const net = consumed - burned;
+      totalDeficit += (target - net);
+      daysWithData++;
+      if (consumed > 0) daysWithFood++;
+    }
+  });
+
+  return { totalDeficit: Math.round(totalDeficit), daysWithData, daysWithFood };
 }
 
 function renderProgress() {
@@ -1665,12 +1747,49 @@ function renderProgress() {
     document.getElementById('goal1Bar').style.width = '0%';
     document.getElementById('goal1Pct').textContent = '0% — target 154 lbs';
   }
+
+  // Weekly calorie deficit
+  const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(currentWeek);
+  const defEl = document.getElementById('weeklyDeficit');
+  const defSub = document.getElementById('weeklyDeficitSub');
+  if (defEl) {
+    if (daysWithData === 0) {
+      defEl.innerHTML = '— <span>kcal</span>';
+      defEl.style.color = '';
+      if (defSub) defSub.textContent = 'No data yet this week';
+    } else if (totalDeficit >= 0) {
+      defEl.innerHTML = totalDeficit.toLocaleString() + ' <span>kcal</span>';
+      defEl.style.color = 'var(--green)';
+      const foodNote = daysWithFood === 0 ? ' · no food logged' : '';
+      if (defSub) defSub.textContent = `deficit · ${daysWithData}d logged${foodNote}`;
+    } else {
+      defEl.innerHTML = Math.abs(totalDeficit).toLocaleString() + ' <span>kcal</span>';
+      defEl.style.color = 'var(--red)';
+      if (defSub) defSub.textContent = `surplus · ${daysWithData}d logged`;
+    }
+  }
 }
 
 let weightNoteTimer = null;
 function debounceWeightNote(val) {
   clearTimeout(weightNoteTimer);
   weightNoteTimer = setTimeout(() => saveWeightNote(val), 800);
+}
+
+let weekNotesTimer = null;
+function debounceWeekNotes(val) {
+  clearTimeout(weekNotesTimer);
+  weekNotesTimer = setTimeout(() => {
+    getWeekData(currentWeek).weekNotes = val.trim();
+    autoPersist();
+  }, 800);
+}
+
+function renderWeekNotes() {
+  const inp = document.getElementById('weekNotesInput');
+  if (!inp) return;
+  const wd = peekWeekData(currentWeek);
+  inp.value = (wd && wd.weekNotes) ? wd.weekNotes : '';
 }
 
 function saveWeightNote(val) {
@@ -1801,7 +1920,14 @@ function renderDays() {
     let checksHtml = '';
     if (dd.core) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Core ✓</span></div>`;
     if (dd.activity) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Done</span></div>`;
-    if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal</span></div>`;
+    if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal burned</span></div>`;
+
+    // Feature C — kcal consumed indicator
+    const wd = peekWeekData(currentWeek);
+    const dayCal = wd && wd.calories && wd.calories[day];
+    const dayEntries = dayCal ? MEALS.flatMap(m => dayCal[m] || []).concat(dayCal.entries || []) : [];
+    const dayKcal = dayEntries.reduce((s, e) => s + (e.kcal || 0), 0);
+    if (dayKcal > 0) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal eaten</span></div>`;
 
     card.innerHTML = `
       <div class="day-name" style="${isToday ? 'color:var(--accent);font-weight:500;' : ''}">${day}${isToday ? ' ·today' : ''}</div>
@@ -1978,11 +2104,18 @@ function injectInlineSession(activity, week) {
 function clearDay(day) {
   if (!confirm(`Clear everything logged for ${day}? This cannot be undone.`)) return;
   getWeekData(currentWeek).days[day] = { activity: '', core: false, backOk: true, notes: '', customBurn: undefined };
-  if (getWeekData(currentWeek).calories) delete getWeekData(currentWeek).calories[day];
+  if (getWeekData(currentWeek).calories && getWeekData(currentWeek).calories[day]) {
+    const cal = getWeekData(currentWeek).calories[day];
+    cal.breakfast=[]; cal.lunch=[]; cal.dinner=[]; cal.snacks=[]; delete cal.entries;
+  }
   if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
   if (getWeekData(currentWeek).diet) delete getWeekData(currentWeek).diet[day];
+  // Clear any in-progress UI
+  const existing = document.getElementById('customEntryRow');
+  if (existing) existing.remove();
+  const picker = document.getElementById('foodServingPicker');
+  if (picker) picker.remove();
   autoPersist();
-  // Close and re-render the detail panel to reflect cleared state
   selectedDay = null;
   renderDays();
   renderSummary();
@@ -2029,7 +2162,10 @@ function clearSection(day, section) {
   } else if (section === 'notes') {
     dd.notes = '';
   } else if (section === 'calories') {
-    if (getWeekData(currentWeek).calories) delete getWeekData(currentWeek).calories[day];
+    if (getWeekData(currentWeek).calories) {
+      const cal = getWeekData(currentWeek).calories[day];
+      if (cal) { cal.breakfast=[]; cal.lunch=[]; cal.dinner=[]; cal.snacks=[]; delete cal.entries; }
+    }
     if (day === calDay) { renderCalorie(); updateCalTotals(); }
   } else if (section === 'water') {
     if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
@@ -2141,6 +2277,39 @@ function renderSummary() {
   document.getElementById('sumOJ').innerHTML = noOJ + '<small>/7</small>';
   const pct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
   document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
+
+  // Fix #6 — weekly calorie summary stats
+  const target = currentWeek <= 10 ? DAILY_TARGET : 1700;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const actualStart = allData._startDate ? new Date(allData._startDate) : null;
+  if (actualStart) actualStart.setHours(0,0,0,0);
+  let totalConsumed = 0, foodDays = 0, onTargetDays = 0;
+  DAYS.forEach((day, i) => {
+    const dayDate = getDayDate(currentWeek, i);
+    if (!dayDate) return;
+    dayDate.setHours(0,0,0,0);
+    if (actualStart && dayDate < actualStart) return;
+    if (dayDate > today) return;
+    const rawWd = peekWeekData(currentWeek);
+    if (!rawWd || !rawWd.calories || !rawWd.calories[day]) return;
+    const cal = rawWd.calories[day];
+    const entries = MEALS.flatMap(m => cal[m] || []).concat(
+      (cal.entries && !cal.breakfast) ? cal.entries : []
+    );
+    const consumed = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    if (consumed > 0) {
+      totalConsumed += consumed;
+      foodDays++;
+      const dayData = (rawWd.days && rawWd.days[day]) || {};
+      const burned = dayData.customBurn !== undefined ? dayData.customBurn : (EXERCISE_BURN[dayData.activity||''] || 0);
+      const net = consumed - burned;
+      if (net <= target && net >= target * 0.7) onTargetDays++;
+    }
+  });
+  const avgEl = document.getElementById('sumAvgKcal');
+  const otEl = document.getElementById('sumOnTarget');
+  if (avgEl) avgEl.textContent = foodDays > 0 ? Math.round(totalConsumed / foodDays).toLocaleString() : '—';
+  if (otEl) otEl.innerHTML = foodDays > 0 ? `${onTargetDays}<small>/${foodDays}</small>` : '—';
 }
 
 // ─── TABS ─────────────────────────────────────────────────
@@ -2257,7 +2426,7 @@ async function pullFromSheets() {
   setSyncStatus('loading');
   try {
     const resp = await fetch(SCRIPT_URL + '?action=read', { method: 'GET' });
-    if (!resp.ok) { console.error('Sheets pull failed:', resp.status); setSyncStatus('error'); return false; }
+    if (!resp.ok) { setSyncStatus('error'); return false; }
     const json = await resp.json();
     if (json.ok && json.data && json.data.fitnessTracker) {
       allData = json.data.fitnessTracker;
@@ -2268,7 +2437,6 @@ async function pullFromSheets() {
     setSyncStatus('saved');
     return false;
   } catch(err) {
-    console.error('Sheets pull error:', err);
     setSyncStatus('error');
   }
   return false;
@@ -2318,10 +2486,11 @@ function loadMacroPrefs() {
 function renderMacroStats() {
   const cd = getCalData(currentWeek, calDay);
   const p = getMacroPrefs();
-  const protein = cd.entries.reduce((s,e) => s+(e.protein||0), 0);
-  const carbs   = cd.entries.reduce((s,e) => s+(e.carbs||0), 0);
-  const fats    = cd.entries.reduce((s,e) => s+(e.fats||0), 0);
-  const sugar   = cd.entries.reduce((s,e) => s+(e.sugar||0), 0);
+  const allEntries = MEALS.flatMap(m => cd[m] || []);
+  const protein = allEntries.reduce((s,e) => s+(e.protein||0), 0);
+  const carbs   = allEntries.reduce((s,e) => s+(e.carbs||0), 0);
+  const fats    = allEntries.reduce((s,e) => s+(e.fats||0), 0);
+  const sugar   = allEntries.reduce((s,e) => s+(e.sugar||0), 0);
 
   const macros = [
     { key:'protein', label:'Protein', val:protein, target:75, color:'var(--blue)', always:true },
@@ -2461,7 +2630,7 @@ function selectFoodResult(idx) {
       <label style="font-size:12px;color:var(--text2);white-space:nowrap;">Amount eaten:</label>
       <input type="number" id="foodServingG" value="${food.servingG || 100}" min="1" max="2000" step="1"
         style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:14px;color:var(--text);outline:none;"
-        oninput="previewServing()">
+        oninput="previewServing()" onkeydown="if(event.key==='Enter')confirmFoodAdd();if(event.key==='Escape')cancelFoodPicker();">
       <span style="font-size:12px;color:var(--text2);">g</span>
       ${food.servingG && food.servingG !== 100 ? `<button onclick="setServing(${food.servingG})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);">1 serving (${food.servingG}g)</button>` : ''}
       <button onclick="setServing(100)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);">100g</button>
@@ -2487,15 +2656,15 @@ function previewServing() {
   const g = parseFloat(document.getElementById('foodServingG').value) || 100;
   const scale = g / 100;
   const f = v => Math.round(v * scale * 10) / 10;
-  const prefs = getMacroPrefs();
   const { kcal100, prot100, carb100, fat100, sugar100 } = _selectedFood;
   let parts = [
     `${Math.round(kcal100 * scale)} kcal`,
     `${f(prot100)}g protein`,
   ];
-  if (prefs.carbs) parts.push(`${f(carb100)}g carbs`);
-  if (prefs.fats)  parts.push(`${f(fat100)}g fat`);
-  if (prefs.sugar) parts.push(`${f(sugar100)}g sugar`);
+  // Always show all available macros in the preview regardless of prefs
+  if (carb100 > 0)  parts.push(`${f(carb100)}g carbs`);
+  if (fat100 > 0)   parts.push(`${f(fat100)}g fat`);
+  if (sugar100 > 0) parts.push(`${f(sugar100)}g sugar`);
   const el = document.getElementById('foodPreview');
   if (el) el.textContent = parts.join(' · ');
 }
@@ -2522,7 +2691,7 @@ function confirmFoodAdd() {
     sugar:   Math.round(sugar100 * scale * 10) / 10,
   };
   const cd = getCalData(currentWeek, calDay);
-  cd.entries.push(entry);
+  cd[activeMeal].push(entry);
   autoPersist();
   _selectedFood = null;
   const picker = document.getElementById('foodServingPicker');
@@ -2568,12 +2737,40 @@ const EXERCISE_BURN = {
 };
 
 let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+let activeMeal = 'breakfast';
+const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
+
+function setActiveMeal(meal) {
+  activeMeal = meal;
+  MEALS.forEach(m => {
+    const btn = document.getElementById('mealBtn_' + m);
+    if (btn) btn.classList.toggle('meal-tab-active', m === meal);
+  });
+  // Fix #1 — update quick-add label
+  const qaLabel = document.getElementById('quickAddLabel');
+  if (qaLabel) qaLabel.textContent = `Quick add → ${MEAL_LABELS[meal]}`;
+  // Fix #9 — clear any in-progress rows when changing meal
+  const existing = document.getElementById('customEntryRow');
+  if (existing) existing.remove();
+}
 
 function getCalData(w, d) {
   const wd = getWeekData(w);
   if (!wd.calories) wd.calories = {};
   if (!wd.calories[d]) wd.calories[d] = { entries: [] };
-  return wd.calories[d];
+  // Migrate old flat entries array to meal-based structure
+  const cal = wd.calories[d];
+  if (cal.entries && !cal.breakfast) {
+    cal.breakfast = cal.entries.map(e => ({ ...e }));
+    cal.lunch = []; cal.dinner = []; cal.snacks = [];
+    delete cal.entries;
+  }
+  if (!cal.breakfast) cal.breakfast = [];
+  if (!cal.lunch)     cal.lunch = [];
+  if (!cal.dinner)    cal.dinner = [];
+  if (!cal.snacks)    cal.snacks = [];
+  return cal;
 }
 
 function getWaterData(w, d) {
@@ -2649,18 +2846,22 @@ function renderWater() {
 
 function switchCalDay(day) {
   calDay = day;
+  const existing = document.getElementById('customEntryRow');
+  if (existing) existing.remove();
+  const picker = document.getElementById('foodServingPicker');
+  if (picker) picker.remove();
   renderCalorie();
-  renderWater();
   const slider = document.getElementById('waterSlider');
   if (slider) slider.value = getWaterMl();
 }
 
 function renderCalorie() {
-  // Set day selector
   const sel = document.getElementById('calDaySelect');
   if (sel) sel.value = calDay;
 
-  // Render quick add buttons
+  const qaLabel = document.getElementById('quickAddLabel');
+  if (qaLabel) qaLabel.textContent = `Quick add → ${MEAL_LABELS[activeMeal]}`;
+
   const qRow = document.getElementById('quickAddRow');
   if (qRow) {
     qRow.innerHTML = QUICK_PRESETS.map(p =>
@@ -2679,84 +2880,87 @@ function renderCalEntries() {
   const container = document.getElementById('mealSections');
   if (!container) return;
 
-  if (cd.entries.length === 0) {
+  const allEntries = MEALS.flatMap(m => (cd[m] || []));
+  if (allEntries.length === 0) {
     container.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:10px 0 6px;">No items logged yet — search above, use quick add, or add manually.</div>`;
     return;
   }
 
-  container.innerHTML = cd.entries.map((e, i) => {
-    let macroStr = `${e.kcal} kcal · ${e.protein || 0}g protein`;
-    if (e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
-    if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
-    if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
+  container.innerHTML = MEALS.map(meal => {
+    const entries = cd[meal] || [];
+    if (entries.length === 0) return '';
+    const mealKcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    const rows = entries.map((e, i) => {
+      let macroStr = `${e.kcal} kcal · ${e.protein || 0}g protein`;
+      if (e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
+      if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
+      if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
+      return `
+      <div id="entry_${meal}_${i}" style="border-bottom:1px solid var(--border);padding:7px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.name}">${e.name}</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${macroStr}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            <button onclick="editCalEntry('${meal}',${i})" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
+            <button onclick="deleteCalEntry('${meal}',${i})" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
     return `
-    <div id="entry_${i}" style="border-bottom:1px solid var(--border);padding:8px 0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name}</div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${macroStr}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button onclick="editCalEntry(${i})" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
-          <button class="del-entry-btn" onclick="deleteCalEntry(${i})">×</button>
-        </div>
+    <div style="margin-bottom:10px;">
+      <div class="meal-section-header">
+        <span class="meal-section-title">${MEAL_LABELS[meal]}</span>
+        <span class="meal-section-kcal">${mealKcal} kcal</span>
       </div>
+      <div>${rows}</div>
     </div>`;
   }).join('');
 }
 
-function editCalEntry(idx) {
+function editCalEntry(meal, idx) {
   const cd = getCalData(currentWeek, calDay);
-  const e = cd.entries[idx];
+  const e = cd[meal][idx];
   if (!e) return;
-
-  const row = document.getElementById('entry_' + idx);
+  const row = document.getElementById(`entry_${meal}_${idx}`);
   if (!row) return;
-
   row.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;">
-      <input type="text" id="edit_name_${idx}" value="${e.name.replace(/"/g,'&quot;')}"
+      <input type="text" id="edit_name_${meal}_${idx}" value="${e.name.replace(/"/g,'&quot;')}"
         style="flex:1;min-width:140px;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-      <input type="number" id="edit_kcal_${idx}" value="${e.kcal || ''}" placeholder="kcal"
-        class="cal-num-input" min="0" max="5000" style="width:68px;">
-      <input type="number" id="edit_prot_${idx}" value="${e.protein || ''}" placeholder="protein g"
-        class="cal-num-input" min="0" max="500" style="width:80px;">
-      <input type="number" id="edit_carbs_${idx}" value="${e.carbs != null ? e.carbs : ''}" placeholder="carbs g"
-        class="cal-num-input" min="0" max="500" style="width:72px;">
-      <input type="number" id="edit_fats_${idx}" value="${e.fats != null ? e.fats : ''}" placeholder="fats g"
-        class="cal-num-input" min="0" max="500" style="width:68px;">
-      <input type="number" id="edit_sugar_${idx}" value="${e.sugar != null ? e.sugar : ''}" placeholder="sugar g"
-        class="cal-num-input" min="0" max="500" style="width:72px;">
-      <button onclick="saveCalEntry(${idx})"
-        style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
-      <button onclick="renderCalEntries()"
-        style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+      <input type="number" id="edit_kcal_${meal}_${idx}"  value="${e.kcal   ||''}" placeholder="kcal"      class="cal-num-input" min="0" max="5000" style="width:68px;">
+      <input type="number" id="edit_prot_${meal}_${idx}"  value="${e.protein||''}" placeholder="protein g" class="cal-num-input" min="0" max="500"  style="width:80px;">
+      <input type="number" id="edit_carbs_${meal}_${idx}" value="${e.carbs !=null?e.carbs:''}" placeholder="carbs g"  class="cal-num-input" min="0" max="500" style="width:72px;">
+      <input type="number" id="edit_fats_${meal}_${idx}"  value="${e.fats  !=null?e.fats :''}" placeholder="fats g"   class="cal-num-input" min="0" max="500" style="width:68px;">
+      <input type="number" id="edit_sugar_${meal}_${idx}" value="${e.sugar !=null?e.sugar:''}" placeholder="sugar g"  class="cal-num-input" min="0" max="500" style="width:72px;">
+      <button onclick="saveCalEntry('${meal}',${idx})" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+      <button onclick="renderCalEntries()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:3px;">Leave carbs / fats / sugar blank if unknown</div>
-  `;
-  document.getElementById('edit_name_' + idx).focus();
-
-  // Save on Enter key
+    <div style="font-size:10px;color:var(--text3);margin-top:2px;">Leave carbs / fats / sugar blank if unknown</div>`;
+  document.getElementById(`edit_name_${meal}_${idx}`).focus();
   row.querySelectorAll('input').forEach(inp => {
     inp.addEventListener('keydown', ev => {
-      if (ev.key === 'Enter') saveCalEntry(idx);
+      if (ev.key === 'Enter') saveCalEntry(meal, idx);
       if (ev.key === 'Escape') renderCalEntries();
     });
   });
 }
 
-function saveCalEntry(idx) {
+function saveCalEntry(meal, idx) {
   const cd = getCalData(currentWeek, calDay);
   const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
-  const nameEl = document.getElementById('edit_name_' + idx);
+  const nameEl = document.getElementById(`edit_name_${meal}_${idx}`);
   if (!nameEl) return;
-  cd.entries[idx] = {
-    name:    nameEl.value.trim() || cd.entries[idx].name,
-    kcal:    get('edit_kcal_'  + idx) || 0,
-    protein: get('edit_prot_'  + idx) || 0,
-    carbs:   get('edit_carbs_' + idx),
-    fats:    get('edit_fats_'  + idx),
-    sugar:   get('edit_sugar_' + idx),
+  cd[meal][idx] = {
+    name:    nameEl.value.trim() || cd[meal][idx].name,
+    kcal:    get(`edit_kcal_${meal}_${idx}`)  || 0,
+    protein: get(`edit_prot_${meal}_${idx}`)  || 0,
+    carbs:   get(`edit_carbs_${meal}_${idx}`),
+    fats:    get(`edit_fats_${meal}_${idx}`),
+    sugar:   get(`edit_sugar_${meal}_${idx}`),
   };
   autoPersist();
   renderCalEntries();
@@ -2765,7 +2969,7 @@ function saveCalEntry(idx) {
 
 function quickAdd(name, kcal, protein) {
   const cd = getCalData(currentWeek, calDay);
-  cd.entries.push({ name, kcal, protein });
+  cd[activeMeal].push({ name, kcal, protein });
   autoPersist();
   renderCalEntries();
   updateCalTotals();
@@ -2814,7 +3018,7 @@ function confirmCustomEntry(tempId) {
     sugar:   get(tempId + '_sugar'),
   };
   const cd = getCalData(currentWeek, calDay);
-  cd.entries.push(entry);
+  cd[activeMeal].push(entry);
   autoPersist();
   const row = document.getElementById('customEntryRow');
   if (row) row.remove();
@@ -2822,9 +3026,9 @@ function confirmCustomEntry(tempId) {
   updateCalTotals();
 }
 
-function deleteCalEntry(idx) {
+function deleteCalEntry(meal, idx) {
   const cd = getCalData(currentWeek, calDay);
-  cd.entries.splice(idx, 1);
+  cd[meal].splice(idx, 1);
   autoPersist();
   renderCalEntries();
   updateCalTotals();
@@ -2832,10 +3036,12 @@ function deleteCalEntry(idx) {
 
 function updateCalTotals() {
   const cd = getCalData(currentWeek, calDay);
-  const consumed = cd.entries.reduce((s, e) => s + (e.kcal || 0), 0);
+  const allEntries = MEALS.flatMap(m => cd[m] || []);
+  const consumed = allEntries.reduce((s, e) => s + (e.kcal || 0), 0);
 
   // Get exercise burn — custom watch value takes priority over preset
-  const dayActData = getDayData(currentWeek, calDay);
+  const wd = peekWeekData(currentWeek);
+  const dayActData = (wd && wd.days && wd.days[calDay]) || {};
   const dayAct = dayActData.activity || '';
   const burned = dayActData.customBurn !== undefined
     ? dayActData.customBurn
@@ -2870,6 +3076,32 @@ function updateCalTotals() {
   }
 
   renderMacroStats();
+
+  // Fix #5 — remaining kcal badge above food log
+  const remainBadge = document.getElementById('remainingKcalBadge');
+  if (remainBadge) {
+    const remaining = target - net;
+    if (consumed === 0 && burned === 0) {
+      remainBadge.textContent = `${target.toLocaleString()} kcal remaining`;
+      remainBadge.style.background = 'var(--surface2)';
+      remainBadge.style.color = 'var(--text3)';
+    } else if (remaining > 0) {
+      remainBadge.textContent = `${Math.round(remaining).toLocaleString()} kcal remaining`;
+      remainBadge.style.background = remaining < 300 ? 'var(--amber-bg)' : 'var(--green-bg)';
+      remainBadge.style.color = remaining < 300 ? 'var(--amber)' : 'var(--green)';
+    } else {
+      remainBadge.textContent = `${Math.round(Math.abs(remaining)).toLocaleString()} kcal over target`;
+      remainBadge.style.background = 'var(--red-bg)';
+      remainBadge.style.color = 'var(--red)';
+    }
+  }
+
+  // Update weekly deficit in progress banner (debounced for performance)
+  clearTimeout(window._progressUpdateTimer);
+  window._progressUpdateTimer = setTimeout(() => {
+    const defEl = document.getElementById('weeklyDeficit');
+    if (defEl) renderProgress();
+  }, 400);
 }
 
 // ─── START DATE ───────────────────────────────────────────
@@ -3008,21 +3240,47 @@ function renderHistory() {
       }
       if (wt) {
         const milestone = wt <= GOAL2 ? '🎯 Goal 2 hit!' : wt <= GOAL1 ? '🎯 Goal 1 hit!' : '';
-        const note = wd.weightNote ? `<span style="font-size:11px;color:var(--text3);margin-left:8px;font-style:italic;">${wd.weightNote}</span>` : '';
-        weightHtml += `<div class="history-row">
-          <span class="history-week">Wk ${w} · ${weekLabel}</span>
-          <span class="history-weight">${wt} lbs</span>
-          ${deltaHtml}
-          ${milestone ? `<span style="font-size:11px;color:var(--green);margin-left:6px;">${milestone}</span>` : ''}
-          ${note}
+        const note = wd.weightNote ? `<span style="font-size:11px;color:var(--text3);font-style:italic;">${wd.weightNote}</span>` : '';
+        const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(w);
+        const defText = daysWithData > 0
+          ? (daysWithFood === 0
+              ? `<span style="font-size:11px;color:var(--text3);font-family:var(--mono);">no food logged this week</span>`
+              : totalDeficit >= 0
+                ? `<span style="font-size:11px;color:var(--green);font-family:var(--mono);">↓ ${totalDeficit.toLocaleString()} kcal deficit</span>`
+                : `<span style="font-size:11px;color:var(--red);font-family:var(--mono);">↑ ${Math.abs(totalDeficit).toLocaleString()} kcal surplus</span>`)
+          : '';
+        weightHtml += `<div class="history-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="history-week">Wk ${w} · ${weekLabel}</span>
+            <span class="history-weight">${wt} lbs</span>
+            ${deltaHtml}
+            ${milestone ? `<span style="font-size:11px;color:var(--green);">${milestone}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            ${defText}
+            ${note}
+          </div>
         </div>`;
         chartLabels.push(`Wk${w}${ws?' '+formatDate(ws,{day:'numeric',month:'short'}):''}` );
         chartData.push(wt);
         prevWt = wt;
       }
       let acts = DAYS.map(d => wd.days[d]?.activity).filter(Boolean);
-      if (acts.length) {
-        actHtml += `<div class="history-row"><span class="history-week">Wk ${w} · ${weekLabel}</span><span style="font-size:12px;color:var(--text2);">${acts.join(' · ')}</span></div>`;
+      if (acts.length || wd.weekNotes) {
+        const { totalDeficit: wDef, daysWithFood: wFoodDays } = calcWeeklyDeficit(w);
+        const calNote = wFoodDays > 0
+          ? ` · <span style="color:${wDef >= 0 ? 'var(--green)' : 'var(--red)'};">${wDef >= 0 ? '↓' : '↑'} ${Math.abs(wDef).toLocaleString()} kcal ${wDef >= 0 ? 'deficit' : 'surplus'}</span>`
+          : '';
+        const notesLine = wd.weekNotes
+          ? `<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px;">${wd.weekNotes}</div>`
+          : '';
+        actHtml += `<div class="history-row" style="flex-direction:column;align-items:flex-start;gap:2px;">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+            <span class="history-week">Wk ${w} · ${weekLabel}</span>
+            ${acts.length ? `<span style="font-size:12px;color:var(--text2);">${acts.join(' · ')}${calNote}</span>` : ''}
+          </div>
+          ${notesLine}
+        </div>`;
       }
     }
   }
