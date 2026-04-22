@@ -871,6 +871,7 @@
     <button class="tab-btn active" onclick="showTab('this-week')">This week</button>
     <button class="tab-btn" onclick="showTab('history')">History</button>
     <button class="tab-btn" onclick="showTab('calendar')">Calendar</button>
+    <button class="tab-btn" onclick="showTab('meals')">Meals</button>
     <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
     <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
   </div>
@@ -1029,7 +1030,7 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);" id="quickAddLabel">Quick add → Breakfast</div>
-        <button onclick="openMealTemplates()" style="font-size:10px;padding:2px 9px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">⊕ manage templates</button>
+        <button onclick="showTab('meals')" style="font-size:10px;padding:2px 9px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">manage →</button>
       </div>
       <div class="quick-add-row" id="quickAddRow"></div>
       <div id="mealTemplateRow" style="margin-bottom:6px;"></div>
@@ -1138,6 +1139,10 @@
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:32px; flex-wrap:wrap;">
       <button class="save-btn" onclick="saveWeek()">Save week</button>
       <span class="save-msg" id="saveMsg">Saved ✓</span>
+      <button onclick="copyWeekSummary()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">⎘</span> Copy summary
+      </button>
+      <span class="save-msg" id="copyMsg" style="color:var(--green);">Copied ✓</span>
       <div style="flex:1;"></div>
       <button onclick="exportData()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">↓</span> Export backup
@@ -1149,6 +1154,23 @@
       <span class="save-msg" id="importMsg" style="color:var(--green);">Imported ✓</span>
     </div>
 
+  </div>
+
+  <!-- MEALS -->
+  <div id="meals" class="tab-panel">
+    <div class="section-title">Meal templates</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Build reusable templates for meals you eat regularly. One tap on the main food log page adds all items at once.</div>
+    <div id="mealsTabTemplates"></div>
+    <button onclick="createMealTemplate()" style="width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:13px;margin-bottom:24px;">+ create new template</button>
+
+    <div class="section-title">Quick-add presets</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">These appear as one-tap buttons on the food log. Edit, remove, or add your own.</div>
+    <div id="mealsTabPresets"></div>
+    <button onclick="addQuickPreset()" style="width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:13px;margin-bottom:24px;">+ add preset</button>
+
+    <div class="section-title">Recently logged foods</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Foods you've logged recently across all meals. Tap to add to the active meal on the food log.</div>
+    <div id="mealsTabRecent"></div>
   </div>
 
   <!-- HISTORY -->
@@ -1334,11 +1356,11 @@
   <div id="plan-ref" class="tab-panel">
     <div class="section-title">Your plan at a glance</div>
 
-    <span class="phase-badge phase-1">Phase 1 — Weeks 1–10</span>
+    <span id="planPhase1Badge" class="phase-badge phase-1">Phase 1 — Weeks 1–10</span>
     <div class="plan-ref">
       <div class="plan-ref-title">Goal & calories</div>
-      <strong>Target:</strong> 168 → 154 lbs at ~1 lb/week<br>
-      <strong>Calories:</strong> 1,750–1,850 kcal/day · <strong>Protein:</strong> 70–80g/day (aim higher if dal available)
+      <strong>Target:</strong> <span id="planP1Target"></span><br>
+      <strong>Calories:</strong> <span id="planP1Cals"></span> · <strong>Protein:</strong> <span id="planP1Protein"></span>
     </div>
     <div class="plan-ref">
       <div class="plan-ref-title">Weekly training</div>
@@ -1361,11 +1383,11 @@
       1 hour padel = substitute for a running day. 2 hours padel = running day + extra recovery next day. Don't add it on top of a full training day.
     </div>
 
-    <span class="phase-badge phase-2" style="margin-top:8px;">Phase 2 — Weeks 11–20</span>
+    <span id="planPhase2Badge" class="phase-badge phase-2" style="margin-top:8px;">Phase 2 — Weeks 11–20</span>
     <div class="plan-ref">
       <div class="plan-ref-title">Goal & calories</div>
-      <strong>Target:</strong> 154 → 143 lbs at ~0.75 lb/week<br>
-      <strong>Calories:</strong> 1,600–1,750 kcal/day · <strong>Protein:</strong> 90–100g/day<br>
+      <strong>Target:</strong> <span id="planP2Target"></span><br>
+      <strong>Calories:</strong> <span id="planP2Cals"></span> · <strong>Protein:</strong> <span id="planP2Protein"></span><br>
       <strong>Refeed:</strong> 1 meal at maintenance per week
     </div>
     <div class="plan-ref">
@@ -1379,8 +1401,8 @@
       <div class="plan-ref-title">Running milestones</div>
       <strong>Wk 4:</strong> Running 20–25 min continuously<br>
       <strong>Wk 8:</strong> 5km continuously, down ~5–7 lbs<br>
-      <strong>Wk 12:</strong> Goal 1 hit (154 lbs), tempo runs started<br>
-      <strong>Wk 20:</strong> Goal 2 hit (143 lbs)
+      <strong>Wk 12:</strong> Goal 1 hit (<span id="planGoal1Lbs"></span>), tempo runs started<br>
+      <strong>Wk 20:</strong> Goal 2 hit (<span id="planGoal2Lbs"></span>)
     </div>
     <div class="plan-ref">
       <div class="plan-ref-title">Back safety rules</div>
@@ -1389,6 +1411,69 @@
 
     <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
       <div class="section-title">Settings</div>
+
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;">
+        <div class="plan-ref-title">Goals &amp; targets</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Total plan weeks</label>
+            <input type="number" id="setTotalWeeks" step="1" min="4" max="52"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 1 length (weeks)</label>
+            <input type="number" id="setPhase1Weeks" step="1" min="1" max="51"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Start weight (lbs)</label>
+            <input type="number" id="setStartWeight" step="0.1" min="50" max="400"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Goal 1 (lbs)</label>
+            <input type="number" id="setGoal1" step="0.1" min="50" max="400"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Goal 2 (lbs)</label>
+            <input type="number" id="setGoal2" step="0.1" min="50" max="400"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 1 calorie target (kcal/day)</label>
+            <input type="number" id="setTarget1" step="10" min="1000" max="4000"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 2 calorie target (kcal/day)</label>
+            <input type="number" id="setTarget2" step="10" min="1000" max="4000"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily protein target (g)</label>
+            <input type="number" id="setProteinTarget" step="5" min="20" max="300"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily water target (litres)</label>
+            <input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Target date (optional) — auto-calculates required weekly deficit</label>
+          <input type="date" id="setTargetDate"
+            style="width:220px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;"
+            oninput="updateTargetDateCalc()">
+          <div id="targetDateCalc" style="font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
+          <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
+        </div>
+      </div>
+
       <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
         <div class="plan-ref-title">Change plan start date</div>
         <div style="font-size:12px;color:var(--text2);">Current: <span id="currentStartDate">not set</span></div>
@@ -1398,6 +1483,7 @@
         </div>
         <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
       </div>
+
       <div class="section-title" style="margin-top:16px;">Security</div>
       <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;">
         <div class="plan-ref-title">Change password</div>
@@ -1497,9 +1583,37 @@ async function changePassword() {
 }
 
 // ─── STATE ───────────────────────────────────────────────
-const START_WEIGHT = 168;
-const GOAL1 = 154;
-const GOAL2 = 143;
+// Default values — overridden by user settings stored in allData._settings
+const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, totalWeeks: 20, phase1Weeks: 10 };
+
+function getSetting(key) {
+  return (allData._settings && allData._settings[key] != null) ? allData._settings[key] : DEFAULTS[key];
+}
+function saveSetting(key, val) {
+  if (!allData._settings) allData._settings = {};
+  allData._settings[key] = val;
+  autoPersist();
+}
+
+// Convenience accessors used throughout the app
+const START_WEIGHT    = () => getSetting('startWeight');
+const GOAL1           = () => getSetting('goal1');
+const GOAL2           = () => getSetting('goal2');
+const DAILY_TARGET    = () => getSetting('dailyTarget1');
+const DAILY_TARGET2   = () => getSetting('dailyTarget2');
+const WATER_TARGET_ML = () => Math.round(getSetting('waterTargetL') * 1000);
+const TOTAL_WEEKS     = () => getSetting('totalWeeks');
+const PHASE1_WEEKS    = () => getSetting('phase1Weeks');
+
+// Helper: which phase is a given week in?
+function getPhase(weekNum) {
+  return weekNum <= PHASE1_WEEKS() ? 1 : 2;
+}
+// Helper: calorie target for a given week
+function getTargetForWeek(weekNum) {
+  return getPhase(weekNum) === 1 ? DAILY_TARGET() : DAILY_TARGET2();
+}
+
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 const PHASE1_PLAN = ['Run','Weights A','Run','Rest','Weights B','Run','Rest'];
@@ -1592,7 +1706,7 @@ function getCurrentWeekFromDate() {
   const daysToMonday = dow === 0 ? -6 : 1 - dow;
   monday.setDate(monday.getDate() + daysToMonday);
   const diff = Math.floor((today - monday) / (7 * 24 * 60 * 60 * 1000));
-  return Math.min(20, Math.max(1, diff + 1));
+  return Math.min(TOTAL_WEEKS(), Math.max(1, diff + 1));
 }
 
 function calcStreak() {
@@ -1601,7 +1715,7 @@ function calcStreak() {
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = new Date(allData._startDate); actualStart.setHours(0,0,0,0);
   const days = [];
-  for (let w = 1; w <= 20; w++) {
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
     for (let d = 0; d < 7; d++) {
       const date = getDayDate(w, d);
       if (!date) continue;
@@ -1641,7 +1755,7 @@ function goToCurrentWeek() {
 }
 
 function changeWeek(dir) {
-  currentWeek = Math.max(1, Math.min(20, currentWeek + dir));
+  currentWeek = Math.max(1, Math.min(TOTAL_WEEKS(), currentWeek + dir));
   selectedDay = null;
   dietDayManuallySet = false;
   // Feature 10 — reset calDay to today when navigating to current week
@@ -1658,14 +1772,19 @@ function render() {
   const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
   const dateRange = ws ? formatDate(ws) + ' – ' + formatDate(we) : 'Set start date →';
   document.getElementById('weekLabel').textContent = 'Week ' + currentWeek;
-  document.getElementById('weekNum').innerHTML = currentWeek + ' <span>of 20</span>';
-  document.getElementById('weekPhaseDesc').textContent = currentWeek <= 10 ? 'Phase 1, wk ' + currentWeek : 'Phase 2, wk ' + (currentWeek - 10);
+  document.getElementById('weekNum').innerHTML = currentWeek + ' <span>of ' + TOTAL_WEEKS() + '</span>';
+  const p1w = PHASE1_WEEKS();
+  document.getElementById('weekPhaseDesc').textContent = getPhase(currentWeek) === 1
+    ? 'Phase 1, wk ' + currentWeek
+    : 'Phase 2, wk ' + (currentWeek - p1w);
   const wdr = document.getElementById('weekDateRange');
   if (wdr) wdr.textContent = dateRange;
 
-  const phase = currentWeek <= 10 ? 1 : 2;
+  const phase = getPhase(currentWeek);
   document.getElementById('currentPhase').textContent = phase;
-  document.getElementById('phaseDesc').textContent = phase === 1 ? '168→154 lbs' : '154→143 lbs';
+  document.getElementById('phaseDesc').textContent = phase === 1
+    ? `${START_WEIGHT()}→${GOAL1()} lbs`
+    : `${GOAL1()}→${GOAL2()} lbs`;
 
   const streak = calcStreak();
   const cs = document.getElementById('currentStreak');
@@ -1686,7 +1805,7 @@ function render() {
 }
 
 function calcWeeklyDeficit(weekNum) {
-  const target = weekNum <= 10 ? DAILY_TARGET : 1700;
+  const target = getTargetForWeek(weekNum);
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = allData._startDate ? new Date(allData._startDate) : null;
   if (actualStart) actualStart.setHours(0,0,0,0);
@@ -1735,23 +1854,25 @@ function renderProgress() {
     const d = peekWeekData(w);
     if (d && d.weight) { latestWt = d.weight; break; }
   }
+  const sw = START_WEIGHT(), g1 = GOAL1(), g2 = GOAL2();
   if (latestWt) {
     document.getElementById('currentWt').textContent = latestWt;
-    const lost = START_WEIGHT - latestWt;
+    const lost = sw - latestWt;
     document.getElementById('totalLost').textContent = Math.max(0, lost).toFixed(1);
     document.getElementById('wtDeltaText').textContent = lost > 0 ? '↓ ' + lost.toFixed(1) + ' lbs lost' : lost < 0 ? '↑ gained' : 'no change';
-    const pct = Math.min(100, Math.max(0, (lost / (START_WEIGHT - GOAL1)) * 100));
+    const pct = Math.min(100, Math.max(0, (lost / (sw - g1)) * 100));
     document.getElementById('goal1Bar').style.width = pct.toFixed(0) + '%';
-    document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target 154 lbs';
-    const toGo = Math.max(0, latestWt - GOAL1);
+    document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target ' + g1 + ' lbs';
+    const toGo = Math.max(0, latestWt - g1);
     document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
   } else {
     document.getElementById('currentWt').textContent = '—';
     document.getElementById('wtDeltaText').textContent = 'Log below';
     document.getElementById('totalLost').textContent = '0';
-    document.getElementById('toGoText').textContent = '14 lbs to goal 1';
+    const toGoDefault = (sw - g1).toFixed(1);
+    document.getElementById('toGoText').textContent = toGoDefault + ' lbs to goal 1';
     document.getElementById('goal1Bar').style.width = '0%';
-    document.getElementById('goal1Pct').textContent = '0% — target 154 lbs';
+    document.getElementById('goal1Pct').textContent = '0% — target ' + g1 + ' lbs';
   }
 
   // Weekly calorie deficit
@@ -1845,7 +1966,7 @@ function updateWeightDelta() {
     const d = peekWeekData(w);
     if (d && d.weight) { prev = d.weight; break; }
   }
-  if (!prev) prev = START_WEIGHT;
+  if (!prev) prev = START_WEIGHT();
   const diff = val - prev;
   delta.style.display = 'inline-block';
   if (diff < 0) {
@@ -1865,7 +1986,7 @@ function updateWeightDelta() {
 }
 
 function renderDays() {
-  const plan = currentWeek <= 10 ? PHASE1_PLAN : PHASE2_PLAN;
+  const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
   const grid = document.getElementById('daysGrid');
   grid.innerHTML = '';
 
@@ -1979,7 +2100,7 @@ function selectDay(day) {
 
 function renderDayDetail(day) {
   const dd = getDayData(currentWeek, day);
-  const plan = currentWeek <= 10 ? PHASE1_PLAN : PHASE2_PLAN;
+  const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
   const dayIdx = DAYS.indexOf(day);
   const planned = plan[dayIdx];
   const dayDate = getDayDate(currentWeek, dayIdx);
@@ -2066,7 +2187,7 @@ function renderDayDetail(day) {
 }
 
 function getSessionKey(activity, week) {
-  const phase = week <= 10 ? 1 : 2;
+  const phase = getPhase(week);
   const a = (activity || '').toLowerCase();
   if (a.includes('weights a')) return phase === 1 ? 'wo-p1a' : 'wo-p2a';
   if (a.includes('weights b')) return phase === 1 ? 'wo-p1b' : 'wo-p2b';
@@ -2276,8 +2397,9 @@ function renderSummary() {
     });
   });
 
-  document.getElementById('sumRuns').innerHTML = runs + '<small>/' + (currentWeek <= 10 ? '3' : '4') + '</small>';
-  document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (currentWeek <= 10 ? '2' : '3') + '</small>';
+  const ph = getPhase(currentWeek);
+  document.getElementById('sumRuns').innerHTML = runs + '<small>/' + (ph === 1 ? '3' : '4') + '</small>';
+  document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (ph === 1 ? '2' : '3') + '</small>';
   document.getElementById('sumCore').innerHTML = core + '<small>/7</small>';
   document.getElementById('sumPadel').textContent = padel;
   document.getElementById('sumOJ').innerHTML = noOJ + '<small>/7</small>';
@@ -2285,7 +2407,7 @@ function renderSummary() {
   document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
 
   // Fix #6 — weekly calorie summary stats
-  const target = currentWeek <= 10 ? DAILY_TARGET : 1700;
+  const target = getTargetForWeek(currentWeek);
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = allData._startDate ? new Date(allData._startDate) : null;
   if (actualStart) actualStart.setHours(0,0,0,0);
@@ -2319,6 +2441,115 @@ function renderSummary() {
 }
 
 // ─── TABS ─────────────────────────────────────────────────
+function saveAllSettings() {
+  const fields = {
+    totalWeeks:    parseInt(document.getElementById('setTotalWeeks').value),
+    phase1Weeks:   parseInt(document.getElementById('setPhase1Weeks').value),
+    startWeight:   parseFloat(document.getElementById('setStartWeight').value),
+    goal1:         parseFloat(document.getElementById('setGoal1').value),
+    goal2:         parseFloat(document.getElementById('setGoal2').value),
+    dailyTarget1:  parseInt(document.getElementById('setTarget1').value),
+    dailyTarget2:  parseInt(document.getElementById('setTarget2').value),
+    proteinTarget: parseInt(document.getElementById('setProteinTarget').value),
+    waterTargetL:  parseFloat(document.getElementById('setWaterTarget').value),
+  };
+  // Validate phase1Weeks < totalWeeks
+  if (!isNaN(fields.phase1Weeks) && !isNaN(fields.totalWeeks) && fields.phase1Weeks >= fields.totalWeeks) {
+    alert('Phase 1 length must be less than total weeks.');
+    return;
+  }
+  // Save target date if set
+  const tdEl = document.getElementById('setTargetDate');
+  if (tdEl && tdEl.value) allData._targetDate = tdEl.value;
+  else if (tdEl && !tdEl.value) delete allData._targetDate;
+
+  if (!allData._settings) allData._settings = {};
+  Object.entries(fields).forEach(([k, v]) => { if (!isNaN(v) && v > 0) allData._settings[k] = v; });
+  autoPersist();
+  // Clamp currentWeek within new total
+  if (currentWeek > TOTAL_WEEKS()) currentWeek = TOTAL_WEEKS();
+  render();
+  renderPlanRef();
+  const msg = document.getElementById('settingsSaveMsg');
+  if (msg) { msg.textContent = 'Settings saved ✓'; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3000); }
+}
+
+function populateSettingsFields() {
+  const map = {
+    setTotalWeeks:    'totalWeeks',
+    setPhase1Weeks:   'phase1Weeks',
+    setStartWeight:   'startWeight',
+    setGoal1:         'goal1',
+    setGoal2:         'goal2',
+    setTarget1:       'dailyTarget1',
+    setTarget2:       'dailyTarget2',
+    setProteinTarget: 'proteinTarget',
+    setWaterTarget:   'waterTargetL',
+  };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = getSetting(key);
+  });
+  const tdEl = document.getElementById('setTargetDate');
+  if (tdEl) tdEl.value = allData._targetDate || '';
+  updateTargetDateCalc();
+}
+
+function updateTargetDateCalc() {
+  const el = document.getElementById('targetDateCalc');
+  if (!el) return;
+  const tdEl = document.getElementById('setTargetDate');
+  if (!tdEl || !tdEl.value) { el.textContent = ''; return; }
+
+  const start = getStartDate();
+  if (!start) { el.textContent = 'Set your plan start date first.'; return; }
+
+  const target = new Date(tdEl.value);
+  target.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const weeksFromNow = Math.round((target - today) / (7 * 24 * 60 * 60 * 1000));
+  const weeksFromStart = Math.round((target - start) / (7 * 24 * 60 * 60 * 1000));
+
+  if (weeksFromNow < 1) { el.textContent = 'Target date must be in the future.'; el.style.color = 'var(--red)'; return; }
+  el.style.color = 'var(--text2)';
+
+  const g1 = parseFloat(document.getElementById('setGoal1')?.value) || GOAL1();
+  const sw = parseFloat(document.getElementById('setStartWeight')?.value) || START_WEIGHT();
+  const totalLoss = sw - g1;
+  const weeklyLoss = weeksFromStart > 0 ? (totalLoss / weeksFromStart).toFixed(2) : '—';
+  const dailyDeficit = weeksFromStart > 0 ? Math.round((totalLoss * 3500) / (weeksFromStart * 7)) : '—';
+
+  el.textContent = `${weeksFromNow} weeks away · ~${weeklyLoss} lbs/week · ~${dailyDeficit} kcal/day deficit needed to reach Goal 1`;
+}
+
+function renderPlanRef() {
+  const sw = START_WEIGHT(), g1 = GOAL1(), g2 = GOAL2();
+  const t1 = DAILY_TARGET(), t2 = DAILY_TARGET2();
+  const pt = getSetting('proteinTarget');
+  const p1w = PHASE1_WEEKS(), totalW = TOTAL_WEEKS();
+  const p2w = totalW - p1w;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  // Phase badges
+  const b1 = document.getElementById('planPhase1Badge');
+  if (b1) b1.textContent = `Phase 1 — Weeks 1–${p1w}`;
+  const b2 = document.getElementById('planPhase2Badge');
+  if (b2) b2.textContent = `Phase 2 — Weeks ${p1w + 1}–${totalW}`;
+  // Phase 1
+  const p1LossPerWk = p1w > 0 ? ((sw - g1) / p1w).toFixed(2) : '—';
+  set('planP1Target', `${sw} → ${g1} lbs at ~${parseFloat(p1LossPerWk)} lb/week`);
+  set('planP1Cals', `${Math.round(t1 - 100).toLocaleString()}–${t1.toLocaleString()} kcal/day`);
+  set('planP1Protein', `${Math.round(pt * 0.9)}–${pt}g/day`);
+  // Phase 2
+  const p2LossPerWk = p2w > 0 ? ((g1 - g2) / p2w).toFixed(2) : '—';
+  set('planP2Target', `${g1} → ${g2} lbs at ~${parseFloat(p2LossPerWk)} lb/week`);
+  set('planP2Cals', `${Math.round(t2 - 100).toLocaleString()}–${t2.toLocaleString()} kcal/day`);
+  set('planP2Protein', `${pt}–${Math.round(pt * 1.3)}g/day`);
+  // Milestones
+  set('planGoal1Lbs', `${g1} lbs`);
+  set('planGoal2Lbs', `${g2} lbs`);
+}
+
 function changeStartDate() {
   const inp = document.getElementById('changeStartDateInput');
   if (!inp || !inp.value) return;
@@ -2340,12 +2571,15 @@ function showTab(id) {
   if (btn) btn.classList.add('active');
   if (id === 'history') renderHistory();
   if (id === 'calendar') renderCalendar();
+  if (id === 'meals') renderMealsTab();
   if (id === 'plan-ref') {
     const sd = getStartDate();
     const el = document.getElementById('currentStartDate');
     if (el) el.textContent = sd ? formatDateFull(sd) : 'not set';
     const inp = document.getElementById('changeStartDateInput');
     if (inp && sd) inp.value = allData._startDate;
+    populateSettingsFields();
+    renderPlanRef();
   }
 }
 
@@ -2455,6 +2689,61 @@ function autoPersist() {
   syncTimer = setTimeout(pushToSheets, 1500);
 }
 
+function copyWeekSummary() {
+  const ws = getWeekStartDate(currentWeek);
+  const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
+  const dateRange = ws ? `${formatDate(ws)} – ${formatDate(we)}` : `Week ${currentWeek}`;
+  const wd = peekWeekData(currentWeek) || { days: {}, diet: {} };
+  const phase = getPhase(currentWeek);
+
+  // Activities
+  const activities = DAYS.map(d => {
+    const dd = (wd.days && wd.days[d]) || {};
+    return dd.activity ? `  ${d}: ${dd.activity}${dd.core ? ' + core' : ''}` : null;
+  }).filter(Boolean).join('\n');
+
+  // Weight
+  const wt = wd.weight ? `${wd.weight} lbs` : 'not logged';
+  const startWt = START_WEIGHT();
+  const lost = wd.weight ? (startWt - wd.weight).toFixed(1) : '—';
+
+  // Calorie deficit
+  const { totalDeficit, daysWithFood } = calcWeeklyDeficit(currentWeek);
+  const defText = daysWithFood > 0
+    ? `${totalDeficit >= 0 ? '↓' : '↑'} ${Math.abs(totalDeficit).toLocaleString()} kcal ${totalDeficit >= 0 ? 'deficit' : 'surplus'} (${daysWithFood} days logged)`
+    : 'No food logged';
+
+  // Diet score
+  let dietTotal = 0, dietPossible = 0;
+  DAYS.forEach(d => {
+    const diet = (wd.diet && wd.diet[d]) || {};
+    DIET_RULES.forEach((_, i) => { dietPossible++; if (diet[i]) dietTotal++; });
+  });
+  const dietPct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
+
+  // Notes
+  const notes = wd.weightNote ? `\nWeight note: ${wd.weightNote}` : '';
+  const weekNotes = wd.weekNotes ? `\nWeek notes: ${wd.weekNotes}` : '';
+
+  const text = [
+    `📊 Week ${currentWeek} of ${TOTAL_WEEKS()} — Phase ${phase}`,
+    `${dateRange}`,
+    ``,
+    `⚖️  Weight: ${wt}  (${lost >= 0 ? '↓' : '↑'} ${Math.abs(lost)} lbs total lost)${notes}`,
+    `🔥 Calorie: ${defText}`,
+    `🥗 Diet score: ${dietPct}%`,
+    ``,
+    `🏃 Activities:`,
+    activities || '  None logged',
+    weekNotes,
+  ].join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const msg = document.getElementById('copyMsg');
+    if (msg) { msg.classList.add('show'); setTimeout(() => msg.classList.remove('show'), 2500); }
+  }).catch(() => alert('Could not copy — try manually selecting the text.'));
+}
+
 function saveWeek() {
   const wv = parseFloat(document.getElementById('weekWeight').value);
   if (wv) getWeekData(currentWeek).weight = wv;
@@ -2466,7 +2755,8 @@ function saveWeek() {
 
 // ─── MEAL TEMPLATES ──────────────────────────────────────
 function getMealTemplates() {
-  return allData._mealTemplates || [];
+  if (!allData._mealTemplates) allData._mealTemplates = [];
+  return allData._mealTemplates;
 }
 
 function saveMealTemplates(templates) {
@@ -2482,7 +2772,7 @@ function renderMealTemplateRow() {
   row.innerHTML = templates.map((t, i) => {
     const totalKcal = (t.items || []).reduce((s, e) => s + (e.kcal || 0), 0);
     return `<button onclick="addMealTemplate(${i})"
-      style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer;font-family:var(--sans);margin-bottom:4px;margin-right:4px;">
+      style="font-size:11px;padding:4px 12px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer;font-family:var(--sans);margin-bottom:4px;margin-right:4px;">
       ★ ${t.name} <span style="opacity:0.7;">${totalKcal} kcal</span>
     </button>`;
   }).join('');
@@ -2499,56 +2789,12 @@ function addMealTemplate(idx) {
   updateCalTotals();
 }
 
-function openMealTemplates() {
-  const existing = document.getElementById('mealTemplateEditor');
-  if (existing) { existing.remove(); return; }
-
-  const templates = getMealTemplates();
-  const container = document.getElementById('mealTemplateRow').parentElement;
-  const editor = document.createElement('div');
-  editor.id = 'mealTemplateEditor';
-  editor.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;';
-
-  const renderEditor = () => {
-    const tpls = getMealTemplates();
-    editor.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:500;color:var(--text);">Meal templates</div>
-        <button onclick="document.getElementById('mealTemplateEditor').remove()" style="font-size:18px;line-height:1;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
-      </div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Build templates for meals you eat regularly. One tap adds all items to the active meal section.</div>
-      ${tpls.map((t, ti) => `
-        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <input type="text" value="${t.name.replace(/"/g,'&quot;')}" onchange="renameMealTemplate(${ti},this.value)"
-              style="font-size:13px;font-weight:500;color:var(--text);background:none;border:none;border-bottom:1px solid var(--border);outline:none;padding:2px 4px;width:160px;">
-            <button onclick="deleteMealTemplate(${ti})" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Delete</button>
-          </div>
-          ${(t.items || []).map((item, ii) => `
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px;color:var(--text2);">
-              <span style="flex:1;">${item.name}</span>
-              <span style="font-family:var(--mono);color:var(--text3);">${item.kcal} kcal · ${item.protein||0}g prot</span>
-              <button onclick="removeTemplateItem(${ti},${ii})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;">×</button>
-            </div>`).join('')}
-          <button onclick="addItemToTemplate(${ti})" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);margin-top:4px;">+ add item</button>
-        </div>`).join('')}
-      <button onclick="createMealTemplate()" style="width:100%;padding:8px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:12px;margin-top:4px;">+ create new template</button>
-    `;
-  };
-
-  renderEditor();
-  container.insertBefore(editor, document.getElementById('mealTemplateRow').nextSibling);
-
-  // Re-expose renderEditor so sub-functions can refresh it
-  window._reRenderTemplateEditor = renderEditor;
-}
-
 function createMealTemplate() {
   const templates = getMealTemplates();
-  templates.push({ name: 'My meal ' + (templates.length + 1), items: [] });
+  templates.push({ name: 'New template ' + (templates.length + 1), items: [] });
   saveMealTemplates(templates);
   renderMealTemplateRow();
-  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+  renderMealsTab();
 }
 
 function renameMealTemplate(idx, name) {
@@ -2564,37 +2810,31 @@ function deleteMealTemplate(idx) {
   templates.splice(idx, 1);
   saveMealTemplates(templates);
   renderMealTemplateRow();
-  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+  renderMealsTab();
 }
 
 function addItemToTemplate(templateIdx) {
-  const templates = getMealTemplates();
-  const t = templates[templateIdx];
-  if (!t) return;
-
-  const editor = document.getElementById('mealTemplateEditor');
-  if (!editor) return;
-
-  // Find or create an inline input row at the bottom of this template's section
-  const inputId = `templateItemInput_${templateIdx}`;
-  if (document.getElementById(inputId)) return;
-
+  const rowId = `tplItemRow_${templateIdx}`;
+  if (document.getElementById(rowId)) return;
+  const container = document.getElementById(`tplItems_${templateIdx}`);
+  if (!container) return;
   const tempId = 'tpl_' + Date.now();
   const div = document.createElement('div');
-  div.id = inputId;
-  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);';
+  div.id = rowId;
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);';
   div.innerHTML = `
-    <input type="text" id="${tempId}_name" placeholder="Item name..." style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;">
-    <input type="number" id="${tempId}_kcal" placeholder="kcal" class="cal-num-input" min="0" max="5000" style="width:60px;">
-    <input type="number" id="${tempId}_prot" placeholder="prot g" class="cal-num-input" min="0" max="500" style="width:62px;">
-    <input type="number" id="${tempId}_carbs" placeholder="carbs" class="cal-num-input" min="0" max="500" style="width:55px;">
-    <input type="number" id="${tempId}_fats" placeholder="fats" class="cal-num-input" min="0" max="500" style="width:52px;">
-    <input type="number" id="${tempId}_sugar" placeholder="sugar" class="cal-num-input" min="0" max="500" style="width:55px;">
-    <button onclick="confirmTemplateItem(${templateIdx},'${tempId}')" style="padding:5px 10px;border-radius:6px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:11px;cursor:pointer;">Add</button>
-    <button onclick="document.getElementById('${inputId}').remove()" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:11px;cursor:pointer;">Cancel</button>
+    <input type="text" id="${tempId}_name" placeholder="Item name..." style="flex:1;min-width:130px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
+    <input type="number" id="${tempId}_kcal"  placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:62px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
+    <input type="number" id="${tempId}_prot"  placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
+    <input type="number" id="${tempId}_carbs" placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
+    <input type="number" id="${tempId}_fats"  placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
+    <input type="number" id="${tempId}_sugar" placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
+    <button onclick="confirmTemplateItem(${templateIdx},'${tempId}')" style="padding:6px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
+    <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">carbs, fats, sugar optional · Esc to cancel</div>
   `;
-  // Append to this template's container
-  editor.querySelectorAll('[style*="border:1px solid var(--border)"]')[templateIdx]?.appendChild(div);
+  container.appendChild(div);
   document.getElementById(tempId + '_name')?.focus();
 }
 
@@ -2603,18 +2843,17 @@ function confirmTemplateItem(templateIdx, tempId) {
   if (!nameEl || !nameEl.value.trim()) return;
   const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
   const templates = getMealTemplates();
-  const item = {
+  templates[templateIdx].items.push({
     name:    nameEl.value.trim(),
     kcal:    get(tempId + '_kcal')  || 0,
     protein: get(tempId + '_prot')  || 0,
     carbs:   get(tempId + '_carbs'),
     fats:    get(tempId + '_fats'),
     sugar:   get(tempId + '_sugar'),
-  };
-  templates[templateIdx].items.push(item);
+  });
   saveMealTemplates(templates);
   renderMealTemplateRow();
-  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+  renderMealsTab();
 }
 
 function removeTemplateItem(templateIdx, itemIdx) {
@@ -2622,12 +2861,203 @@ function removeTemplateItem(templateIdx, itemIdx) {
   templates[templateIdx].items.splice(itemIdx, 1);
   saveMealTemplates(templates);
   renderMealTemplateRow();
-  if (window._reRenderTemplateEditor) window._reRenderTemplateEditor();
+  renderMealsTab();
+}
+
+// ─── RECENT FOODS ─────────────────────────────────────────
+function logRecentFood(entry) {
+  if (!entry || !entry.name || !entry.kcal) return;
+  if (!allData._recentFoods) allData._recentFoods = [];
+  // Remove existing entry with same name to avoid duplicates, then prepend
+  allData._recentFoods = allData._recentFoods.filter(f => f.name !== entry.name);
+  allData._recentFoods.unshift({ ...entry });
+  // Keep only last 20
+  if (allData._recentFoods.length > 20) allData._recentFoods = allData._recentFoods.slice(0, 20);
+}
+
+// ─── QUICK PRESETS — edit functions ───────────────────────
+function addQuickPreset() {
+  const rowId = 'newPresetRow';
+  if (document.getElementById(rowId)) return;
+  const container = document.getElementById('mealsTabPresets');
+  if (!container) return;
+  const tempId = 'preset_' + Date.now();
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px;border:1px dashed var(--accent);border-radius:8px;margin-bottom:8px;';
+  div.innerHTML = `
+    <input type="text" id="${tempId}_label" placeholder="Name (e.g. Banana)" style="flex:1;min-width:130px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
+    <input type="number" id="${tempId}_kcal"  placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:70px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_prot"  placeholder="protein g" class="cal-num-input" min="0" max="500" style="width:80px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <button onclick="confirmNewPreset('${tempId}')" style="padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+  container.prepend(div);
+  document.getElementById(tempId + '_label')?.focus();
+}
+
+function confirmNewPreset(tempId) {
+  const labelEl = document.getElementById(tempId + '_label');
+  const kcalEl  = document.getElementById(tempId + '_kcal');
+  const protEl  = document.getElementById(tempId + '_prot');
+  if (!labelEl || !labelEl.value.trim()) return;
+  const presets = getQuickPresets();
+  presets.push({
+    label:   labelEl.value.trim(),
+    kcal:    parseInt(kcalEl.value) || 0,
+    protein: parseInt(protEl.value) || 0,
+  });
+  saveQuickPresets(presets);
+  const row = document.getElementById('newPresetRow');
+  if (row) row.remove();
+  renderMealsTab();
+  renderCalorie();
+}
+
+function deleteQuickPreset(idx) {
+  const presets = getQuickPresets();
+  presets.splice(idx, 1);
+  saveQuickPresets(presets);
+  renderMealsTab();
+  renderCalorie();
+}
+
+function editQuickPreset(idx) {
+  const presets = getQuickPresets();
+  const p = presets[idx];
+  if (!p) return;
+  const rowId = `presetEditRow_${idx}`;
+  const existing = document.getElementById(rowId);
+  if (existing) { existing.remove(); return; }
+  const container = document.getElementById(`presetRow_${idx}`);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);';
+  div.innerHTML = `
+    <input type="text" id="${rowId}_label" value="${p.label.replace(/"/g,'&quot;')}" style="flex:1;min-width:130px;padding:5px 9px;border:1px solid var(--accent);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
+    <input type="number" id="${rowId}_kcal" value="${p.kcal}" class="cal-num-input" min="0" max="5000" style="width:70px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_prot" value="${p.protein}" class="cal-num-input" min="0" max="500" style="width:80px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <button onclick="saveQuickPresetEdit(${idx},'${rowId}')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="document.getElementById('${rowId}').remove()" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+  container.appendChild(div);
+  document.getElementById(rowId + '_label')?.focus();
+}
+
+function saveQuickPresetEdit(idx, rowId) {
+  const labelEl = document.getElementById(rowId + '_label');
+  const kcalEl  = document.getElementById(rowId + '_kcal');
+  const protEl  = document.getElementById(rowId + '_prot');
+  if (!labelEl) return;
+  const presets = getQuickPresets();
+  presets[idx] = {
+    label:   labelEl.value.trim() || presets[idx].label,
+    kcal:    parseInt(kcalEl.value) || 0,
+    protein: parseInt(protEl.value) || 0,
+  };
+  saveQuickPresets(presets);
+  renderMealsTab();
+  renderCalorie();
+}
+
+// ─── MEALS TAB RENDERER ───────────────────────────────────
+function renderMealsTab() {
+  renderMealsTabTemplates();
+  renderMealsTabPresets();
+  renderMealsTabRecent();
+}
+
+function renderMealsTabTemplates() {
+  const container = document.getElementById('mealsTabTemplates');
+  if (!container) return;
+  const templates = getMealTemplates();
+  if (templates.length === 0) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0 12px;">No templates yet — create one below.</div>`;
+    return;
+  }
+  container.innerHTML = templates.map((t, ti) => {
+    const totalKcal = (t.items || []).reduce((s, e) => s + (e.kcal || 0), 0);
+    const totalProt = (t.items || []).reduce((s, e) => s + (e.protein || 0), 0);
+    return `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">
+        <input type="text" value="${t.name.replace(/"/g,'&quot;')}" onchange="renameMealTemplate(${ti},this.value)"
+          style="font-size:14px;font-weight:500;color:var(--text);background:none;border:none;border-bottom:1px solid var(--border);outline:none;padding:2px 4px;flex:1;min-width:100px;">
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${totalKcal} kcal · ${Math.round(totalProt)}g prot</span>
+          <button onclick="addMealTemplate(${ti})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:var(--sans);">+ Add to log</button>
+          <button onclick="deleteMealTemplate(${ti})" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Delete</button>
+        </div>
+      </div>
+      ${(t.items || []).length === 0
+        ? `<div style="font-size:12px;color:var(--text3);padding:4px 0;">No items yet — add one below.</div>`
+        : (t.items || []).map((item, ii) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="flex:1;font-size:13px;color:var(--text);">${item.name}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${item.kcal} kcal · ${item.protein||0}g prot${item.carbs!=null?' · '+item.carbs+'g carbs':''}${item.fats!=null?' · '+item.fats+'g fat':''}${item.sugar!=null?' · '+item.sugar+'g sugar':''}</span>
+            <button onclick="removeTemplateItem(${ti},${ii})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">×</button>
+          </div>`).join('')}
+      <div id="tplItems_${ti}"></div>
+      <button onclick="addItemToTemplate(${ti})" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ add item</button>
+    </div>`;
+  }).join('');
+}
+
+function renderMealsTabPresets() {
+  const container = document.getElementById('mealsTabPresets');
+  if (!container) return;
+  const presets = getQuickPresets();
+  container.innerHTML = presets.map((p, i) => `
+    <div id="presetRow_${i}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
+      <span style="flex:1;font-size:13px;color:var(--text);">${p.label}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${p.kcal} kcal · ${p.protein}g prot</span>
+      <button onclick="editQuickPreset(${i})" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
+      <button onclick="deleteQuickPreset(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;">×</button>
+    </div>`).join('');
+}
+
+function renderMealsTabRecent() {
+  const container = document.getElementById('mealsTabRecent');
+  if (!container) return;
+  const recent = allData._recentFoods || [];
+  if (recent.length === 0) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0;">No recent foods yet — they'll appear here after you log food.</div>`;
+    return;
+  }
+  container.innerHTML = recent.map((f, i) => {
+    let macroStr = `${f.kcal} kcal · ${f.protein||0}g prot`;
+    if (f.carbs != null) macroStr += ` · ${f.carbs}g carbs`;
+    if (f.fats  != null) macroStr += ` · ${f.fats}g fat`;
+    if (f.sugar != null) macroStr += ` · ${f.sugar}g sugar`;
+    return `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);">${macroStr}</div>
+      </div>
+      <button onclick="addRecentFood(${i})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--accent);cursor:pointer;font-family:var(--sans);white-space:nowrap;flex-shrink:0;">+ Add</button>
+    </div>`;
+  }).join('');
+}
+
+function addRecentFood(idx) {
+  const recent = allData._recentFoods || [];
+  const food = recent[idx];
+  if (!food) return;
+  const cd = getCalData(currentWeek, calDay);
+  cd[activeMeal].push({ ...food });
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+  // Switch to This week tab so user sees the addition
+  showTab('this-week');
 }
 
 // ─── COPY FROM PREVIOUS DAY ──────────────────────────────
 function copyMealFromPrevDay(meal) {
-  // Find the previous day (could be previous week's Sunday if today is Monday)
   const todayIdx = DAYS.indexOf(calDay);
   let prevWeek = currentWeek;
   let prevDayIdx = todayIdx - 1;
@@ -2639,7 +3069,7 @@ function copyMealFromPrevDay(meal) {
   const prevCal = prevWd && prevWd.calories && prevWd.calories[prevDay];
   if (!prevCal) { alert(`No ${MEAL_LABELS[meal]} logged for ${prevDay} (Week ${prevWeek}).`); return; }
 
-  const prevEntries = MEALS.flatMap(m => m === meal ? (prevCal[meal] || []) : []);
+  const prevEntries = prevCal[meal] || [];
   if (prevEntries.length === 0) { alert(`No items in ${MEAL_LABELS[meal]} from ${prevDay}.`); return; }
 
   if (!confirm(`Copy ${prevEntries.length} item${prevEntries.length > 1 ? 's' : ''} from ${prevDay}'s ${MEAL_LABELS[meal]}?`)) return;
@@ -2686,7 +3116,7 @@ function renderMacroStats() {
   const sugar   = allEntries.reduce((s,e) => s+(e.sugar||0), 0);
 
   const macros = [
-    { key:'protein', label:'Protein', val:protein, target:75, color:'var(--blue)', always:true },
+    { key:'protein', label:'Protein', val:protein, target:getSetting('proteinTarget'), color:'var(--blue)', always:true },
     { key:'carbs',   label:'Carbs',   val:carbs,   target:200, color:'var(--amber)', always:false },
     { key:'fats',    label:'Fats',    val:fats,    target:60,  color:'var(--purple)', always:false },
     { key:'sugar',   label:'Sugar',   val:sugar,   target:40,  color:'var(--red)', always:false },
@@ -2711,12 +3141,21 @@ function renderMacroStats() {
   const pr = document.getElementById('proteinRemaining');
   const pb = document.getElementById('proteinBar');
   if (pl) pl.innerHTML = Math.round(protein) + ' <small>g</small>';
-  if (pr) pr.innerHTML = Math.max(0, 75-Math.round(protein)) + ' <small>g</small>';
+  if (pr) pr.innerHTML = Math.max(0, getSetting('proteinTarget')-Math.round(protein)) + ' <small>g</small>';
   if (pb) pb.style.width = Math.min(100,Math.round((protein/75)*100))+'%';
 }
 
 // ─── FOOD SEARCH (USDA FoodData Central) ─────────────────
-let searchDebounceTimer = null;
+
+function cleanFoodName(raw) {
+  // Convert ALL CAPS words to Title Case
+  let name = raw.replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
+  // Keep only the first meaningful segment before a comma if the full string is long
+  const parts = name.split(',');
+  if (parts[0].length > 6 && parts.length > 1) name = parts[0].trim();
+  // Collapse multiple spaces
+  return name.replace(/\s+/g, ' ').trim();
+}
 
 async function searchFood() {
   const query = document.getElementById('foodSearchInput').value.trim();
@@ -2766,7 +3205,7 @@ async function searchFood() {
 
     // Store parsed results for serving picker
     window._lastFoodResults = foods.map(f => ({
-      name:     f.description + (f.brandOwner ? ` (${f.brandOwner})` : ''),
+      name:     cleanFoodName(f.description) + (f.brandOwner ? ` (${f.brandOwner})` : ''),
       kcal100:  getNut(f.foodNutrients, [1008, 2047, 2048]),
       prot100:  getNut(f.foodNutrients, [1003]),
       carb100:  getNut(f.foodNutrients, [1005]),
@@ -2885,8 +3324,8 @@ function confirmFoodAdd() {
   };
   const cd = getCalData(currentWeek, calDay);
   cd[activeMeal].push(entry);
+  logRecentFood(entry);
   autoPersist();
-  _selectedFood = null;
   const picker = document.getElementById('foodServingPicker');
   if (picker) picker.remove();
   document.getElementById('foodSearchInput').value = '';
@@ -2898,11 +3337,8 @@ function confirmFoodAdd() {
 
 // ─── CALORIE COUNTER ──────────────────────────────────────
 
-const DAILY_TARGET = 1850; // Phase 1 target
-const WATER_TARGET_ML = 2500;
-
-// Quick-add presets based on Arnav's actual diet
-const QUICK_PRESETS = [
+// ─── QUICK PRESETS (user-editable, stored in allData) ─────
+const DEFAULT_QUICK_PRESETS = [
   { label: 'Banana', kcal: 90, protein: 1 },
   { label: '6 almonds', kcal: 40, protein: 1 },
   { label: '6 raisins', kcal: 30, protein: 0 },
@@ -2920,6 +3356,16 @@ const QUICK_PRESETS = [
   { label: 'Masala chai', kcal: 80, protein: 2 },
   { label: 'OJ (250ml)', kcal: 120, protein: 1 },
 ];
+
+function getQuickPresets() {
+  if (!allData._quickPresets) allData._quickPresets = DEFAULT_QUICK_PRESETS.map(p => ({...p}));
+  return allData._quickPresets;
+}
+
+function saveQuickPresets(presets) {
+  allData._quickPresets = presets;
+  autoPersist();
+}
 
 // Exercise calorie estimates
 const EXERCISE_BURN = {
@@ -2993,14 +3439,10 @@ function addWaterIncrement(ml) {
   setWaterMl(current + ml);
 }
 
-function addWater(ml) { addWaterIncrement(ml); }
-function removeWater() { addWaterIncrement(-250); }
-function removeSpecificWater() { addWaterIncrement(-250); }
-
 function renderWater() {
   const totalMl = getWaterMl();
   const totalL = totalMl / 1000;
-  const pct = Math.min(100, Math.round((totalMl / WATER_TARGET_ML) * 100));
+  const pct = Math.min(100, Math.round((totalMl / WATER_TARGET_ML()) * 100));
 
   const slider = document.getElementById('waterSlider');
   if (slider && parseInt(slider.value) !== totalMl) slider.value = totalMl;
@@ -3008,8 +3450,8 @@ function renderWater() {
   const badge = document.getElementById('waterBadge');
   if (badge) {
     const display = totalL % 1 === 0 ? totalL.toFixed(0) : totalL.toFixed(2).replace(/0+$/, '');
-    badge.textContent = display + ' / 2.5 L';
-    if (totalMl >= WATER_TARGET_ML) {
+    badge.textContent = display + ' / ' + getSetting('waterTargetL') + ' L';
+    if (totalMl >= WATER_TARGET_ML()) {
       badge.style.background = 'var(--green-bg)'; badge.style.color = 'var(--green)';
     } else if (totalMl >= 1500) {
       badge.style.background = 'var(--blue-bg)'; badge.style.color = 'var(--blue)';
@@ -3057,8 +3499,8 @@ function renderCalorie() {
 
   const qRow = document.getElementById('quickAddRow');
   if (qRow) {
-    qRow.innerHTML = QUICK_PRESETS.map(p =>
-      `<button class="quick-btn" onclick="quickAdd('${p.label}',${p.kcal},${p.protein})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`
+    qRow.innerHTML = getQuickPresets().map(p =>
+      `<button class="quick-btn" onclick="quickAdd('${p.label.replace(/'/g,"\\'")}',${p.kcal},${p.protein})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`
     ).join('');
   }
 
@@ -3190,7 +3632,9 @@ function saveCalEntry(meal, idx) {
 
 function quickAdd(name, kcal, protein) {
   const cd = getCalData(currentWeek, calDay);
-  cd[activeMeal].push({ name, kcal, protein });
+  const entry = { name, kcal, protein };
+  cd[activeMeal].push(entry);
+  logRecentFood(entry);
   autoPersist();
   renderCalEntries();
   updateCalTotals();
@@ -3240,6 +3684,7 @@ function confirmCustomEntry(tempId) {
   };
   const cd = getCalData(currentWeek, calDay);
   cd[activeMeal].push(entry);
+  logRecentFood(entry);
   autoPersist();
   const row = document.getElementById('customEntryRow');
   if (row) row.remove();
@@ -3269,7 +3714,7 @@ function updateCalTotals() {
     : (EXERCISE_BURN[dayAct] || 0);
 
   const net = consumed - burned;
-  const target = currentWeek <= 10 ? DAILY_TARGET : 1700;
+  const target = getTargetForWeek(currentWeek);
   const deficit = target - net;
 
   const fmt = n => Math.round(n).toLocaleString();
@@ -3364,7 +3809,7 @@ function renderCalendar() {
   html += `<div class="cal-header-row"><div class="cal-header-cell"></div>${DAYS.map(d=>`<div class="cal-header-cell">${d}</div>`).join('')}</div>`;
 
   let lastMonth = -1;
-  for (let w = 1; w <= 20; w++) {
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
     const ws = getWeekStartDate(w);
     if (!ws) continue;
     const month = ws.getMonth();
@@ -3441,11 +3886,11 @@ function renderHistory() {
   let hasHistory = false;
   let weightHtml = '';
   let actHtml = '';
-  let prevWt = START_WEIGHT;
+  let prevWt = START_WEIGHT();
   const chartLabels = [];
   const chartData = [];
 
-  for (let w = 1; w <= 20; w++) {
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
     const wd = peekWeekData(w);
     if (!wd) continue;
     const ws = getWeekStartDate(w);
@@ -3460,7 +3905,7 @@ function renderHistory() {
         deltaHtml = `<span class="history-delta ${cls}">${diff < 0 ? '↓' : diff > 0 ? '↑+' : '='} ${Math.abs(diff).toFixed(1)} lbs</span>`;
       }
       if (wt) {
-        const milestone = wt <= GOAL2 ? '🎯 Goal 2 hit!' : wt <= GOAL1 ? '🎯 Goal 1 hit!' : '';
+        const milestone = wt <= GOAL2() ? '🎯 Goal 2 hit!' : wt <= GOAL1() ? '🎯 Goal 1 hit!' : '';
         const note = wd.weightNote ? `<span style="font-size:11px;color:var(--text3);font-style:italic;">${wd.weightNote}</span>` : '';
         const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(w);
         const defText = daysWithData > 0
@@ -3535,8 +3980,8 @@ function renderHistory() {
   const pad = { t: 16, r: 60, b: 32, l: 44 };
   const cW = W - pad.l - pad.r;
   const cH = H - pad.t - pad.b;
-  const minY = Math.min(...chartData, GOAL2) - 2;
-  const maxY = Math.max(...chartData, START_WEIGHT) + 2;
+  const minY = Math.min(...chartData, GOAL2()) - 2;
+  const maxY = Math.max(...chartData, START_WEIGHT()) + 2;
   const xScale = i => pad.l + (i / (chartData.length - 1)) * cW;
   const yScale = v => pad.t + cH - ((v - minY) / (maxY - minY)) * cH;
 
@@ -3544,20 +3989,34 @@ function renderHistory() {
   ctx.setLineDash([4, 4]);
   ctx.lineWidth = 1;
   ctx.strokeStyle = '#2d6a4f55';
-  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL1)); ctx.lineTo(pad.l + cW, yScale(GOAL1)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL1())); ctx.lineTo(pad.l + cW, yScale(GOAL1())); ctx.stroke();
   ctx.strokeStyle = '#1e40af55';
-  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL2)); ctx.lineTo(pad.l + cW, yScale(GOAL2)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, yScale(GOAL2())); ctx.lineTo(pad.l + cW, yScale(GOAL2())); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Weight line
+  // Weight line (raw)
   ctx.beginPath();
   chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(xScale(i), yScale(v)); else ctx.lineTo(xScale(i), yScale(v)); });
-  ctx.strokeStyle = '#c4501a';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#c4501a55';
+  ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   ctx.stroke();
 
-  // Dots + value labels
+  // 4-week rolling average line
+  if (chartData.length >= 3) {
+    const rolling = chartData.map((_, i) => {
+      const window4 = chartData.slice(Math.max(0, i - 3), i + 1);
+      return window4.reduce((s, v) => s + v, 0) / window4.length;
+    });
+    ctx.beginPath();
+    rolling.forEach((v, i) => { if (i === 0) ctx.moveTo(xScale(i), yScale(v)); else ctx.lineTo(xScale(i), yScale(v)); });
+    ctx.strokeStyle = '#c4501a';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+
+  // Dots + value labels (on raw data)
   chartData.forEach((v, i) => {
     ctx.beginPath();
     ctx.arc(xScale(i), yScale(v), 3.5, 0, Math.PI * 2);
@@ -3575,16 +4034,16 @@ function renderHistory() {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#a89e93';
   ctx.font = '10px DM Mono, monospace';
-  [[START_WEIGHT, 'Start'], [GOAL1, 'Goal 1'], [GOAL2, 'Goal 2']].forEach(([v, label]) => {
+  [[START_WEIGHT(), 'Start'], [GOAL1(), 'Goal 1'], [GOAL2(), 'Goal 2']].forEach(([v, label]) => {
     ctx.fillText(v + 'lb', pad.l - 4, yScale(v));
   });
 
   // Goal line labels (right side)
   ctx.textAlign = 'left';
   ctx.fillStyle = '#2d6a4f88';
-  ctx.fillText('Goal 1', pad.l + cW + 4, yScale(GOAL1));
+  ctx.fillText('Goal 1', pad.l + cW + 4, yScale(GOAL1()));
   ctx.fillStyle = '#1e40af88';
-  ctx.fillText('Goal 2', pad.l + cW + 4, yScale(GOAL2));
+  ctx.fillText('Goal 2', pad.l + cW + 4, yScale(GOAL2()));
 
   // X labels — first, last, and any milestone weeks
   ctx.fillStyle = '#a89e93';
