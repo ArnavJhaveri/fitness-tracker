@@ -872,6 +872,7 @@
     <button class="tab-btn" onclick="showTab('history')">History</button>
     <button class="tab-btn" onclick="showTab('calendar')">Calendar</button>
     <button class="tab-btn" onclick="showTab('meals')">Meals</button>
+    <button class="tab-btn" onclick="showTab('diet')">Diet</button>
     <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
     <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
   </div>
@@ -967,7 +968,10 @@
     <div id="dayDetail" style="display:none"></div>
 
     <!-- DIET CHECKLIST -->
-    <div class="section-title">Diet rules — did you stick to them today?</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="section-title" style="margin-bottom:0;">Diet rules — did you stick to them today?</div>
+      <button onclick="showTab('diet')" style="font-size:10px;padding:2px 9px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">manage →</button>
+    </div>
     <div class="diet-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="font-size:13px; color:var(--text2);">Rules followed — <span id="dietDayLabel" style="font-weight:500;color:var(--text);"></span></div>
@@ -1125,10 +1129,9 @@
       <div class="sum-stat"><div class="sum-label">Weights</div><div class="sum-val" id="sumWeights">0<small>/2</small></div></div>
       <div class="sum-stat"><div class="sum-label">Core days</div><div class="sum-val" id="sumCore">0<small>/7</small></div></div>
       <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
-      <div class="sum-stat"><div class="sum-label">No OJ</div><div class="sum-val" id="sumOJ">0<small>/7</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
-      <div class="sum-stat"><div class="sum-label">On target days</div><div class="sum-val" id="sumOnTarget">—</div></div>
+      <div class="sum-stat"><div class="sum-label">In deficit</div><div class="sum-val" id="sumOnTarget">—</div></div>
     </div>
 
     <div style="margin-bottom:14px;">
@@ -1171,6 +1174,19 @@
     <div class="section-title">Recently logged foods</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Foods you've logged recently across all meals. Tap to add to the active meal on the food log.</div>
     <div id="mealsTabRecent"></div>
+  </div>
+
+  <!-- DIET -->
+  <div id="diet" class="tab-panel">
+    <div class="section-title">Daily diet rules</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">These rules appear in your daily checklist on the This Week tab. Add, edit, or remove rules to match your current dietary goals.</div>
+    <div id="dietTabRules"></div>
+    <button onclick="addDietRule()" style="width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:13px;margin-bottom:24px;">+ add rule</button>
+
+    <div class="section-title">About the diet score</div>
+    <div style="font-size:13px;color:var(--text2);background:var(--surface);border-radius:10px;padding:14px;line-height:1.7;">
+      Your <strong>diet score</strong> is the percentage of rules you followed across all days in the week — so if you have <span id="dietRuleCount">7</span> rules and checked all of them every day (7 days), that's 100%. Missing one rule on one day brings the score down proportionally. The score adapts automatically as you add or remove rules.
+    </div>
   </div>
 
   <!-- HISTORY -->
@@ -1456,6 +1472,21 @@
               style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
           </div>
           <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily carbs target (g)</label>
+            <input type="number" id="setCarbTarget" step="10" min="20" max="600"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily fat target (g)</label>
+            <input type="number" id="setFatTarget" step="5" min="10" max="200"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily sugar limit (g)</label>
+            <input type="number" id="setSugarTarget" step="5" min="5" max="150"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+          </div>
+          <div>
             <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily water target (litres)</label>
             <input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6"
               style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
@@ -1584,7 +1615,7 @@ async function changePassword() {
 
 // ─── STATE ───────────────────────────────────────────────
 // Default values — overridden by user settings stored in allData._settings
-const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, totalWeeks: 20, phase1Weeks: 10 };
+const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, carbTarget: 200, fatTarget: 60, sugarTarget: 40, totalWeeks: 20, phase1Weeks: 10 };
 
 function getSetting(key) {
   return (allData._settings && allData._settings[key] != null) ? allData._settings[key] : DEFAULTS[key];
@@ -1619,7 +1650,7 @@ const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PHASE1_PLAN = ['Run','Weights A','Run','Rest','Weights B','Run','Rest'];
 const PHASE2_PLAN = ['Run','Weights A','Tempo','Weights B','Run','Weights C','Rest'];
 
-const DIET_RULES = [
+const DEFAULT_DIET_RULES = [
   'No orange juice',
   'Only 2 chapattis at lunch',
   'Fruit as mid-morning snack (not at lunch)',
@@ -1628,6 +1659,124 @@ const DIET_RULES = [
   'Finished dinner before 8pm',
   'Both protein shakes taken',
 ];
+
+function getDietRules() {
+  if (!allData._dietRules) allData._dietRules = DEFAULT_DIET_RULES.map(r => ({ text: r }));
+  return allData._dietRules;
+}
+
+function saveDietRules(rules) {
+  allData._dietRules = rules;
+  autoPersist();
+}
+
+// ─── DIET TAB ─────────────────────────────────────────────
+function renderDietTab() {
+  const rules = getDietRules();
+  const container = document.getElementById('dietTabRules');
+  if (!container) return;
+
+  if (rules.length === 0) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0 12px;">No rules yet — add one below.</div>`;
+  } else {
+    container.innerHTML = rules.map((r, i) => `
+      <div id="dietRuleRow_${i}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:18px;">${i + 1}.</span>
+        <span style="flex:1;font-size:13px;color:var(--text);">${r.text}</span>
+        <button onclick="editDietRule(${i})" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
+        <button onclick="deleteDietRule(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;">×</button>
+      </div>`).join('');
+  }
+
+  // Update rule count in description
+  const countEl = document.getElementById('dietRuleCount');
+  if (countEl) countEl.textContent = rules.length;
+}
+
+function addDietRule() {
+  const rowId = 'newDietRuleRow';
+  if (document.getElementById(rowId)) return;
+  const container = document.getElementById('dietTabRules');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--accent);border-radius:8px;margin-bottom:6px;';
+  div.innerHTML = `
+    <input type="text" id="newDietRuleInput" placeholder="e.g. No eating after 9pm..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')confirmAddDietRule();if(event.key==='Escape')document.getElementById('${rowId}').remove();">
+    <button onclick="confirmAddDietRule()" style="padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
+    <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+  container.appendChild(div);
+  document.getElementById('newDietRuleInput')?.focus();
+}
+
+function confirmAddDietRule() {
+  const inp = document.getElementById('newDietRuleInput');
+  if (!inp || !inp.value.trim()) return;
+  const rules = getDietRules();
+  rules.push({ text: inp.value.trim() });
+  saveDietRules(rules);
+  const row = document.getElementById('newDietRuleRow');
+  if (row) row.remove();
+  renderDietTab();
+  renderDiet();
+}
+
+function editDietRule(idx) {
+  const rowId = `dietRuleRow_${idx}`;
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const rules = getDietRules();
+  const current = rules[idx]?.text || '';
+  row.innerHTML = `
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:18px;">${idx + 1}.</span>
+    <input type="text" id="editDietRuleInput_${idx}" value="${current.replace(/"/g,'&quot;')}" style="flex:1;padding:6px 10px;border:1px solid var(--accent);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+      onkeydown="if(event.key==='Enter')confirmEditDietRule(${idx});if(event.key==='Escape')renderDietTab();">
+    <button onclick="confirmEditDietRule(${idx})" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="renderDietTab()" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+  document.getElementById(`editDietRuleInput_${idx}`)?.focus();
+}
+
+function confirmEditDietRule(idx) {
+  const inp = document.getElementById(`editDietRuleInput_${idx}`);
+  if (!inp || !inp.value.trim()) return;
+  const rules = getDietRules();
+  rules[idx].text = inp.value.trim();
+  saveDietRules(rules);
+  renderDietTab();
+  renderDiet();
+}
+
+function deleteDietRule(idx) {
+  if (!confirm('Delete this diet rule? Any check-ins for this rule across all days will be lost.')) return;
+  const rules = getDietRules();
+  // Shift existing diet check data down to keep indices aligned
+  // For each week and day, remove the entry at idx
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (!wd || !wd.diet) continue;
+    DAYS.forEach(d => {
+      const dietDay = wd.diet[d];
+      if (!dietDay) return;
+      // Build new object with shifted indices
+      const newDiet = {};
+      Object.entries(dietDay).forEach(([k, v]) => {
+        const ki = parseInt(k);
+        if (ki < idx) newDiet[ki] = v;
+        else if (ki > idx) newDiet[ki - 1] = v;
+        // ki === idx: dropped
+      });
+      wd.diet[d] = newDiet;
+    });
+  }
+  rules.splice(idx, 1);
+  saveDietRules(rules);
+  renderDietTab();
+  renderDiet();
+  renderSummary();
+}
 
 let currentWeek = 1;
 let selectedDay = null;
@@ -2348,17 +2497,18 @@ function renderDiet() {
   const dd = getDietData(currentWeek, dietDay);
   const container = document.getElementById('dietChecklist');
   container.innerHTML = '';
+  const rules = getDietRules();
   let checked = 0;
-  DIET_RULES.forEach((rule, i) => {
+  rules.forEach((rule, i) => {
     const id = 'diet_' + i;
     const isChecked = dd[i] || false;
     if (isChecked) checked++;
     const item = document.createElement('label');
     item.className = 'diet-item';
-    item.innerHTML = `<input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="saveDiet(${i}, this.checked)"><label for="${id}">${rule}</label>`;
+    item.innerHTML = `<input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="saveDiet(${i}, this.checked)"><label for="${id}">${rule.text}</label>`;
     container.appendChild(item);
   });
-  document.getElementById('dietScore').textContent = checked + '/' + DIET_RULES.length;
+  document.getElementById('dietScore').textContent = checked + '/' + rules.length;
   const dayDateEl = document.getElementById('dietDayLabel');
   if (dayDateEl) {
     const dayDate = getDayDate(currentWeek, DAYS.indexOf(dietDay));
@@ -2377,7 +2527,8 @@ function saveDiet(idx, val) {
 
 function renderSummary() {
   const wd = peekWeekData(currentWeek) || { days: {}, diet: {} };
-  let runs = 0, weights = 0, core = 0, padel = 0, noOJ = 0, dietTotal = 0, dietPossible = 0;
+  let runs = 0, weights = 0, core = 0, padel = 0, dietTotal = 0, dietPossible = 0;
+  const rules = getDietRules();
 
   DAYS.forEach(day => {
     const dd = (wd.days && wd.days[day]) || {};
@@ -2388,12 +2539,9 @@ function renderSummary() {
     if (dd.core) core++;
 
     const diet = (wd.diet && wd.diet[day]) || {};
-    DIET_RULES.forEach((_, i) => {
+    rules.forEach((_, i) => {
       dietPossible++;
-      if (diet[i]) {
-        dietTotal++;
-        if (i === 0) noOJ++;
-      }
+      if (diet[i]) dietTotal++;
     });
   });
 
@@ -2402,7 +2550,6 @@ function renderSummary() {
   document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (ph === 1 ? '2' : '3') + '</small>';
   document.getElementById('sumCore').innerHTML = core + '<small>/7</small>';
   document.getElementById('sumPadel').textContent = padel;
-  document.getElementById('sumOJ').innerHTML = noOJ + '<small>/7</small>';
   const pct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
   document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
 
@@ -2451,6 +2598,9 @@ function saveAllSettings() {
     dailyTarget1:  parseInt(document.getElementById('setTarget1').value),
     dailyTarget2:  parseInt(document.getElementById('setTarget2').value),
     proteinTarget: parseInt(document.getElementById('setProteinTarget').value),
+    carbTarget:    parseInt(document.getElementById('setCarbTarget').value),
+    fatTarget:     parseInt(document.getElementById('setFatTarget').value),
+    sugarTarget:   parseInt(document.getElementById('setSugarTarget').value),
     waterTargetL:  parseFloat(document.getElementById('setWaterTarget').value),
   };
   // Validate phase1Weeks < totalWeeks
@@ -2484,6 +2634,9 @@ function populateSettingsFields() {
     setTarget1:       'dailyTarget1',
     setTarget2:       'dailyTarget2',
     setProteinTarget: 'proteinTarget',
+    setCarbTarget:    'carbTarget',
+    setFatTarget:     'fatTarget',
+    setSugarTarget:   'sugarTarget',
     setWaterTarget:   'waterTargetL',
   };
   Object.entries(map).forEach(([id, key]) => {
@@ -2572,6 +2725,7 @@ function showTab(id) {
   if (id === 'history') renderHistory();
   if (id === 'calendar') renderCalendar();
   if (id === 'meals') renderMealsTab();
+  if (id === 'diet') renderDietTab();
   if (id === 'plan-ref') {
     const sd = getStartDate();
     const el = document.getElementById('currentStartDate');
@@ -2715,9 +2869,10 @@ function copyWeekSummary() {
 
   // Diet score
   let dietTotal = 0, dietPossible = 0;
+  const rules = getDietRules();
   DAYS.forEach(d => {
     const diet = (wd.diet && wd.diet[d]) || {};
-    DIET_RULES.forEach((_, i) => { dietPossible++; if (diet[i]) dietTotal++; });
+    rules.forEach((_, i) => { dietPossible++; if (diet[i]) dietTotal++; });
   });
   const dietPct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
 
@@ -3117,9 +3272,9 @@ function renderMacroStats() {
 
   const macros = [
     { key:'protein', label:'Protein', val:protein, target:getSetting('proteinTarget'), color:'var(--blue)', always:true },
-    { key:'carbs',   label:'Carbs',   val:carbs,   target:200, color:'var(--amber)', always:false },
-    { key:'fats',    label:'Fats',    val:fats,    target:60,  color:'var(--purple)', always:false },
-    { key:'sugar',   label:'Sugar',   val:sugar,   target:40,  color:'var(--red)', always:false },
+    { key:'carbs',   label:'Carbs',   val:carbs,   target:getSetting('carbTarget'),    color:'var(--amber)',  always:false },
+    { key:'fats',    label:'Fats',    val:fats,    target:getSetting('fatTarget'),     color:'var(--purple)', always:false },
+    { key:'sugar',   label:'Sugar',   val:sugar,   target:getSetting('sugarTarget'),   color:'var(--red)',    always:false },
   ];
 
   const container = document.getElementById('macroStats');
@@ -3142,7 +3297,7 @@ function renderMacroStats() {
   const pb = document.getElementById('proteinBar');
   if (pl) pl.innerHTML = Math.round(protein) + ' <small>g</small>';
   if (pr) pr.innerHTML = Math.max(0, getSetting('proteinTarget')-Math.round(protein)) + ' <small>g</small>';
-  if (pb) pb.style.width = Math.min(100,Math.round((protein/75)*100))+'%';
+  if (pb) pb.style.width = Math.min(100,Math.round((protein/getSetting('proteinTarget'))*100))+'%';
 }
 
 // ─── FOOD SEARCH (USDA FoodData Central) ─────────────────
