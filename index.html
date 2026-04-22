@@ -2927,10 +2927,18 @@ function editCalEntry(meal, idx) {
   if (!e) return;
   const row = document.getElementById(`entry_${meal}_${idx}`);
   if (!row) return;
+
+  const mealOptions = MEALS.map(m =>
+    `<option value="${m}" ${m === meal ? 'selected' : ''}>${MEAL_LABELS[m]}</option>`
+  ).join('');
+
   row.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;">
       <input type="text" id="edit_name_${meal}_${idx}" value="${e.name.replace(/"/g,'&quot;')}"
         style="flex:1;min-width:140px;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+      <select id="edit_meal_${meal}_${idx}" class="cal-day-select" style="font-size:12px;padding:5px 8px;">
+        ${mealOptions}
+      </select>
       <input type="number" id="edit_kcal_${meal}_${idx}"  value="${e.kcal   ||''}" placeholder="kcal"      class="cal-num-input" min="0" max="5000" style="width:68px;">
       <input type="number" id="edit_prot_${meal}_${idx}"  value="${e.protein||''}" placeholder="protein g" class="cal-num-input" min="0" max="500"  style="width:80px;">
       <input type="number" id="edit_carbs_${meal}_${idx}" value="${e.carbs !=null?e.carbs:''}" placeholder="carbs g"  class="cal-num-input" min="0" max="500" style="width:72px;">
@@ -2953,8 +2961,11 @@ function saveCalEntry(meal, idx) {
   const cd = getCalData(currentWeek, calDay);
   const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
   const nameEl = document.getElementById(`edit_name_${meal}_${idx}`);
+  const mealEl = document.getElementById(`edit_meal_${meal}_${idx}`);
   if (!nameEl) return;
-  cd[meal][idx] = {
+
+  const newMeal = mealEl ? mealEl.value : meal;
+  const updated = {
     name:    nameEl.value.trim() || cd[meal][idx].name,
     kcal:    get(`edit_kcal_${meal}_${idx}`)  || 0,
     protein: get(`edit_prot_${meal}_${idx}`)  || 0,
@@ -2962,6 +2973,15 @@ function saveCalEntry(meal, idx) {
     fats:    get(`edit_fats_${meal}_${idx}`),
     sugar:   get(`edit_sugar_${meal}_${idx}`),
   };
+
+  // If meal changed, remove from old and push to new
+  if (newMeal !== meal) {
+    cd[meal].splice(idx, 1);
+    cd[newMeal].push(updated);
+  } else {
+    cd[meal][idx] = updated;
+  }
+
   autoPersist();
   renderCalEntries();
   updateCalTotals();
