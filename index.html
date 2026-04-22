@@ -556,6 +556,9 @@
     width: 72px;
     text-align: right;
   }
+  .cal-num-input::-webkit-outer-spin-button,
+  .cal-num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .cal-num-input { -moz-appearance: textfield; }
   .cal-num-input:focus { border-color: var(--accent); }
   .cal-unit { font-size: 12px; color: var(--text3); white-space: nowrap; }
   .add-entry-btn {
@@ -846,6 +849,7 @@
     </div>
     <div class="lock-title">Arnav's Fitness Tracker</div>
     <div class="lock-sub" id="lockSub">Enter your password to continue</div>
+    <div id="lockBiometricSetupHint" style="display:none;font-size:11px;color:#5f5e5a;margin-bottom:12px;text-align:center;">Touch ID and Face ID available — set up in Settings after logging in.</div>
 
     <!-- Biometric button — shown when passkey registered -->
     <button class="lock-biometric-btn" id="biometricBtn" onclick="attemptBiometric()" style="display:none;">
@@ -856,7 +860,7 @@
     <div id="biometricStatus" style="font-size:12px;color:#a89e93;min-height:18px;text-align:center;margin-bottom:8px;"></div>
 
     <!-- Divider shown when biometric available -->
-    <div id="lockDivider" style="display:none;display:flex;align-items:center;gap:10px;width:100%;margin-bottom:16px;">
+    <div id="lockDivider" style="display:none;align-items:center;gap:10px;width:100%;margin-bottom:16px;">
       <div style="flex:1;height:1px;background:#3a3530;"></div>
       <span style="font-size:11px;color:#5f5e5a;">or use password</span>
       <div style="flex:1;height:1px;background:#3a3530;"></div>
@@ -896,13 +900,14 @@
 <div class="main">
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('this-week')">This week</button>
+    <button class="tab-btn active" onclick="showTab('this-week')">Home</button>
     <button class="tab-btn" onclick="showTab('history')">History</button>
     <button class="tab-btn" onclick="showTab('calendar')">Calendar</button>
     <button class="tab-btn" onclick="showTab('meals')">Meals</button>
     <button class="tab-btn" onclick="showTab('diet')">Diet</button>
     <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
     <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
+    <button class="tab-btn" onclick="showTab('settings')">Settings</button>
   </div>
 
   <!-- THIS WEEK -->
@@ -1255,7 +1260,54 @@
       <button class="wo-tab" onclick="showWoTab('wo-p2a',this)">Phase 2 — Session A</button>
       <button class="wo-tab" onclick="showWoTab('wo-p2b',this)">Phase 2 — Session B</button>
       <button class="wo-tab" onclick="showWoTab('wo-p2c',this)">Phase 2 — Session C</button>
+      <button class="wo-tab" onclick="showWoTab('wo-running',this)">Running</button>
       <button class="wo-tab" onclick="showWoTab('wo-core',this)">Daily core</button>
+    </div>
+
+    <div id="wo-running" class="wo-panel">
+      <div class="wo-session-header">
+        <div class="wo-session-title">Running programme</div>
+        <span class="wo-badge badge-full">Endurance · Fat burn · Cardio base</span>
+      </div>
+      <div class="wo-meta">Runs are the primary calorie-burning activity. Three types: easy runs build aerobic base, tempo runs build lactate threshold, and incline walks are low-impact active recovery. Log distance, time, and how you felt on each run.</div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Easy run</div>
+        <table class="ex-tbl">
+          <thead><tr><th>Phase</th><th>Target</th><th>Pace feel</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><div class="ex-n">Phase 1 (Wks 1–4)</div></td><td><div class="ex-s">20–25 min continuous</div></td><td><div class="ex-s">Conversational</div></td><td><div class="ex-note-text">You should be able to hold a conversation. If you can't, slow down. Heart rate around 65–75% max. Focus on consistency, not speed.</div></td></tr>
+            <tr><td><div class="ex-n">Phase 1 (Wks 5–8)</div></td><td><div class="ex-s">25–35 min · building to 5km</div></td><td><div class="ex-s">Conversational</div></td><td><div class="ex-note-text">Add 5 min per week. By week 8 you should be running 5km without stopping. Don't increase pace — increase duration only.</div></td></tr>
+            <tr><td><div class="ex-n">Phase 1 (Wks 9–10)</div></td><td><div class="ex-s">5km · ~30–35 min</div></td><td><div class="ex-s">Comfortable</div></td><td><div class="ex-note-text">Consolidate the 5km. Don't push pace yet. The goal is to make 5km feel easy before Phase 2 adds tempo work.</div></td></tr>
+            <tr><td><div class="ex-n">Phase 2</div></td><td><div class="ex-s">5–6km · 2× per week</div></td><td><div class="ex-s">Comfortable</div></td><td><div class="ex-note-text">Mon and Fri easy runs. Keep these genuinely easy — they complement the harder tempo session mid-week. Don't turn easy days into moderate days.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:600;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Tempo run <span style="font-size:10px;font-weight:400;color:var(--text3);">Phase 2 only — Wed</span></div>
+        <table class="ex-tbl">
+          <thead><tr><th>Week</th><th>Target</th><th>Pace feel</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><div class="ex-n">Wks 11–13</div></td><td><div class="ex-s">20 min tempo</div></td><td><div class="ex-s">Comfortably hard</div></td><td><div class="ex-note-text">Warm up 5 min easy, then 20 min at a pace where you can say 3–4 words max between breaths. Cool down 5 min. Heart rate 80–88% max.</div></td></tr>
+            <tr><td><div class="ex-n">Wks 14–17</div></td><td><div class="ex-s">25 min tempo</div></td><td><div class="ex-s">Comfortably hard</div></td><td><div class="ex-note-text">Same feel, longer block. If pace feels too easy, you've found your aerobic threshold — don't go harder, go longer.</div></td></tr>
+            <tr><td><div class="ex-n">Wks 18–20</div></td><td><div class="ex-s">30 min tempo or 4–5km</div></td><td><div class="ex-s">Comfortably hard</div></td><td><div class="ex-note-text">Final phase — aim for a 5km tempo effort. This is a significant aerobic benchmark. Note your time for comparison.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Incline walk <span style="font-size:10px;font-weight:400;color:var(--text3);">active recovery · low impact</span></div>
+        <table class="ex-tbl">
+          <thead><tr><th>Type</th><th>Duration</th><th>Settings</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><div class="ex-n">Incline walk (30 min)</div></td><td><div class="ex-s">30 min</div></td><td><div class="ex-s">10–12% incline · 5–6 km/h</div></td><td><div class="ex-note-text">Burns ~300 kcal with zero impact on joints or recovery. Good substitute on days when legs are heavy from running. Don't hold the rails — let your legs and glutes do the work.</div><span class="tag-safe">Back-safe</span></td></tr>
+            <tr><td><div class="ex-n">Incline walk (45 min)</div></td><td><div class="ex-s">45 min</div></td><td><div class="ex-s">10–12% incline · 5–6 km/h</div></td><td><div class="ex-note-text">Extended session. Use on rest day + walk days when you want extra calorie burn without stress on joints. Excellent for fat loss without muscle breakdown.</div><span class="tag-safe">Back-safe</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="wo-prog-note"><strong>10% rule:</strong> Never increase weekly running volume (total km or total time) by more than 10% from one week to the next. This is the most effective way to avoid injury. <strong>Back pain during a run:</strong> Stop immediately, walk home, rest the next day.</div>
     </div>
 
     <div id="wo-p1a" class="wo-panel active">
@@ -1454,106 +1506,135 @@
       Pain during run → stop immediately, walk home. Avoid sit-ups, crunches, Russian twists, straight-leg raises throughout both phases. RDLs reintroduced in Phase 2 with dumbbells only. Max 10% weekly mileage increase.
     </div>
 
-    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
-      <div class="section-title">Settings</div>
-
-      <!-- PLAN STRUCTURE -->
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
-        <div class="plan-ref-title">Plan structure</div>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
-          <div><label class="set-label">Total plan weeks</label><input type="number" id="setTotalWeeks" step="1" min="4" max="52" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Start weight (lbs)</label><input type="number" id="setStartWeight" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Final goal weight (lbs)</label><input type="number" id="setGoal2" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Maintenance calories (kcal/day)</label><input type="number" id="setMaintenance" step="50" min="1200" max="5000" class="set-input" placeholder="e.g. 2350" oninput="updateSettingsCalcs()"><div style="font-size:10px;color:var(--text3);margin-top:3px;">Used for deficit calc</div></div>
-        </div>
-
-        <div style="border-left:3px solid var(--accent);padding-left:12px;">
-          <div style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 1</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
-            <div><label class="set-label">Length (weeks)</label><input type="number" id="setPhase1Weeks" step="1" min="1" max="51" class="set-input" oninput="updateSettingsCalcs()"></div>
-            <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget1" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
-            <div><label class="set-label">Goal 1 — end of phase (lbs)</label><input type="number" id="setGoal1" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-            <div id="phase1DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
-          </div>
-        </div>
-
-        <div style="border-left:3px solid var(--blue);padding-left:12px;">
-          <div style="font-size:11px;font-weight:600;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 2</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
-            <div><label class="set-label">Length (weeks) <span style="font-weight:400;color:var(--text3);">auto</span></label><input type="number" id="setPhase2Disp" class="set-input" disabled style="opacity:0.55;"></div>
-            <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget2" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
-            <div><label class="set-label">Goal 2 — end of phase (lbs) <span style="font-weight:400;color:var(--text3);">(= final goal)</span></label><input type="number" id="setGoal2disp" class="set-input" disabled style="opacity:0.55;"></div>
-            <div id="phase2DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
-          </div>
-        </div>
-
-        <div>
-          <label class="set-label">Target date (optional) — shows required daily deficit to hit Goal 1</label>
-          <input type="date" id="setTargetDate" class="set-input" style="width:200px;" oninput="updateSettingsCalcs()">
-          <div id="targetDateCalc" style="font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;"></div>
-        </div>
-      </div>
-
-      <!-- MACRO & HYDRATION -->
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
-        <div class="plan-ref-title">Macro &amp; hydration goals <span style="font-size:11px;font-weight:400;color:var(--text3);">daily targets</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
-          <div><label class="set-label">Protein (g)</label><input type="number" id="setProteinTarget" step="5" min="20" max="300" class="set-input"></div>
-          <div><label class="set-label">Carbs (g)</label><input type="number" id="setCarbTarget" step="10" min="20" max="600" class="set-input"></div>
-          <div><label class="set-label">Fat (g)</label><input type="number" id="setFatTarget" step="5" min="10" max="200" class="set-input"></div>
-          <div><label class="set-label">Sugar limit (g)</label><input type="number" id="setSugarTarget" step="5" min="5" max="150" class="set-input"></div>
-          <div><label class="set-label">Water (litres)</label><input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6" class="set-input"></div>
-        </div>
-      </div>
-
-      <!-- WORKOUT GOALS -->
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-        <div class="plan-ref-title">Workout goals <span style="font-size:11px;font-weight:400;color:var(--text3);">weekly targets</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
-          <div><label class="set-label">Weekly workout hours target</label><input type="number" id="setWeeklyHoursGoal" step="0.25" min="0.25" max="40" class="set-input" placeholder="e.g. 3"></div>
-        </div>
-        <div style="font-size:12px;color:var(--text3);">Tracked automatically from logged activity durations on the This Week tab.</div>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-        <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
-        <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
-      </div>
-
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
-        <div class="plan-ref-title">Change plan start date</div>
-        <div style="font-size:12px;color:var(--text2);">Current: <span id="currentStartDate">not set</span></div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="date" id="changeStartDateInput" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-          <button onclick="changeStartDate()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update</button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
-      </div>
-      <div class="section-title" style="margin-top:16px;">Security</div>
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
-        <div class="plan-ref-title">Biometric login</div>
-        <div style="font-size:13px;color:var(--text2);" id="passkeyDesc">Use Touch ID or Face ID to unlock the app instantly on supported devices.</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <button id="passkeySetupBtn" onclick="setupPasskey()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">Set up Touch ID / Face ID</button>
-          <button onclick="removePasskey()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Remove</button>
-          <span id="passkeySetupMsg" style="font-size:12px;opacity:0;transition:opacity 0.3s;"></span>
-        </div>
-      </div>
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;">
-        <div class="plan-ref-title">Change password</div>
-        <input type="password" id="pwCurrent" placeholder="Current password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
-        <input type="password" id="pwNew" placeholder="New password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
-        <input type="password" id="pwConfirm" placeholder="Confirm new password" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;max-width:280px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="changePassword()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update password</button>
-          <span id="pwChangeMsg" style="font-size:12px;opacity:0;transition:opacity 0.3s;"></span>
-        </div>
-      </div>
-    </div>
   </div>
 
-</div>
+  <!-- SETTINGS -->
+  <div id="settings" class="tab-panel">
+
+    <div class="section-title">Goals &amp; plan</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Adjust your plan structure, calorie targets, and goals. Changes here update all calculations and the Plan Reference summary automatically.</div>
+
+    <!-- PLAN STRUCTURE -->
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
+      <div class="plan-ref-title">Plan structure</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+        <div><label class="set-label">Total plan weeks</label><input type="number" id="setTotalWeeks" step="1" min="4" max="52" class="set-input" oninput="updateSettingsCalcs()"></div>
+        <div><label class="set-label">Start weight (lbs)</label><input type="number" id="setStartWeight" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+        <div><label class="set-label">Final goal weight (lbs)</label><input type="number" id="setGoal2" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+        <div><label class="set-label">Maintenance calories (kcal/day)</label><input type="number" id="setMaintenance" step="50" min="1200" max="5000" class="set-input" placeholder="e.g. 2350" oninput="updateSettingsCalcs()"><div style="font-size:10px;color:var(--text3);margin-top:3px;">Used for deficit calc</div></div>
+      </div>
+      <div style="border-left:3px solid var(--accent);padding-left:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 1</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
+          <div><label class="set-label">Length (weeks)</label><input type="number" id="setPhase1Weeks" step="1" min="1" max="51" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget1" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Goal 1 — end of phase (lbs)</label><input type="number" id="setGoal1" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div id="phase1DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
+        </div>
+      </div>
+      <div style="border-left:3px solid var(--blue);padding-left:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 2</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
+          <div><label class="set-label">Length (weeks) <span style="font-weight:400;color:var(--text3);">auto</span></label><input type="number" id="setPhase2Disp" class="set-input" disabled style="opacity:0.55;"></div>
+          <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget2" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Goal 2 — end of phase (lbs) <span style="font-weight:400;color:var(--text3);">(= final goal)</span></label><input type="number" id="setGoal2disp" class="set-input" disabled style="opacity:0.55;"></div>
+          <div id="phase2DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
+        </div>
+      </div>
+      <div>
+        <label class="set-label">Target date (optional) — shows required daily deficit to hit Goal 1</label>
+        <input type="date" id="setTargetDate" class="set-input" style="width:200px;" oninput="updateSettingsCalcs()">
+        <div id="targetDateCalc" style="font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;"></div>
+      </div>
+      <div id="settingsOverallWarn"></div>
+    </div>
+
+    <!-- MACRO & HYDRATION -->
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
+      <div class="plan-ref-title">Macro &amp; hydration goals <span style="font-size:11px;font-weight:400;color:var(--text3);">daily targets</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+        <div><label class="set-label">Protein (g)</label><input type="number" id="setProteinTarget" step="5" min="20" max="300" class="set-input"></div>
+        <div><label class="set-label">Carbs (g)</label><input type="number" id="setCarbTarget" step="10" min="20" max="600" class="set-input"></div>
+        <div><label class="set-label">Fat (g)</label><input type="number" id="setFatTarget" step="5" min="10" max="200" class="set-input"></div>
+        <div><label class="set-label">Sugar limit (g)</label><input type="number" id="setSugarTarget" step="5" min="5" max="150" class="set-input"></div>
+        <div><label class="set-label">Water (litres)</label><input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6" class="set-input"></div>
+      </div>
+    </div>
+
+    <!-- WORKOUT GOALS -->
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <div class="plan-ref-title">Workout goals <span style="font-size:11px;font-weight:400;color:var(--text3);">weekly targets</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+        <div><label class="set-label">Weekly workout hours target</label><input type="number" id="setWeeklyHoursGoal" step="0.25" min="0.25" max="40" class="set-input" placeholder="e.g. 3"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);">Tracked automatically from logged activity durations on the Home tab.</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+      <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
+      <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
+    </div>
+
+    <!-- BODY MEASUREMENTS -->
+    <div class="section-title">Body measurements</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Log your measurements here. Stored against today's date so you can track changes over time.</div>
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+        <div><label class="set-label">Height (cm)</label><input type="number" id="settingHeight" step="0.5" min="100" max="250" class="set-input" placeholder="e.g. 176" oninput="saveBodySetting('height',this.value)"></div>
+        <div><label class="set-label">Weight (lbs)</label><input type="number" id="settingCurrentWeight" step="0.1" min="50" max="400" class="set-input" placeholder="Today" oninput="saveBodySetting('currentWeight',this.value)"></div>
+        <div><label class="set-label">Waist (cm)</label><input type="number" id="settingWaist" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('waist',this.value)"></div>
+        <div><label class="set-label">Chest (cm)</label><input type="number" id="settingChest" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('chest',this.value)"></div>
+        <div><label class="set-label">Hips (cm)</label><input type="number" id="settingHips" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('hips',this.value)"></div>
+        <div><label class="set-label">Arms (cm)</label><input type="number" id="settingArms" step="0.5" min="15" max="80" class="set-input" oninput="saveBodySetting('arms',this.value)"></div>
+        <div><label class="set-label">Thighs (cm)</label><input type="number" id="settingThighs" step="0.5" min="20" max="100" class="set-input" oninput="saveBodySetting('thighs',this.value)"></div>
+      </div>
+      <div id="measurementHistory" style="font-size:12px;color:var(--text3);">Log your first measurements above — history will appear here.</div>
+    </div>
+
+    <!-- PLAN START DATE -->
+    <div class="section-title">Plan dates</div>
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <div class="plan-ref-title">Change plan start date</div>
+      <div style="font-size:12px;color:var(--text2);">Current: <span id="currentStartDate">not set</span></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="date" id="changeStartDateInput" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
+        <button onclick="changeStartDate()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="section-title">Security</div>
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+      <div class="plan-ref-title">Biometric login</div>
+      <div style="font-size:13px;color:var(--text2);" id="passkeyDesc">Use Touch ID or Face ID to unlock the app instantly on supported devices.</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button id="passkeySetupBtn" onclick="setupPasskey()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">Set up Touch ID / Face ID</button>
+        <button onclick="removePasskey()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Remove</button>
+        <span id="passkeySetupMsg" style="font-size:12px;opacity:0;transition:opacity 0.3s;"></span>
+      </div>
+    </div>
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+      <div class="plan-ref-title">Change password</div>
+      <div style="position:relative;max-width:280px;">
+        <input type="password" id="pwCurrent" placeholder="Current password" style="padding:8px 40px 8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;">
+        <button onclick="togglePwVisibility('pwCurrent',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);">👁</button>
+      </div>
+      <div style="position:relative;max-width:280px;">
+        <input type="password" id="pwNew" placeholder="New password" style="padding:8px 40px 8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;">
+        <button onclick="togglePwVisibility('pwNew',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);">👁</button>
+      </div>
+      <div style="position:relative;max-width:280px;">
+        <input type="password" id="pwConfirm" placeholder="Confirm new password" style="padding:8px 40px 8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:100%;">
+        <button onclick="togglePwVisibility('pwConfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);">👁</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="changePassword()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update password</button>
+        <span id="pwChangeMsg" style="font-size:12px;opacity:0;transition:opacity 0.3s;"></span>
+      </div>
+    </div>
+
+  </div>
 
 <script>
 // ─── AUTH ─────────────────────────────────────────────────
@@ -2146,7 +2227,9 @@ function render() {
 }
 
 function calcWeeklyDeficit(weekNum) {
-  const target = getTargetForWeek(weekNum);
+  // Uses maintenance calories for real deficit (actual fat burned),
+  // not the phase calorie target (which is used for the food log remaining tracker)
+  const maintenance = getSetting('maintenance');
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = allData._startDate ? new Date(allData._startDate) : null;
   if (actualStart) actualStart.setHours(0,0,0,0);
@@ -2177,10 +2260,12 @@ function calcWeeklyDeficit(weekNum) {
       ? dd.customBurn
       : (EXERCISE_BURN[act] || 0);
 
-    // Fix #2 — count day if food OR activity logged
     if (consumed > 0 || burned > 0 || act) {
+      // Real deficit = maintenance − (consumed − exercise burn)
+      // Exercise burn is already subtracted from net since it represents
+      // calories burned above baseline maintenance
       const net = consumed - burned;
-      totalDeficit += (target - net);
+      totalDeficit += (maintenance - net);
       daysWithData++;
       if (consumed > 0) daysWithFood++;
     }
@@ -2216,24 +2301,30 @@ function renderProgress() {
     document.getElementById('goal1Pct').textContent = '0% — target ' + g1 + ' lbs';
   }
 
-  // Weekly calorie deficit
+  // Weekly calorie deficit (vs maintenance — real fat burn, not vs eating goal)
+  const maintenance = getSetting('maintenance');
   const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(currentWeek);
-  const defEl = document.getElementById('weeklyDeficit');
+  const defEl  = document.getElementById('weeklyDeficit');
   const defSub = document.getElementById('weeklyDeficitSub');
   if (defEl) {
-    if (daysWithData === 0) {
+    if (!maintenance || maintenance === 2350) {
+      // Default maintenance not customised yet — show a nudge
+      defEl.innerHTML = '— <span>kcal</span>';
+      defEl.style.color = '';
+      if (defSub) defSub.textContent = 'Set maintenance kcal in Settings';
+    } else if (daysWithData === 0) {
       defEl.innerHTML = '— <span>kcal</span>';
       defEl.style.color = '';
       if (defSub) defSub.textContent = 'No data yet this week';
     } else if (totalDeficit >= 0) {
       defEl.innerHTML = totalDeficit.toLocaleString() + ' <span>kcal</span>';
       defEl.style.color = 'var(--green)';
-      const foodNote = daysWithFood === 0 ? ' · no food logged' : '';
-      if (defSub) defSub.textContent = `deficit · ${daysWithData}d logged${foodNote}`;
+      const lbsLost = (totalDeficit / 3500).toFixed(2);
+      if (defSub) defSub.textContent = `real deficit · ~${lbsLost} lbs · ${daysWithData}d`;
     } else {
       defEl.innerHTML = Math.abs(totalDeficit).toLocaleString() + ' <span>kcal</span>';
       defEl.style.color = 'var(--red)';
-      if (defSub) defSub.textContent = `surplus · ${daysWithData}d logged`;
+      if (defSub) defSub.textContent = `surplus vs maintenance · ${daysWithData}d`;
     }
   }
 }
@@ -2566,21 +2657,6 @@ function renderDayDetail(day) {
             <button onclick="renderWorkoutLogPanel('${day}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ log details</button>
           </div>
           <div id="workoutLogPanel_${day}">${renderWorkoutLogSummary(day, dd)}</div>
-        </div>
-
-        <!-- BODY METRICS -->
-        <div class="detail-section" style="grid-column:1/-1;">
-          <div class="detail-label">Body measurements (optional — cm)</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px;">
-            ${['waist','chest','hips','arms','thighs'].map(m => `
-              <div>
-                <label style="font-size:10px;color:var(--text3);text-transform:capitalize;">${m}</label>
-                <input type="number" step="0.1" min="20" max="200" class="cal-num-input" style="width:100%;"
-                  value="${(dd.measurements && dd.measurements[m]) || ''}"
-                  placeholder="cm"
-                  oninput="saveDayMeasurement('${day}','${m}',this.value)">
-              </div>`).join('')}
-          </div>
         </div>
 
         <!-- MOOD / SLEEP / ENERGY -->
@@ -3205,33 +3281,55 @@ function updateSettingsCalcs() {
   const g2disp = document.getElementById('setGoal2disp');
   if (g2disp) g2disp.value = g2 || '';
 
-  // Phase 1 deficit info
+  // Phase 1 projected end weight (based on deficit)
+  let p1ProjectedEnd = null;
   const p1El = document.getElementById('phase1DeficitCalc');
   if (p1El) {
     if (maint && t1 && p1w) {
       const dd = maint - t1;
       const wl = ((dd * 7) / 3500).toFixed(2);
-      const pl = ((dd * 7 * p1w) / 3500).toFixed(1);
-      const pe = (sw - parseFloat(pl)).toFixed(1);
-      p1El.innerHTML = `~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${pe} lbs</strong>`;
+      const pl = (dd * 7 * p1w) / 3500;
+      p1ProjectedEnd = parseFloat((sw - pl).toFixed(1));
+      const matchG1 = g1 ? Math.abs(p1ProjectedEnd - g1) < 1 : true;
+      const warnHtml = (!matchG1 && g1)
+        ? `<span style="color:var(--red);display:block;margin-top:4px;">⚠ Projected end (${p1ProjectedEnd} lbs) doesn't match Goal 1 (${g1} lbs). Adjust calorie target, phase length, or Goal 1.</span>`
+        : '';
+      p1El.innerHTML = `~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${p1ProjectedEnd} lbs</strong>${warnHtml}`;
     } else {
       p1El.textContent = maint ? '' : 'Enter maintenance kcal above to see deficit calc';
     }
   }
 
-  // Phase 2 deficit info
+  // Phase 2 starts from Phase 1's projected end (or Goal 1 if projection not available)
+  const p2Start = p1ProjectedEnd ?? g1 ?? sw;
   const p2El = document.getElementById('phase2DeficitCalc');
   if (p2El) {
     if (maint && t2 && p2w) {
       const dd = maint - t2;
       const wl = ((dd * 7) / 3500).toFixed(2);
-      const pl = ((dd * 7 * p2w) / 3500).toFixed(1);
-      const pe = (g1 - parseFloat(pl)).toFixed(1);
-      p2El.innerHTML = `~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${pe} lbs</strong>`;
+      const pl = (dd * 7 * p2w) / 3500;
+      const p2ProjectedEnd = parseFloat((p2Start - pl).toFixed(1));
+      const matchG2 = g2 ? Math.abs(p2ProjectedEnd - g2) < 1 : true;
+      const warnHtml = (!matchG2 && g2)
+        ? `<span style="color:var(--red);display:block;margin-top:4px;">⚠ Projected end (${p2ProjectedEnd} lbs) doesn't match Goal 2 (${g2} lbs). Adjust calorie target, phase 2 length, or Goal 2.</span>`
+        : '';
+      p2El.innerHTML = `Starting from ${p2Start} lbs · ~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${p2ProjectedEnd} lbs</strong>${warnHtml}`;
     } else {
       p2El.textContent = '';
     }
   }
+
+  // Overall mismatch check
+  let overallWarn = '';
+  if (maint && t1 && t2 && p1w && p2w && sw && g2) {
+    const totalDeficit = ((maint - t1) * 7 * p1w + (maint - t2) * 7 * p2w) / 3500;
+    const projFinalWeight = parseFloat((sw - totalDeficit).toFixed(1));
+    if (Math.abs(projFinalWeight - g2) > 2) {
+      overallWarn = `<div style="color:var(--red);font-size:12px;margin-top:8px;padding:8px 12px;background:var(--red-bg,#fef2f2);border-radius:8px;">⚠ Overall plan mismatch: your calorie targets over ${totalW} weeks project a final weight of <strong>${projFinalWeight} lbs</strong>, but your final goal is <strong>${g2} lbs</strong>. Consider adjusting your phase calorie targets or phase lengths to close this gap.</div>`;
+    }
+  }
+  const warnEl = document.getElementById('settingsOverallWarn');
+  if (warnEl) warnEl.innerHTML = overallWarn;
 
   // Target date calc
   const tdEl  = document.getElementById('setTargetDate');
@@ -3304,27 +3402,106 @@ function showTab(id) {
   if (id === 'calendar') renderCalendar();
   if (id === 'meals') renderMealsTab();
   if (id === 'diet') renderDietTab();
+  if (id === 'settings') renderSettingsTab();
   if (id === 'plan-ref') {
-    const sd = getStartDate();
-    const el = document.getElementById('currentStartDate');
-    if (el) el.textContent = sd ? formatDateFull(sd) : 'not set';
-    const inp = document.getElementById('changeStartDateInput');
-    if (inp && sd) inp.value = allData._startDate;
-    populateSettingsFields();
     renderPlanRef();
-    // Update biometric button label
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const bioLabel = isMobile ? 'Face ID' : 'Touch ID';
-    const passkeyBtn = document.getElementById('passkeySetupBtn');
-    if (passkeyBtn) {
-      const hasKey = !!getStoredCredentialId();
-      passkeyBtn.textContent = hasKey ? `Reset ${bioLabel}` : `Set up ${bioLabel}`;
-    }
-    const passkeyDesc = document.getElementById('passkeyDesc');
-    if (passkeyDesc && !webAuthnSupported()) {
-      passkeyDesc.textContent = 'Biometric login is not supported on this browser or device.';
-    }
   }
+}
+
+// ─── PASSWORD SHOW/HIDE ───────────────────────────────────
+function togglePwVisibility(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  if (inp.type === 'password') {
+    if (!confirm('Show password? Make sure no one can see your screen.')) return;
+    inp.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+// ─── SETTINGS TAB ────────────────────────────────────────
+function saveBodySetting(key, val) {
+  const parsed = parseFloat(val);
+  if (!allData._body) allData._body = {};
+  const today = new Date().toISOString().slice(0, 10);
+  if (!allData._body[today]) allData._body[today] = {};
+  allData._body[today][key] = (val === '' || isNaN(parsed)) ? undefined : parsed;
+  autoPersist();
+  renderMeasurementHistory();
+}
+
+function renderSettingsTab() {
+  // Populate all settings fields
+  populateSettingsFields();
+  updateSettingsCalcs();
+
+  // Start date display
+  const sd = getStartDate();
+  const el = document.getElementById('currentStartDate');
+  if (el) el.textContent = sd ? formatDateFull(sd) : 'not set';
+  const inp = document.getElementById('changeStartDateInput');
+  if (inp && sd) inp.value = allData._startDate;
+
+  // Biometric button label
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const bioLabel = isMobile ? 'Face ID' : 'Touch ID';
+  const passkeyBtn = document.getElementById('passkeySetupBtn');
+  if (passkeyBtn) {
+    const hasKey = !!getStoredCredentialId();
+    passkeyBtn.textContent = hasKey ? `Reset ${bioLabel}` : `Set up ${bioLabel}`;
+  }
+  const passkeyDesc = document.getElementById('passkeyDesc');
+  if (passkeyDesc && !webAuthnSupported()) {
+    passkeyDesc.textContent = 'Biometric login is not supported on this browser or device.';
+  }
+
+  // Body measurements - populate with latest recorded values
+  if (!allData._body) allData._body = {};
+  const dates = Object.keys(allData._body).sort().reverse();
+  const latest = dates.length ? allData._body[dates[0]] : {};
+  ['height','currentWeight','waist','chest','hips','arms','thighs'].forEach(f => {
+    const el = document.getElementById('setting' + f.charAt(0).toUpperCase() + f.slice(1));
+    if (el && latest[f] != null) el.value = latest[f];
+  });
+  renderMeasurementHistory();
+}
+
+function renderMeasurementHistory() {
+  const el = document.getElementById('measurementHistory');
+  if (!el) return;
+  if (!allData._body || Object.keys(allData._body).length === 0) {
+    el.textContent = 'Log your first measurements above — history will appear here.';
+    return;
+  }
+  const dates = Object.keys(allData._body).sort().reverse().slice(0, 8);
+  const fields = ['waist','chest','hips','arms','thighs'];
+  el.innerHTML = `
+    <div style="margin-top:8px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:500;">Date</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;">Height</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;">Weight</th>
+            ${fields.map(f => `<th style="padding:6px 8px;color:var(--text3);font-weight:500;text-transform:capitalize;">${f}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${dates.map(d => {
+            const m = allData._body[d] || {};
+            return `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:6px 8px;color:var(--text2);font-family:var(--mono);font-size:11px;">${d}</td>
+              <td style="padding:6px 8px;text-align:center;color:var(--text);">${m.height ? m.height + ' cm' : '—'}</td>
+              <td style="padding:6px 8px;text-align:center;color:var(--text);">${m.currentWeight ? m.currentWeight + ' lbs' : '—'}</td>
+              ${fields.map(f => `<td style="padding:6px 8px;text-align:center;color:var(--text);">${m[f] ? m[f] + ' cm' : '—'}</td>`).join('')}
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function showWoTab(id, btn) {
@@ -4288,9 +4465,12 @@ function renderCalorie() {
 
   const qRow = document.getElementById('quickAddRow');
   if (qRow) {
-    qRow.innerHTML = getQuickPresets().map(p =>
-      `<button class="quick-btn" onclick="quickAdd('${p.label.replace(/'/g,"\\'")}',${p.kcal},${p.protein})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`
-    ).join('');
+    qRow.innerHTML = getQuickPresets().map(p => {
+      const carbs = p.carbs != null ? p.carbs : 'undefined';
+      const fats  = p.fats  != null ? p.fats  : 'undefined';
+      const sugar = p.sugar != null ? p.sugar  : 'undefined';
+      return `<button class="quick-btn" onclick="quickAdd('${p.label.replace(/'/g,"\\'")}',${p.kcal},${p.protein},${carbs},${fats},${sugar})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`;
+    }).join('');
   }
 
   renderCalEntries();
@@ -4298,6 +4478,15 @@ function renderCalorie() {
   updateCalTotals();
   loadMacroPrefs();
   renderWater();
+}
+
+// Track collapsed meal sections
+const collapsedMeals = new Set();
+
+function toggleMealCollapse(meal) {
+  if (collapsedMeals.has(meal)) collapsedMeals.delete(meal);
+  else collapsedMeals.add(meal);
+  renderCalEntries();
 }
 
 function renderCalEntries() {
@@ -4318,39 +4507,75 @@ function renderCalEntries() {
   container.innerHTML = MEALS.map(meal => {
     const entries = cd[meal] || [];
     if (entries.length === 0) return '';
-    const mealKcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
-    const rows = entries.map((e, i) => {
-      let macroStr = `${e.kcal} kcal · ${e.protein || 0}g protein`;
+    const mealKcal   = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    const collapsed  = collapsedMeals.has(meal);
+
+    const rows = collapsed ? '' : entries.map((e, i) => {
+      let macroStr = `${e.kcal} kcal · ${e.protein || 0}g prot`;
       if (e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
       if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
       if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
       return `
-      <div id="entry_${meal}_${i}" style="border-bottom:1px solid var(--border);padding:7px 0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.name}">${e.name}</div>
-            <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${macroStr}</div>
-          </div>
-          <div style="display:flex;gap:5px;flex-shrink:0;">
-            <button onclick="editCalEntry('${meal}',${i})" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
-            <button onclick="deleteCalEntry('${meal}',${i})" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>
-          </div>
+      <div id="entry_${meal}_${i}" draggable="true"
+        ondragstart="dragStart(event,'${meal}',${i})"
+        ondragover="dragOver(event)"
+        ondrop="dragDrop(event,'${meal}',${i})"
+        ondragend="dragEnd(event)"
+        style="border-bottom:1px solid var(--border);padding:7px 0;cursor:grab;display:flex;align-items:center;gap:8px;">
+        <div style="color:var(--border2);font-size:16px;cursor:grab;padding:0 2px;flex-shrink:0;">⠿</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.name}">${e.name}</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${macroStr}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          <button onclick="editCalEntry('${meal}',${i})" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
+          <button onclick="deleteCalEntry('${meal}',${i})" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>
         </div>
       </div>`;
     }).join('');
 
     return `
     <div style="margin-bottom:10px;">
-      <div class="meal-section-header meal-header-${meal}">
+      <div class="meal-section-header meal-header-${meal}" style="cursor:pointer;" onclick="toggleMealCollapse('${meal}')">
         <span class="meal-section-title">${MEAL_LABELS[meal]}</span>
         <div style="display:flex;align-items:center;gap:8px;">
-          <button onclick="copyMealFromPrevDay('${meal}')" style="font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid currentColor;opacity:0.6;background:none;cursor:pointer;font-family:var(--sans);">copy prev day</button>
+          <button onclick="event.stopPropagation();copyMealFromPrevDay('${meal}')" style="font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid currentColor;opacity:0.6;background:none;cursor:pointer;font-family:var(--sans);">copy prev</button>
           <span class="meal-section-kcal">${mealKcal} kcal</span>
+          <span style="font-size:12px;transition:transform 0.2s;display:inline-block;transform:${collapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">▾</span>
         </div>
       </div>
-      <div>${rows}</div>
+      <div id="mealBody_${meal}" style="display:${collapsed ? 'none' : 'block'}">${rows}</div>
     </div>`;
   }).join('');
+}
+
+// ─── DRAG TO REORDER ──────────────────────────────────────
+let _dragMeal = null, _dragIdx = null;
+
+function dragStart(e, meal, idx) {
+  _dragMeal = meal; _dragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.4';
+}
+function dragEnd(e) {
+  e.currentTarget.style.opacity = '';
+  _dragMeal = null; _dragIdx = null;
+}
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function dragDrop(e, targetMeal, targetIdx) {
+  e.preventDefault();
+  if (_dragMeal === null || _dragIdx === null) return;
+  const cd = getCalData(currentWeek, calDay);
+  // Remove from source
+  const [item] = cd[_dragMeal].splice(_dragIdx, 1);
+  // Insert into target position (same or different meal)
+  cd[targetMeal].splice(targetIdx, 0, item);
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
 }
 
 function editCalEntry(meal, idx) {
@@ -4419,9 +4644,20 @@ function saveCalEntry(meal, idx) {
   updateCalTotals();
 }
 
-function quickAdd(name, kcal, protein) {
+function quickAdd(name, kcal, protein, carbs, fats, sugar) {
+  const raw = prompt(`How many servings of "${name}"?`, '1');
+  if (raw === null) return; // cancelled
+  const servings = parseFloat(raw) || 1;
+  const scale = v => v != null ? Math.round(v * servings * 10) / 10 : undefined;
+  const entry = {
+    name: servings === 1 ? name : `${name} ×${servings}`,
+    kcal: Math.round(kcal * servings),
+    protein: Math.round(protein * servings * 10) / 10,
+    carbs: scale(carbs),
+    fats:  scale(fats),
+    sugar: scale(sugar),
+  };
   const cd = getCalData(currentWeek, calDay);
-  const entry = { name, kcal, protein };
   cd[activeMeal].push(entry);
   logRecentFood(entry);
   autoPersist();
@@ -4441,19 +4677,19 @@ function addCustomEntry() {
     <input type="text" placeholder="Food name..." id="${tempId}_name"
       style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');if(event.key==='Escape')document.getElementById('customEntryRow').remove();">
-    <input type="number" placeholder="kcal *" id="${tempId}_kcal" class="cal-num-input" min="0" max="5000" style="width:72px;"
+    <input type="number" placeholder="kcal *" id="${tempId}_kcal" class="cal-num-input" step="any" min="0" max="5000" style="width:68px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <input type="number" placeholder="protein g *" id="${tempId}_prot" class="cal-num-input" min="0" max="500" style="width:82px;"
+    <input type="number" placeholder="protein g *" id="${tempId}_prot" class="cal-num-input" step="any" min="0" max="500" style="width:76px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <input type="number" placeholder="carbs g" id="${tempId}_carbs" class="cal-num-input" min="0" max="500" style="width:72px;"
+    <input type="number" placeholder="carbs g" id="${tempId}_carbs" class="cal-num-input" step="any" min="0" max="500" style="width:68px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <input type="number" placeholder="fats g" id="${tempId}_fats" class="cal-num-input" min="0" max="500" style="width:68px;"
+    <input type="number" placeholder="fats g" id="${tempId}_fats" class="cal-num-input" step="any" min="0" max="500" style="width:60px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
-    <input type="number" placeholder="sugar g" id="${tempId}_sugar" class="cal-num-input" min="0" max="500" style="width:72px;"
+    <input type="number" placeholder="sugar g" id="${tempId}_sugar" class="cal-num-input" step="any" min="0" max="500" style="width:68px;"
       onkeydown="if(event.key==='Enter')confirmCustomEntry('${tempId}');">
     <button class="save-btn" style="padding:6px 12px;font-size:12px;" onclick="confirmCustomEntry('${tempId}')">Add</button>
     <button onclick="document.getElementById('customEntryRow').remove()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
-    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">* required · carbs, fats, sugar optional — leave blank if unknown · Esc to cancel</div>
+    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">* kcal &amp; protein required · carbs, fats, sugar optional · Esc to cancel</div>
   `;
   container.appendChild(div);
   document.getElementById(tempId + '_name').focus();
@@ -4701,8 +4937,8 @@ function renderHistory() {
           ? (daysWithFood === 0
               ? `<span style="font-size:11px;color:var(--text3);font-family:var(--mono);">no food logged this week</span>`
               : totalDeficit >= 0
-                ? `<span style="font-size:11px;color:var(--green);font-family:var(--mono);">↓ ${totalDeficit.toLocaleString()} kcal deficit</span>`
-                : `<span style="font-size:11px;color:var(--red);font-family:var(--mono);">↑ ${Math.abs(totalDeficit).toLocaleString()} kcal surplus</span>`)
+                ? `<span style="font-size:11px;color:var(--green);font-family:var(--mono);">↓ ${totalDeficit.toLocaleString()} kcal real deficit (~${(totalDeficit/3500).toFixed(2)} lbs)</span>`
+                : `<span style="font-size:11px;color:var(--red);font-family:var(--mono);">↑ ${Math.abs(totalDeficit).toLocaleString()} kcal surplus vs maintenance</span>`)
           : '';
         weightHtml += `<div class="history-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
