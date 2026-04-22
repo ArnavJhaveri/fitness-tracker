@@ -814,9 +814,13 @@
   .meal-tab-btn { font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:all 0.15s; }
   .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent); }
   .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important; }
-  .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px; }
-  .meal-section-title { font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.04em;text-transform:uppercase; }
-  .meal-section-kcal { font-family:var(--mono);font-size:10px;color:var(--text3); }
+  .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;padding:5px 10px;border-radius:6px; }
+  .meal-section-title { font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase; }
+  .meal-section-kcal { font-family:var(--mono);font-size:10px;opacity:0.8; }
+  .meal-header-breakfast { background:#fef3c7;color:#92400e; }
+  .meal-header-lunch     { background:#dbeafe;color:#1e40af; }
+  .meal-header-dinner    { background:#ede9fe;color:#5b21b6; }
+  .meal-header-snacks    { background:#d1fae5;color:#065f46; }
 </style>
 </head>
 <body>
@@ -2912,7 +2916,7 @@ function renderCalEntries() {
 
     return `
     <div style="margin-bottom:10px;">
-      <div class="meal-section-header">
+      <div class="meal-section-header meal-header-${meal}">
         <span class="meal-section-title">${MEAL_LABELS[meal]}</span>
         <span class="meal-section-kcal">${mealKcal} kcal</span>
       </div>
