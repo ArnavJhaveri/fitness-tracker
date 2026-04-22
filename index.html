@@ -814,8 +814,9 @@
   .set-label { font-size:11px;color:var(--text3);display:block;margin-bottom:4px; }
   .set-input { width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none; }
   .set-input:focus { border-color:var(--accent); }
-  .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent); }
-  .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important; }
+  .meal-tab-btn { font-size:12px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);font-weight:500;transition:all 0.15s;white-space:nowrap; }
+  .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent);background:var(--accent-bg,#fdf3ef); }
+  .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important;box-shadow:0 2px 8px rgba(196,80,26,0.25); }
   .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;padding:5px 10px;border-radius:6px; }
   .meal-section-title { font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase; }
   .meal-section-kcal { font-family:var(--mono);font-size:10px;opacity:0.8; }
@@ -1017,14 +1018,12 @@
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Search food database</div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
-          <span style="font-size:12px;color:var(--text2);">Adding to:</span>
-          <div style="display:flex;gap:4px;">
-            <button id="mealBtn_breakfast" onclick="setActiveMeal('breakfast')" class="meal-tab-btn meal-tab-active">Breakfast</button>
-            <button id="mealBtn_lunch" onclick="setActiveMeal('lunch')" class="meal-tab-btn">Lunch</button>
-            <button id="mealBtn_dinner" onclick="setActiveMeal('dinner')" class="meal-tab-btn">Dinner</button>
-            <button id="mealBtn_snacks" onclick="setActiveMeal('snacks')" class="meal-tab-btn">Snacks</button>
-          </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;">Add to:</span>
+          <button id="mealBtn_breakfast" onclick="setActiveMeal('breakfast')" class="meal-tab-btn meal-tab-active">Breakfast</button>
+          <button id="mealBtn_lunch" onclick="setActiveMeal('lunch')" class="meal-tab-btn">Lunch</button>
+          <button id="mealBtn_dinner" onclick="setActiveMeal('dinner')" class="meal-tab-btn">Dinner</button>
+          <button id="mealBtn_snacks" onclick="setActiveMeal('snacks')" class="meal-tab-btn">Snacks</button>
         </div>
         <div style="display:flex;gap:6px;">
           <input type="text" id="foodSearchInput" placeholder="Search for a food — e.g. banana, dal, paneer, greek yoghurt..." style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')searchFood()">
@@ -1134,6 +1133,9 @@
       <div class="sum-stat"><div class="sum-label">Active hours</div><div class="sum-val" id="sumWorkoutHours">0<small>h</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
+      <div class="sum-stat"><div class="sum-label">Avg sleep</div><div class="sum-val" id="sumSleep">—<small>h</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Avg mood</div><div class="sum-val" id="sumMood">—<small>/5</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Avg energy</div><div class="sum-val" id="sumEnergy">—<small>/5</small></div></div>
     </div>
 
     <div style="margin-bottom:14px;">
@@ -2192,6 +2194,12 @@ function renderDays() {
     const dayEntries = dayCal ? MEALS.flatMap(m => dayCal[m] || []).concat(dayCal.entries || []) : [];
     const dayKcal = dayEntries.reduce((s, e) => s + (e.kcal || 0), 0);
     if (dayKcal > 0) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal eaten</span></div>`;
+    if (dd.rpe) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--purple,#7c3aed);"></div><span>RPE ${dd.rpe}/10</span></div>`;
+    if (dd.sleepHrs) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--blue);"></div><span>${dd.sleepHrs}h sleep</span></div>`;
+    if (dd.mood) {
+      const moodEmoji = ['','😞','😕','😐','🙂','😄'][dd.mood];
+      checksHtml += `<div class="check-item"><span>${moodEmoji}</span></div>`;
+    }
 
     card.innerHTML = `
       <div class="day-name" style="${isToday ? 'color:var(--accent);font-weight:500;' : ''}">${day}${isToday ? ' ·today' : ''}</div>
@@ -2217,8 +2225,9 @@ function getBadgeClass(activity) {
   const a = activity.toLowerCase();
   if (a.includes('run') || a.includes('tempo')) return 'badge-run';
   if (a.includes('weights') || a.includes('weight')) return 'badge-weights';
-  if (a.includes('padel')) return 'badge-padel';
+  if (a.includes('padel') || a.includes('sport')) return 'badge-padel';
   if (a.includes('rest')) return 'badge-rest';
+  if (a.includes('walk')) return 'badge-rest';
   return 'badge-core';
 }
 
@@ -2448,14 +2457,19 @@ function injectInlineSession(activity, week) {
 
 function clearDay(day) {
   if (!confirm(`Clear everything logged for ${day}? This cannot be undone.`)) return;
-  getWeekData(currentWeek).days[day] = { activity: '', core: false, backOk: true, notes: '', customBurn: undefined };
+  // Reset all day fields including new ones
+  getWeekData(currentWeek).days[day] = {
+    activity: '', core: false, backOk: true, notes: '',
+    customBurn: undefined, durationMin: undefined,
+    rpe: undefined, mood: undefined, energy: undefined,
+    sleepHrs: undefined, measurements: {}, workoutLog: null,
+  };
   if (getWeekData(currentWeek).calories && getWeekData(currentWeek).calories[day]) {
     const cal = getWeekData(currentWeek).calories[day];
     cal.breakfast=[]; cal.lunch=[]; cal.dinner=[]; cal.snacks=[]; delete cal.entries;
   }
   if (getWeekData(currentWeek).water) getWeekData(currentWeek).water[day] = 0;
   if (getWeekData(currentWeek).diet) delete getWeekData(currentWeek).diet[day];
-  // Clear any in-progress UI
   const existing = document.getElementById('customEntryRow');
   if (existing) existing.remove();
   const picker = document.getElementById('foodServingPicker');
@@ -2891,6 +2905,21 @@ function renderSummary() {
   });
   const avgEl = document.getElementById('sumAvgKcal');
   if (avgEl) avgEl.textContent = foodDays > 0 ? Math.round(totalConsumed / foodDays).toLocaleString() : '—';
+
+  // Wellbeing averages
+  let sleepTotal = 0, sleepDays = 0, moodTotal = 0, moodDays = 0, energyTotal = 0, energyDays = 0;
+  DAYS.forEach(day => {
+    const dd = (wd.days && wd.days[day]) || {};
+    if (dd.sleepHrs)  { sleepTotal  += dd.sleepHrs;  sleepDays++; }
+    if (dd.mood)      { moodTotal   += dd.mood;       moodDays++; }
+    if (dd.energy)    { energyTotal += dd.energy;     energyDays++; }
+  });
+  const sleepEl  = document.getElementById('sumSleep');
+  const moodEl   = document.getElementById('sumMood');
+  const energyEl = document.getElementById('sumEnergy');
+  if (sleepEl)  sleepEl.innerHTML  = sleepDays  ? (sleepTotal/sleepDays).toFixed(1)   + '<small>h</small>'  : '—<small>h</small>';
+  if (moodEl)   moodEl.innerHTML   = moodDays   ? (moodTotal/moodDays).toFixed(1)     + '<small>/5</small>' : '—<small>/5</small>';
+  if (energyEl) energyEl.innerHTML = energyDays ? (energyTotal/energyDays).toFixed(1) + '<small>/5</small>' : '—<small>/5</small>';
 }
 
 // ─── TABS ─────────────────────────────────────────────────
@@ -3227,6 +3256,21 @@ function copyWeekSummary() {
   const notes = wd.weightNote ? `\nWeight note: ${wd.weightNote}` : '';
   const weekNotes = wd.weekNotes ? `\nWeek notes: ${wd.weekNotes}` : '';
 
+  // Workout hours
+  const totalMin = calcWeeklyWorkoutHours(currentWeek);
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  const hoursStr = totalMin > 0 ? `${hh > 0 ? hh + 'h ' : ''}${mm > 0 ? mm + 'm' : ''}`.trim() : 'none logged';
+  const goalH = getSetting('weeklyHoursGoal');
+
+  // Wellbeing averages
+  const wellbeing = DAYS.map(d => (wd.days && wd.days[d]) || {});
+  const sleepDays = wellbeing.filter(d => d.sleepHrs);
+  const moodDays  = wellbeing.filter(d => d.mood);
+  const energyDays= wellbeing.filter(d => d.energy);
+  const avgSleep  = sleepDays.length  ? (sleepDays.reduce((s,d) => s+d.sleepHrs,0) / sleepDays.length).toFixed(1) : null;
+  const avgMood   = moodDays.length   ? (moodDays.reduce((s,d) => s+d.mood,0)     / moodDays.length).toFixed(1) : null;
+  const avgEnergy = energyDays.length ? (energyDays.reduce((s,d) => s+d.energy,0) / energyDays.length).toFixed(1) : null;
+
   const text = [
     `📊 Week ${currentWeek} of ${TOTAL_WEEKS()} — Phase ${phase}`,
     `${dateRange}`,
@@ -3234,11 +3278,15 @@ function copyWeekSummary() {
     `⚖️  Weight: ${wt}  (${lost >= 0 ? '↓' : '↑'} ${Math.abs(lost)} lbs total lost)${notes}`,
     `🔥 Calorie: ${defText}`,
     `🥗 Diet score: ${dietPct}%`,
+    `🏋️  Active: ${hoursStr} of ${goalH}h goal`,
+    avgSleep  ? `😴 Sleep: avg ${avgSleep}h/night` : '',
+    avgMood   ? `😊 Mood: avg ${avgMood}/5` : '',
+    avgEnergy ? `⚡ Energy: avg ${avgEnergy}/5` : '',
     ``,
     `🏃 Activities:`,
     activities || '  None logged',
     weekNotes,
-  ].join('\n');
+  ].filter(l => l !== '').join('\n');
 
   navigator.clipboard.writeText(text).then(() => {
     const msg = document.getElementById('copyMsg');
