@@ -1131,7 +1131,6 @@
       <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
-      <div class="sum-stat"><div class="sum-label">In deficit</div><div class="sum-val" id="sumOnTarget">—</div></div>
     </div>
 
     <div style="margin-bottom:14px;">
@@ -2558,7 +2557,7 @@ function renderSummary() {
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = allData._startDate ? new Date(allData._startDate) : null;
   if (actualStart) actualStart.setHours(0,0,0,0);
-  let totalConsumed = 0, foodDays = 0, onTargetDays = 0;
+  let totalConsumed = 0, foodDays = 0;
   DAYS.forEach((day, i) => {
     const dayDate = getDayDate(currentWeek, i);
     if (!dayDate) return;
@@ -2575,16 +2574,10 @@ function renderSummary() {
     if (consumed > 0) {
       totalConsumed += consumed;
       foodDays++;
-      const dayData = (rawWd.days && rawWd.days[day]) || {};
-      const burned = dayData.customBurn !== undefined ? dayData.customBurn : (EXERCISE_BURN[dayData.activity||''] || 0);
-      const net = consumed - burned;
-      if (net <= target && net >= target * 0.7) onTargetDays++;
     }
   });
   const avgEl = document.getElementById('sumAvgKcal');
-  const otEl = document.getElementById('sumOnTarget');
   if (avgEl) avgEl.textContent = foodDays > 0 ? Math.round(totalConsumed / foodDays).toLocaleString() : '—';
-  if (otEl) otEl.innerHTML = foodDays > 0 ? `${onTargetDays}<small>/${foodDays}</small>` : '—';
 }
 
 // ─── TABS ─────────────────────────────────────────────────
