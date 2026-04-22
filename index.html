@@ -811,7 +811,9 @@
   .cal-today .cal-day-num { color: var(--accent); font-weight: 600; }
   .cal-future { background: var(--surface); border-color: var(--border); opacity: 0.35; cursor: default; }
   .cal-empty { opacity: 0; pointer-events: none; }
-  .meal-tab-btn { font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:all 0.15s; }
+  .set-label { font-size:11px;color:var(--text3);display:block;margin-bottom:4px; }
+  .set-input { width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none; }
+  .set-input:focus { border-color:var(--accent); }
   .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent); }
   .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important; }
   .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;padding:5px 10px;border-radius:6px; }
@@ -1129,6 +1131,7 @@
       <div class="sum-stat"><div class="sum-label">Weights</div><div class="sum-val" id="sumWeights">0<small>/2</small></div></div>
       <div class="sum-stat"><div class="sum-label">Core days</div><div class="sum-val" id="sumCore">0<small>/7</small></div></div>
       <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
+      <div class="sum-stat"><div class="sum-label">Active hours</div><div class="sum-val" id="sumWorkoutHours">0<small>h</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
     </div>
@@ -1427,81 +1430,68 @@
     <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
       <div class="section-title">Settings</div>
 
-      <div class="plan-ref" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;">
-        <div class="plan-ref-title">Goals &amp; targets</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Total plan weeks</label>
-            <input type="number" id="setTotalWeeks" step="1" min="4" max="52"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 1 length (weeks)</label>
-            <input type="number" id="setPhase1Weeks" step="1" min="1" max="51"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Start weight (lbs)</label>
-            <input type="number" id="setStartWeight" step="0.1" min="50" max="400"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Goal 1 (lbs)</label>
-            <input type="number" id="setGoal1" step="0.1" min="50" max="400"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Goal 2 (lbs)</label>
-            <input type="number" id="setGoal2" step="0.1" min="50" max="400"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 1 calorie target (kcal/day)</label>
-            <input type="number" id="setTarget1" step="10" min="1000" max="4000"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Phase 2 calorie target (kcal/day)</label>
-            <input type="number" id="setTarget2" step="10" min="1000" max="4000"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily protein target (g)</label>
-            <input type="number" id="setProteinTarget" step="5" min="20" max="300"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily carbs target (g)</label>
-            <input type="number" id="setCarbTarget" step="10" min="20" max="600"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily fat target (g)</label>
-            <input type="number" id="setFatTarget" step="5" min="10" max="200"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily sugar limit (g)</label>
-            <input type="number" id="setSugarTarget" step="5" min="5" max="150"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
-          </div>
-          <div>
-            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Daily water target (litres)</label>
-            <input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6"
-              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+      <!-- PLAN STRUCTURE -->
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
+        <div class="plan-ref-title">Plan structure</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+          <div><label class="set-label">Total plan weeks</label><input type="number" id="setTotalWeeks" step="1" min="4" max="52" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Start weight (lbs)</label><input type="number" id="setStartWeight" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Final goal weight (lbs)</label><input type="number" id="setGoal2" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+          <div><label class="set-label">Maintenance calories (kcal/day)</label><input type="number" id="setMaintenance" step="50" min="1200" max="5000" class="set-input" placeholder="e.g. 2350" oninput="updateSettingsCalcs()"><div style="font-size:10px;color:var(--text3);margin-top:3px;">Used for deficit calc</div></div>
+        </div>
+
+        <div style="border-left:3px solid var(--accent);padding-left:12px;">
+          <div style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 1</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
+            <div><label class="set-label">Length (weeks)</label><input type="number" id="setPhase1Weeks" step="1" min="1" max="51" class="set-input" oninput="updateSettingsCalcs()"></div>
+            <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget1" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
+            <div><label class="set-label">Goal 1 — end of phase (lbs)</label><input type="number" id="setGoal1" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
+            <div id="phase1DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
           </div>
         </div>
+
+        <div style="border-left:3px solid var(--blue);padding-left:12px;">
+          <div style="font-size:11px;font-weight:600;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 2</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
+            <div><label class="set-label">Length (weeks) <span style="font-weight:400;color:var(--text3);">auto</span></label><input type="number" id="setPhase2Disp" class="set-input" disabled style="opacity:0.55;"></div>
+            <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget2" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
+            <div><label class="set-label">Goal 2 — end of phase (lbs) <span style="font-weight:400;color:var(--text3);">(= final goal)</span></label><input type="number" id="setGoal2disp" class="set-input" disabled style="opacity:0.55;"></div>
+            <div id="phase2DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
+          </div>
+        </div>
+
         <div>
-          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Target date (optional) — auto-calculates required weekly deficit</label>
-          <input type="date" id="setTargetDate"
-            style="width:220px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none;"
-            oninput="updateTargetDateCalc()">
+          <label class="set-label">Target date (optional) — shows required daily deficit to hit Goal 1</label>
+          <input type="date" id="setTargetDate" class="set-input" style="width:200px;" oninput="updateSettingsCalcs()">
           <div id="targetDateCalc" style="font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
-          <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
+      </div>
+
+      <!-- MACRO & HYDRATION -->
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
+        <div class="plan-ref-title">Macro &amp; hydration goals <span style="font-size:11px;font-weight:400;color:var(--text3);">daily targets</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+          <div><label class="set-label">Protein (g)</label><input type="number" id="setProteinTarget" step="5" min="20" max="300" class="set-input"></div>
+          <div><label class="set-label">Carbs (g)</label><input type="number" id="setCarbTarget" step="10" min="20" max="600" class="set-input"></div>
+          <div><label class="set-label">Fat (g)</label><input type="number" id="setFatTarget" step="5" min="10" max="200" class="set-input"></div>
+          <div><label class="set-label">Sugar limit (g)</label><input type="number" id="setSugarTarget" step="5" min="5" max="150" class="set-input"></div>
+          <div><label class="set-label">Water (litres)</label><input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6" class="set-input"></div>
         </div>
+      </div>
+
+      <!-- WORKOUT GOALS -->
+      <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div class="plan-ref-title">Workout goals <span style="font-size:11px;font-weight:400;color:var(--text3);">weekly targets</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
+          <div><label class="set-label">Weekly workout hours target</label><input type="number" id="setWeeklyHoursGoal" step="0.25" min="0.25" max="40" class="set-input" placeholder="e.g. 3"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);">Tracked automatically from logged activity durations on the This Week tab.</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
+        <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
       </div>
 
       <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
@@ -1513,7 +1503,6 @@
         </div>
         <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
       </div>
-
       <div class="section-title" style="margin-top:16px;">Security</div>
       <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;">
         <div class="plan-ref-title">Change password</div>
@@ -1614,7 +1603,7 @@ async function changePassword() {
 
 // ─── STATE ───────────────────────────────────────────────
 // Default values — overridden by user settings stored in allData._settings
-const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, carbTarget: 200, fatTarget: 60, sugarTarget: 40, totalWeeks: 20, phase1Weeks: 10 };
+const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, carbTarget: 200, fatTarget: 60, sugarTarget: 40, totalWeeks: 20, phase1Weeks: 10, maintenance: 2350, weeklyHoursGoal: 3 };
 
 function getSetting(key) {
   return (allData._settings && allData._settings[key] != null) ? allData._settings[key] : DEFAULTS[key];
@@ -2254,7 +2243,12 @@ function renderDayDetail(day) {
   const dayDate = getDayDate(currentWeek, dayIdx);
   const dateLabel = dayDate ? ' · ' + formatDateFull(dayDate) : '';
 
-  const activityOptions = ['Run','Tempo run','Weights A','Weights B','Weights C','Padel (1hr)','Padel (2hr)','Rest','Walk','Rest day + walk'];
+  const activityOptions = [
+    'Run','Tempo run','Incline walk (30min)','Incline walk (45min)','Walk',
+    'Weights A','Weights B','Weights C',
+    'Padel (1hr)','Padel (2hr)','Sport / Other',
+    'Rest','Rest day + walk',
+  ];
   const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
 
   const preloadedBurn = EXERCISE_BURN[dd.activity] || 0;
@@ -2327,6 +2321,82 @@ function renderDayDetail(day) {
           </div>
           <textarea class="notes-input" placeholder="e.g. back a bit tight on run, felt strong in weights..." onchange="saveDayNotes('${day}', this.value)">${dd.notes || ''}</textarea>
         </div>
+
+        <!-- DURATION -->
+        <div class="detail-section">
+          <div class="detail-label">Duration (minutes)</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" class="cal-num-input" id="durationInput_${day}"
+              value="${dd.durationMin || ''}"
+              placeholder="${ACTIVITY_DURATION[dd.activity] || '—'}"
+              min="0" max="360" style="width:72px;"
+              oninput="saveDayDuration('${day}', this.value)">
+            <span style="font-size:12px;color:var(--text3);">min</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+            ${dd.durationMin ? `${dd.durationMin} min logged` : `Est: ${ACTIVITY_DURATION[dd.activity] || '—'} min — enter actual to override`}
+          </div>
+        </div>
+
+        <!-- RPE -->
+        <div class="detail-section">
+          <div class="detail-label">Intensity (RPE 1–10)</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+              <button onclick="saveDayRPE('${day}',${n})" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border2);background:${dd.rpe===n?'var(--accent)':'none'};color:${dd.rpe===n?'white':'var(--text2)'};cursor:pointer;font-size:12px;font-family:var(--mono);">${n}</button>`).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">${dd.rpe ? ['','Easy','Easy','Moderate','Moderate','Hard','Hard','Very hard','Very hard','Max','Max'][dd.rpe] + ` (${dd.rpe}/10)` : 'How hard was it?'}</div>
+        </div>
+
+        <!-- WORKOUT DETAIL LOG -->
+        <div class="detail-section" style="grid-column:1/-1;">
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
+            Workout details
+            <button onclick="renderWorkoutLogPanel('${day}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ log details</button>
+          </div>
+          <div id="workoutLogPanel_${day}">${renderWorkoutLogSummary(day, dd)}</div>
+        </div>
+
+        <!-- BODY METRICS -->
+        <div class="detail-section" style="grid-column:1/-1;">
+          <div class="detail-label">Body measurements (optional — cm)</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px;">
+            ${['waist','chest','hips','arms','thighs'].map(m => `
+              <div>
+                <label style="font-size:10px;color:var(--text3);text-transform:capitalize;">${m}</label>
+                <input type="number" step="0.1" min="20" max="200" class="cal-num-input" style="width:100%;"
+                  value="${(dd.measurements && dd.measurements[m]) || ''}"
+                  placeholder="cm"
+                  oninput="saveDayMeasurement('${day}','${m}',this.value)">
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- MOOD / SLEEP / ENERGY -->
+        <div class="detail-section">
+          <div class="detail-label">Sleep (hours)</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" class="cal-num-input" step="0.5" min="2" max="14" style="width:72px;"
+              value="${dd.sleepHrs || ''}" placeholder="7.5"
+              oninput="saveDaySleep('${day}',this.value)">
+            <span style="font-size:12px;color:var(--text3);">hrs</span>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Mood (1–5)</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            ${['😞','😕','😐','🙂','😄'].map((e,i) => `
+              <button onclick="saveDayMood('${day}',${i+1})" style="font-size:18px;padding:4px 6px;border-radius:6px;border:1px solid ${dd.mood===i+1?'var(--accent)':'var(--border2)'};background:${dd.mood===i+1?'var(--accent-bg)':'none'};cursor:pointer;">${e}</button>`).join('')}
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Energy (1–5)</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            ${[1,2,3,4,5].map(n => `
+              <button onclick="saveDayEnergy('${day}',${n})" style="width:30px;height:30px;border-radius:6px;border:1px solid ${dd.energy===n?'var(--accent)':'var(--border2)'};background:${dd.energy===n?'var(--accent)':'none'};color:${dd.energy===n?'white':'var(--text2)'};cursor:pointer;font-size:13px;font-family:var(--mono);">${n}</button>`).join('')}
+          </div>
+        </div>
+
       </div>
       ${getSessionLinkHTML(dd.activity || planned, currentWeek)}
     </div>
@@ -2451,7 +2521,10 @@ function clearSection(day, section) {
 }
 
 function saveDayActivity(day, val) {
-  getDayData(currentWeek, day).activity = val;
+  const dd = getDayData(currentWeek, day);
+  dd.activity = val;
+  // Reset workout log type if activity type changes
+  if (dd.workoutLog) dd.workoutLog.type = detectWorkoutType(val);
   autoPersist();
   renderSummary();
   renderDays();
@@ -2481,6 +2554,235 @@ function saveDayBackOk(day, val) {
 function saveDayNotes(day, val) {
   getDayData(currentWeek, day).notes = val;
   autoPersist();
+}
+
+// ─── NEW DAY FIELDS ───────────────────────────────────────
+function saveDayDuration(day, val) {
+  const parsed = parseFloat(val);
+  getDayData(currentWeek, day).durationMin = (val === '' || isNaN(parsed)) ? undefined : parsed;
+  autoPersist();
+  renderSummary();
+}
+function saveDayRPE(day, val) {
+  getDayData(currentWeek, day).rpe = val;
+  autoPersist();
+  renderDayDetail(day);
+}
+function saveDayMood(day, val) {
+  getDayData(currentWeek, day).mood = val;
+  autoPersist();
+  renderDayDetail(day);
+}
+function saveDayEnergy(day, val) {
+  getDayData(currentWeek, day).energy = val;
+  autoPersist();
+  renderDayDetail(day);
+}
+function saveDaySleep(day, val) {
+  const parsed = parseFloat(val);
+  getDayData(currentWeek, day).sleepHrs = (val === '' || isNaN(parsed)) ? undefined : parsed;
+  autoPersist();
+}
+function saveDayMeasurement(day, key, val) {
+  const dd = getDayData(currentWeek, day);
+  if (!dd.measurements) dd.measurements = {};
+  const parsed = parseFloat(val);
+  dd.measurements[key] = (val === '' || isNaN(parsed)) ? undefined : parsed;
+  autoPersist();
+}
+
+// ─── WORKOUT DETAIL LOG ───────────────────────────────────
+// Structure: dd.workoutLog = { type:'weights'|'cardio'|'other', entries:[] }
+// Weights entry: { exercise, sets:[{reps,weight}] }
+// Cardio entry:  { distanceKm, durationMin, notes }
+
+function getWorkoutLog(day) {
+  const dd = getDayData(currentWeek, day);
+  if (!dd.workoutLog) dd.workoutLog = { type: detectWorkoutType(dd.activity), entries: [] };
+  return dd.workoutLog;
+}
+
+function detectWorkoutType(activity) {
+  const a = (activity || '').toLowerCase();
+  if (a.includes('weight')) return 'weights';
+  if (a.includes('run') || a.includes('walk') || a.includes('tempo')) return 'cardio';
+  if (a.includes('padel') || a.includes('sport')) return 'sport';
+  return 'other';
+}
+
+function renderWorkoutLogSummary(day, dd) {
+  const log = dd.workoutLog;
+  if (!log || !log.entries || log.entries.length === 0) {
+    return `<div style="font-size:12px;color:var(--text3);padding:4px 0;">No details logged yet.</div>`;
+  }
+  if (log.type === 'weights') {
+    return log.entries.map((ex, i) => {
+      const setsStr = (ex.sets || []).map(s => `${s.reps}×${s.weight}kg`).join(', ');
+      return `<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text);font-weight:500;">${ex.exercise}</span>
+        <span style="color:var(--text3);margin-left:8px;font-family:var(--mono);">${setsStr || 'no sets logged'}</span>
+      </div>`;
+    }).join('');
+  }
+  if (log.type === 'cardio') {
+    const e = log.entries[0] || {};
+    const parts = [];
+    if (e.distanceKm) parts.push(`${e.distanceKm} km`);
+    if (e.durationMin) parts.push(`${e.durationMin} min`);
+    if (e.distanceKm && e.durationMin) {
+      const pace = (e.durationMin / e.distanceKm).toFixed(1);
+      parts.push(`${pace} min/km`);
+    }
+    if (e.notes) parts.push(e.notes);
+    return `<div style="font-size:12px;color:var(--text2);padding:4px 0;">${parts.join(' · ') || 'No details'}</div>`;
+  }
+  if (log.type === 'sport') {
+    const e = log.entries[0] || {};
+    return `<div style="font-size:12px;color:var(--text2);padding:4px 0;">${e.notes || 'No details logged'}</div>`;
+  }
+  return '';
+}
+
+function renderWorkoutLogPanel(day) {
+  const dd = getDayData(currentWeek, day);
+  const log = getWorkoutLog(day);
+  const panel = document.getElementById(`workoutLogPanel_${day}`);
+  if (!panel) return;
+
+  if (log.type === 'weights') {
+    panel.innerHTML = `
+      <div style="margin-top:8px;">
+        ${log.entries.map((ex, ei) => `
+          <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <input type="text" value="${ex.exercise.replace(/"/g,'&quot;')}" placeholder="Exercise name"
+                style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+                onchange="updateExerciseName('${day}',${ei},this.value)">
+              <button onclick="removeExercise('${day}',${ei})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+              ${(ex.sets || []).map((s, si) => `
+                <div style="display:flex;align-items:center;gap:3px;background:var(--surface2);border-radius:6px;padding:4px 8px;">
+                  <input type="number" value="${s.reps}" min="0" max="100" placeholder="reps"
+                    style="width:42px;border:none;background:transparent;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;text-align:center;"
+                    oninput="updateSet('${day}',${ei},${si},'reps',this.value)">
+                  <span style="font-size:10px;color:var(--text3);">×</span>
+                  <input type="number" value="${s.weight}" min="0" max="500" step="0.5" placeholder="kg"
+                    style="width:46px;border:none;background:transparent;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;text-align:center;"
+                    oninput="updateSet('${day}',${ei},${si},'weight',this.value)">
+                  <span style="font-size:10px;color:var(--text3);">kg</span>
+                  <button onclick="removeSet('${day}',${ei},${si})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;margin-left:2px;">×</button>
+                </div>`).join('')}
+              <button onclick="addSet('${day}',${ei})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;">+ set</button>
+            </div>
+          </div>`).join('')}
+        <button onclick="addExercise('${day}')" style="width:100%;padding:8px;border-radius:8px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);font-size:12px;">+ add exercise</button>
+      </div>`;
+  } else if (log.type === 'cardio') {
+    const e = log.entries[0] || {};
+    panel.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;align-items:flex-end;">
+        <div><label class="set-label">Distance (km)</label>
+          <input type="number" step="0.1" min="0" max="200" class="cal-num-input" style="width:80px;"
+            value="${e.distanceKm || ''}" placeholder="0.0"
+            oninput="updateCardioLog('${day}','distanceKm',this.value)"></div>
+        <div><label class="set-label">Duration (min)</label>
+          <input type="number" step="1" min="0" max="600" class="cal-num-input" style="width:80px;"
+            value="${e.durationMin || ''}" placeholder="0"
+            oninput="updateCardioLog('${day}','durationMin',this.value)"></div>
+        <div id="cardioCalcDisplay_${day}" style="font-size:12px;color:var(--text2);padding-bottom:2px;">${e.distanceKm && e.durationMin ? `${(e.durationMin/e.distanceKm).toFixed(1)} min/km` : ''}</div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="set-label">Notes</label>
+        <input type="text" class="set-input" value="${(e.notes||'').replace(/"/g,'&quot;')}" placeholder="e.g. felt strong, humid, new route..."
+          oninput="updateCardioLog('${day}','notes',this.value)">
+      </div>`;
+  } else {
+    panel.innerHTML = `
+      <div style="margin-top:8px;">
+        <label class="set-label">Notes</label>
+        <input type="text" class="set-input" value="${((log.entries[0]||{}).notes||'').replace(/"/g,'&quot;')}" placeholder="e.g. 2hr padel session, intense..."
+          oninput="updateSportLog('${day}','notes',this.value)">
+      </div>`;
+  }
+}
+
+function addExercise(day) {
+  const log = getWorkoutLog(day);
+  log.entries.push({ exercise: '', sets: [{ reps: '', weight: '' }] });
+  autoPersist();
+  renderWorkoutLogPanel(day);
+}
+function removeExercise(day, ei) {
+  const log = getWorkoutLog(day);
+  log.entries.splice(ei, 1);
+  autoPersist();
+  renderWorkoutLogPanel(day);
+  renderWorkoutLogPanelSummary(day);
+}
+function updateExerciseName(day, ei, val) {
+  getWorkoutLog(day).entries[ei].exercise = val;
+  autoPersist();
+}
+function addSet(day, ei) {
+  const log = getWorkoutLog(day);
+  const lastSet = log.entries[ei].sets.slice(-1)[0] || { reps: '', weight: '' };
+  log.entries[ei].sets.push({ reps: lastSet.reps, weight: lastSet.weight });
+  autoPersist();
+  renderWorkoutLogPanel(day);
+}
+function removeSet(day, ei, si) {
+  const log = getWorkoutLog(day);
+  log.entries[ei].sets.splice(si, 1);
+  autoPersist();
+  renderWorkoutLogPanel(day);
+}
+function updateSet(day, ei, si, field, val) {
+  const set = getWorkoutLog(day).entries[ei].sets[si];
+  set[field] = val === '' ? '' : parseFloat(val);
+  autoPersist();
+}
+function updateCardioLog(day, field, val) {
+  const log = getWorkoutLog(day);
+  if (!log.entries[0]) log.entries.push({});
+  log.entries[0][field] = field === 'notes' ? val : (val === '' ? undefined : parseFloat(val));
+  autoPersist();
+  const calc = document.getElementById(`cardioCalcDisplay_${day}`);
+  if (calc) {
+    const e = log.entries[0];
+    calc.textContent = e.distanceKm && e.durationMin
+      ? `${(e.durationMin / e.distanceKm).toFixed(1)} min/km`
+      : '';
+  }
+}
+function updateSportLog(day, field, val) {
+  const log = getWorkoutLog(day);
+  if (!log.entries[0]) log.entries.push({});
+  log.entries[0][field] = val;
+  autoPersist();
+}
+function renderWorkoutLogPanelSummary(day) {
+  const dd = getDayData(currentWeek, day);
+  const panel = document.getElementById(`workoutLogPanel_${day}`);
+  if (panel) panel.innerHTML = renderWorkoutLogSummary(day, dd);
+}
+
+// ─── WEEKLY HOURS CALCULATION ─────────────────────────────
+function calcWeeklyWorkoutHours(weekNum) {
+  const wd = peekWeekData(weekNum);
+  if (!wd) return 0;
+  let totalMin = 0;
+  DAYS.forEach(day => {
+    const dd = (wd.days && wd.days[day]) || {};
+    const act = dd.activity || '';
+    if (!act || act === 'Rest') return;
+    // Use logged duration first, then estimate
+    const dur = dd.durationMin !== undefined
+      ? dd.durationMin
+      : (ACTIVITY_DURATION[act] || 0);
+    totalMin += dur;
+  });
+  return totalMin;
 }
 
 let dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
@@ -2549,6 +2851,17 @@ function renderSummary() {
   document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (ph === 1 ? '2' : '3') + '</small>';
   document.getElementById('sumCore').innerHTML = core + '<small>/7</small>';
   document.getElementById('sumPadel').textContent = padel;
+
+  // Workout hours
+  const totalMin = calcWeeklyWorkoutHours(currentWeek);
+  const goalMin  = getSetting('weeklyHoursGoal') * 60;
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  const hoursStr = hh > 0 ? `${hh}h${mm > 0 ? mm + 'm' : ''}` : (mm > 0 ? `${mm}m` : '0h');
+  const hoursEl = document.getElementById('sumWorkoutHours');
+  if (hoursEl) {
+    hoursEl.innerHTML = `${hoursStr}<small>/${getSetting('weeklyHoursGoal')}h</small>`;
+    hoursEl.style.color = (goalMin > 0 && totalMin >= goalMin) ? 'var(--green)' : '';
+  }
   const pct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
   document.getElementById('sumDiet').innerHTML = pct + '<small>%</small>';
 
@@ -2582,55 +2895,56 @@ function renderSummary() {
 
 // ─── TABS ─────────────────────────────────────────────────
 function saveAllSettings() {
+  const gv = id => { const el = document.getElementById(id); return el ? el.value : ''; };
   const fields = {
-    totalWeeks:    parseInt(document.getElementById('setTotalWeeks').value),
-    phase1Weeks:   parseInt(document.getElementById('setPhase1Weeks').value),
-    startWeight:   parseFloat(document.getElementById('setStartWeight').value),
-    goal1:         parseFloat(document.getElementById('setGoal1').value),
-    goal2:         parseFloat(document.getElementById('setGoal2').value),
-    dailyTarget1:  parseInt(document.getElementById('setTarget1').value),
-    dailyTarget2:  parseInt(document.getElementById('setTarget2').value),
-    proteinTarget: parseInt(document.getElementById('setProteinTarget').value),
-    carbTarget:    parseInt(document.getElementById('setCarbTarget').value),
-    fatTarget:     parseInt(document.getElementById('setFatTarget').value),
-    sugarTarget:   parseInt(document.getElementById('setSugarTarget').value),
-    waterTargetL:  parseFloat(document.getElementById('setWaterTarget').value),
+    totalWeeks:      parseInt(gv('setTotalWeeks')),
+    phase1Weeks:     parseInt(gv('setPhase1Weeks')),
+    startWeight:     parseFloat(gv('setStartWeight')),
+    goal1:           parseFloat(gv('setGoal1')),
+    goal2:           parseFloat(gv('setGoal2')),
+    dailyTarget1:    parseInt(gv('setTarget1')),
+    dailyTarget2:    parseInt(gv('setTarget2')),
+    maintenance:     parseInt(gv('setMaintenance')),
+    proteinTarget:   parseInt(gv('setProteinTarget')),
+    carbTarget:      parseInt(gv('setCarbTarget')),
+    fatTarget:       parseInt(gv('setFatTarget')),
+    sugarTarget:     parseInt(gv('setSugarTarget')),
+    waterTargetL:    parseFloat(gv('setWaterTarget')),
+    weeklyHoursGoal: parseFloat(gv('setWeeklyHoursGoal')),
   };
-  // Validate phase1Weeks < totalWeeks
   if (!isNaN(fields.phase1Weeks) && !isNaN(fields.totalWeeks) && fields.phase1Weeks >= fields.totalWeeks) {
-    alert('Phase 1 length must be less than total weeks.');
-    return;
+    alert('Phase 1 length must be less than total weeks.'); return;
   }
-  // Save target date if set
   const tdEl = document.getElementById('setTargetDate');
   if (tdEl && tdEl.value) allData._targetDate = tdEl.value;
-  else if (tdEl && !tdEl.value) delete allData._targetDate;
-
+  else if (tdEl) delete allData._targetDate;
   if (!allData._settings) allData._settings = {};
   Object.entries(fields).forEach(([k, v]) => { if (!isNaN(v) && v > 0) allData._settings[k] = v; });
   autoPersist();
-  // Clamp currentWeek within new total
   if (currentWeek > TOTAL_WEEKS()) currentWeek = TOTAL_WEEKS();
   render();
   renderPlanRef();
+  updateSettingsCalcs();
   const msg = document.getElementById('settingsSaveMsg');
   if (msg) { msg.textContent = 'Settings saved ✓'; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3000); }
 }
 
 function populateSettingsFields() {
   const map = {
-    setTotalWeeks:    'totalWeeks',
-    setPhase1Weeks:   'phase1Weeks',
-    setStartWeight:   'startWeight',
-    setGoal1:         'goal1',
-    setGoal2:         'goal2',
-    setTarget1:       'dailyTarget1',
-    setTarget2:       'dailyTarget2',
-    setProteinTarget: 'proteinTarget',
-    setCarbTarget:    'carbTarget',
-    setFatTarget:     'fatTarget',
-    setSugarTarget:   'sugarTarget',
-    setWaterTarget:   'waterTargetL',
+    setTotalWeeks:     'totalWeeks',
+    setPhase1Weeks:    'phase1Weeks',
+    setStartWeight:    'startWeight',
+    setGoal1:          'goal1',
+    setGoal2:          'goal2',
+    setTarget1:        'dailyTarget1',
+    setTarget2:        'dailyTarget2',
+    setMaintenance:    'maintenance',
+    setProteinTarget:  'proteinTarget',
+    setCarbTarget:     'carbTarget',
+    setFatTarget:      'fatTarget',
+    setSugarTarget:    'sugarTarget',
+    setWaterTarget:    'waterTargetL',
+    setWeeklyHoursGoal:'weeklyHoursGoal',
   };
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
@@ -2638,36 +2952,76 @@ function populateSettingsFields() {
   });
   const tdEl = document.getElementById('setTargetDate');
   if (tdEl) tdEl.value = allData._targetDate || '';
-  updateTargetDateCalc();
+  updateSettingsCalcs();
 }
 
-function updateTargetDateCalc() {
-  const el = document.getElementById('targetDateCalc');
-  if (!el) return;
-  const tdEl = document.getElementById('setTargetDate');
-  if (!tdEl || !tdEl.value) { el.textContent = ''; return; }
+function updateSettingsCalcs() {
+  const gv  = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const gi  = id => parseInt(document.getElementById(id)?.value)   || 0;
+  const totalW = gi('setTotalWeeks')  || getSetting('totalWeeks');
+  const p1w    = gi('setPhase1Weeks') || getSetting('phase1Weeks');
+  const p2w    = Math.max(0, totalW - p1w);
+  const sw     = gv('setStartWeight') || START_WEIGHT();
+  const g1     = gv('setGoal1')       || GOAL1();
+  const g2     = gv('setGoal2')       || GOAL2();
+  const t1     = gi('setTarget1')     || DAILY_TARGET();
+  const t2     = gi('setTarget2')     || DAILY_TARGET2();
+  const maint  = gi('setMaintenance') || getSetting('maintenance');
 
-  const start = getStartDate();
-  if (!start) { el.textContent = 'Set your plan start date first.'; return; }
+  // Read-only display fields
+  const p2disp = document.getElementById('setPhase2Disp');
+  if (p2disp) p2disp.value = p2w || '';
+  const g2disp = document.getElementById('setGoal2disp');
+  if (g2disp) g2disp.value = g2 || '';
 
-  const target = new Date(tdEl.value);
-  target.setHours(0,0,0,0);
-  const today = new Date(); today.setHours(0,0,0,0);
+  // Phase 1 deficit info
+  const p1El = document.getElementById('phase1DeficitCalc');
+  if (p1El) {
+    if (maint && t1 && p1w) {
+      const dd = maint - t1;
+      const wl = ((dd * 7) / 3500).toFixed(2);
+      const pl = ((dd * 7 * p1w) / 3500).toFixed(1);
+      const pe = (sw - parseFloat(pl)).toFixed(1);
+      p1El.innerHTML = `~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${pe} lbs</strong>`;
+    } else {
+      p1El.textContent = maint ? '' : 'Enter maintenance kcal above to see deficit calc';
+    }
+  }
 
-  const weeksFromNow = Math.round((target - today) / (7 * 24 * 60 * 60 * 1000));
-  const weeksFromStart = Math.round((target - start) / (7 * 24 * 60 * 60 * 1000));
+  // Phase 2 deficit info
+  const p2El = document.getElementById('phase2DeficitCalc');
+  if (p2El) {
+    if (maint && t2 && p2w) {
+      const dd = maint - t2;
+      const wl = ((dd * 7) / 3500).toFixed(2);
+      const pl = ((dd * 7 * p2w) / 3500).toFixed(1);
+      const pe = (g1 - parseFloat(pl)).toFixed(1);
+      p2El.innerHTML = `~${dd.toLocaleString()} kcal/day deficit · ~${wl} lbs/wk · projected end: <strong>${pe} lbs</strong>`;
+    } else {
+      p2El.textContent = '';
+    }
+  }
 
-  if (weeksFromNow < 1) { el.textContent = 'Target date must be in the future.'; el.style.color = 'var(--red)'; return; }
-  el.style.color = 'var(--text2)';
-
-  const g1 = parseFloat(document.getElementById('setGoal1')?.value) || GOAL1();
-  const sw = parseFloat(document.getElementById('setStartWeight')?.value) || START_WEIGHT();
-  const totalLoss = sw - g1;
-  const weeklyLoss = weeksFromStart > 0 ? (totalLoss / weeksFromStart).toFixed(2) : '—';
-  const dailyDeficit = weeksFromStart > 0 ? Math.round((totalLoss * 3500) / (weeksFromStart * 7)) : '—';
-
-  el.textContent = `${weeksFromNow} weeks away · ~${weeklyLoss} lbs/week · ~${dailyDeficit} kcal/day deficit needed to reach Goal 1`;
+  // Target date calc
+  const tdEl  = document.getElementById('setTargetDate');
+  const calcEl = document.getElementById('targetDateCalc');
+  if (calcEl) {
+    if (!tdEl || !tdEl.value) { calcEl.textContent = ''; return; }
+    const startD = getStartDate();
+    if (!startD) { calcEl.textContent = 'Set plan start date first.'; return; }
+    const tgt   = new Date(tdEl.value); tgt.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const wfn   = Math.round((tgt - today)   / (7*24*60*60*1000));
+    const wfs   = Math.round((tgt - startD)  / (7*24*60*60*1000));
+    if (wfn < 1) { calcEl.textContent = 'Target date must be in the future.'; calcEl.style.color = 'var(--red)'; return; }
+    calcEl.style.color = 'var(--text2)';
+    const loss = sw - g1;
+    const wl   = wfs > 0 ? (loss / wfs).toFixed(2) : '—';
+    const dd   = wfs > 0 ? Math.round((loss * 3500) / (wfs * 7)) : '—';
+    calcEl.textContent = `${wfn} weeks away · ~${wl} lbs/week · ~${dd} kcal/day deficit needed to hit Goal 1`;
+  }
 }
+
 
 function renderPlanRef() {
   const sw = START_WEIGHT(), g1 = GOAL1(), g2 = GOAL2();
@@ -3516,12 +3870,37 @@ function saveQuickPresets(presets) {
 }
 
 // Exercise calorie estimates
+// Default calorie burn estimates — overridden by customBurn (watch reading)
 const EXERCISE_BURN = {
-  'Run': 320, 'Tempo run': 380, 'Weights A': 220, 'Weights B': 220,
-  'Weights C': 220, 'Padel (1hr)': 500, 'Padel (2hr)': 950,
-  'Rest': 0, 'Walk': 160, 'Rest day + walk': 160,
+  'Run': 320, 'Tempo run': 380,
   'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
+  'Walk': 160, 'Rest day + walk': 160,
+  'Weights A': 220, 'Weights B': 220, 'Weights C': 220,
+  'Padel (1hr)': 500, 'Padel (2hr)': 950,
+  'Sport / Other': 300,
+  'Rest': 0,
 };
+
+// Default duration estimates in minutes
+const ACTIVITY_DURATION = {
+  'Run': 35, 'Tempo run': 40,
+  'Incline walk (30min)': 30, 'Incline walk (45min)': 45,
+  'Walk': 30, 'Rest day + walk': 30,
+  'Weights A': 55, 'Weights B': 55, 'Weights C': 55,
+  'Padel (1hr)': 60, 'Padel (2hr)': 120,
+  'Sport / Other': 60,
+  'Rest': 0,
+};
+
+// Strava activity type → app activity mapping
+function mapStravaActivity(stravaType) {
+  const t = (stravaType || '').toLowerCase();
+  if (t.includes('run'))                        return 'Run';
+  if (t.includes('walk'))                       return 'Walk';
+  if (t.includes('weight') || t.includes('strength')) return 'Weights A';
+  if (t.includes('padel') || t.includes('tennis') || t.includes('squash') || t.includes('sport')) return 'Padel (1hr)';
+  return 'Sport / Other';
+}
 
 let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 let activeMeal = 'breakfast';
