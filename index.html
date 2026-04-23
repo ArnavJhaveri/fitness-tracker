@@ -270,6 +270,7 @@
   .badge-weights { background: var(--blue-bg); color: var(--blue); }
   .badge-padel { background: var(--purple-bg); color: var(--purple); }
   .badge-rest { background: var(--surface2); color: var(--text3); }
+  .badge-walk { background: var(--amber-bg); color: var(--amber); }
   .badge-core { background: var(--amber-bg); color: var(--amber); }
   .badge-empty { background: var(--surface2); color: var(--text3); }
 
@@ -813,10 +814,19 @@
   .cal-workout { background: var(--green-bg); border-color: #9FE1CB; }
   .cal-workout .cal-day-num { color: var(--green); }
   .cal-workout .cal-day-tag { color: #0F6E56; }
-  .cal-padel { background: var(--blue-bg); border-color: #B5D4F4; }
-  .cal-padel .cal-day-num { color: var(--blue); }
+  .cal-run { background: var(--green-bg); border-color: #9FE1CB; }
+  .cal-run .cal-day-num { color: var(--green); }
+  .cal-run .cal-day-tag { color: #0F6E56; }
+  .cal-weights { background: var(--blue-bg); border-color: #B5D4F4; }
+  .cal-weights .cal-day-num { color: var(--blue); }
+  .cal-weights .cal-day-tag { color: var(--blue); }
+  .cal-padel { background: var(--purple-bg); border-color: #c4b5fd; }
+  .cal-padel .cal-day-num { color: var(--purple); }
   .cal-rest { background: var(--surface2); border-color: var(--border); }
   .cal-rest .cal-day-num { color: var(--text3); }
+  .cal-walk { background: var(--amber-bg); border-color: #fbbf24; }
+  .cal-walk .cal-day-num { color: var(--amber); }
+  .cal-walk .cal-day-tag { color: var(--amber); }
   .cal-skipped { background: var(--red-bg); border-color: #F7C1C1; }
   .cal-skipped .cal-day-num { color: var(--red); }
   .cal-today { border-color: var(--accent) !important; border-width: 2px !important; }
@@ -999,14 +1009,6 @@
       </div>
     </div>
 
-    <!-- DAYS -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="section-title" style="margin-bottom:0;">Daily log — click a day to log details</div>
-      <div style="display:flex;align-items:center;gap:8px;" id="inlineWeekNav"></div>
-    </div>
-    <div class="days-grid" id="daysGrid"></div>
-    <div id="dayDetail" style="display:none"></div>
-
     <!-- GLOBAL DAY SELECTOR -->
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
       <div style="font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;">View day:</div>
@@ -1019,8 +1021,16 @@
         <button id="globalDay_Sat" onclick="setGlobalDay('Sat')" class="global-day-btn">Sat</button>
         <button id="globalDay_Sun" onclick="setGlobalDay('Sun')" class="global-day-btn">Sun</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);flex:1;text-align:right;">Syncs diet + calorie sections · each section still has its own day selector</div>
+      <div style="font-size:11px;color:var(--text3);">Selects the active day across all sections</div>
     </div>
+
+    <!-- DAYS -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="section-title" style="margin-bottom:0;">Daily log — click a day to log details</div>
+      <div style="display:flex;align-items:center;gap:8px;" id="inlineWeekNav"></div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+    <div id="dayDetail" style="display:none"></div>
 
     <!-- DIET CHECKLIST -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1192,51 +1202,25 @@
       <div class="sum-stat"><div class="sum-label">Avg energy</div><div class="sum-val" id="sumEnergy">—<small>/5</small></div></div>
     </div>
 
-    <!-- TDEE NUDGE -->
+    <!-- NUDGE BANNERS -->
     <div id="nudgeTdee" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696;&#xfe0f; Time to update your maintenance calories</div>
-        <div style="font-size:12px;color:var(--text2);" id="nudgeTdeeMsg">You&apos;ve lost significant weight since your maintenance was last set. Your TDEE has likely dropped &mdash; recalculate for accurate deficit tracking.</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
-        <button onclick="showTab('settings');dismissNudge('nudgeTdee',14);" style="padding:6px 14px;border-radius:8px;border:none;background:var(--blue);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;white-space:nowrap;">Update in Settings &rarr;</button>
-        <button onclick="dismissNudge('nudgeTdee',14)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Dismiss</button>
-      </div>
+      <div style="flex:1;min-width:200px;"><div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696; Time to update your maintenance calories</div><div style="font-size:12px;color:var(--text2);" id="nudgeTdeeMsg"></div></div>
+      <div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="showTab('settings');dismissNudge('nudgeTdee',14);" style="padding:6px 14px;border-radius:8px;border:none;background:var(--blue);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Update in Settings &rarr;</button><button onclick="dismissNudge('nudgeTdee',14)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Dismiss</button></div>
     </div>
-
-    <!-- PROTEIN NUDGE -->
     <div id="nudgeProtein" style="display:none;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:2px;">&#x1f969; Protein target missed most days</div>
-        <div style="font-size:12px;color:var(--text2);" id="nudgeProteinMsg"></div>
-      </div>
+      <div style="flex:1;min-width:200px;"><div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:2px;">&#x1f969; Protein target missed most days</div><div style="font-size:12px;color:var(--text2);" id="nudgeProteinMsg"></div></div>
       <button onclick="dismissNudge('nudgeProtein',7)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Dismiss</button>
     </div>
-
-    <!-- PACE NUDGE -->
     <div id="nudgePace" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;" id="nudgePaceTitle">&#x1f4ca; Pace check</div>
-        <div style="font-size:12px;color:var(--text2);" id="nudgePaceMsg"></div>
-      </div>
+      <div style="flex:1;min-width:200px;"><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;" id="nudgePaceTitle">&#x1f4ca; Pace check</div><div style="font-size:12px;color:var(--text2);" id="nudgePaceMsg"></div></div>
       <button onclick="dismissNudge('nudgePace',14)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Dismiss</button>
     </div>
-
-    <!-- MONDAY WEIGH-IN NUDGE -->
     <div id="nudgeWeighIn" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696;&#xfe0f; Monday weigh-in</div>
-        <div style="font-size:12px;color:var(--text2);">It&apos;s Monday &mdash; don&apos;t forget to log your weight before eating. Same time, same conditions every week gives the most accurate trend.</div>
-      </div>
+      <div style="flex:1;min-width:200px;"><div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696; Monday weigh-in</div><div style="font-size:12px;color:var(--text2);">Don&apos;t forget to log your weight before eating. Same time, same conditions every week.</div></div>
       <button onclick="dismissNudge('nudgeWeighIn',1)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Got it</button>
     </div>
-
-    <!-- WATER NUDGE -->
     <div id="nudgeWater" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x1f4a7; Water intake low today</div>
-        <div style="font-size:12px;color:var(--text2);" id="nudgeWaterMsg">You&apos;re under halfway to your daily water target. Dehydration mimics hunger and makes it harder to stay on your calorie target.</div>
-      </div>
+      <div style="flex:1;min-width:200px;"><div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x1f4a7; Water intake low today</div><div style="font-size:12px;color:var(--text2);" id="nudgeWaterMsg"></div></div>
       <button onclick="dismissNudge('nudgeWater',1)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Got it</button>
     </div>
 
@@ -1332,10 +1316,11 @@
   <div id="calendar" class="tab-panel">
     <div class="section-title">20-week plan calendar</div>
     <div id="calendarLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid var(--green);"></div>Workout</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Padel</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid var(--green);"></div>Run</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Weights</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid var(--purple);"></div>Padel</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid var(--amber);"></div>Today</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid var(--red);"></div>Skipped</div>
     </div>
     <div id="calendarGrid"></div>
@@ -1349,7 +1334,7 @@
       <button class="wo-tab" onclick="showWoTab('wo-p2a',this)">Phase 2 — Session A</button>
       <button class="wo-tab" onclick="showWoTab('wo-p2b',this)">Phase 2 — Session B</button>
       <button class="wo-tab" onclick="showWoTab('wo-p2c',this)">Phase 2 — Session C</button>
-      <button class="wo-tab" onclick="showWoTab('wo-running',this)">Running</button>
+      <button class="wo-tab" onclick="showWoTab('wo-running',this)">Running &amp; Walking</button>
       <button class="wo-tab" onclick="showWoTab('wo-core',this)">Daily core</button>
     </div>
 
@@ -1391,7 +1376,7 @@
           <thead><tr><th>Type</th><th>Duration</th><th>Settings</th><th>Notes</th></tr></thead>
           <tbody>
             <tr><td><div class="ex-n">Incline walk (30 min)</div></td><td><div class="ex-s">30 min</div></td><td><div class="ex-s">10–12% incline · 5–6 km/h</div></td><td><div class="ex-note-text">Burns ~300 kcal with zero impact on joints or recovery. Good substitute on days when legs are heavy from running. Don't hold the rails — let your legs and glutes do the work.</div><span class="tag-safe">Back-safe</span></td></tr>
-            <tr><td><div class="ex-n">Incline walk (45 min)</div></td><td><div class="ex-s">45 min</div></td><td><div class="ex-s">10–12% incline · 5–6 km/h</div></td><td><div class="ex-note-text">Extended session. Use on rest day + walk days when you want extra calorie burn without stress on joints. Excellent for fat loss without muscle breakdown.</div><span class="tag-safe">Back-safe</span></td></tr>
+            <tr><td><div class="ex-n">Incline walk (45 min)</div></td><td><div class="ex-s">45 min</div></td><td><div class="ex-s">10–12% incline · 5–6 km/h</div></td><td><div class="ex-note-text">Extended session. Use on walk days when you want extra calorie burn without stress on joints. Excellent for fat loss without muscle breakdown.</div><span class="tag-safe">Back-safe</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -1552,7 +1537,7 @@
       <div class="plan-ref-title">Weekly training</div>
       <strong>Mon/Wed/Sat:</strong> Easy run (25–35 min, building to 5km by wk 8)<br>
       <strong>Tue/Fri:</strong> Upper body weights — Session A (push) and Session B (pull)<br>
-      <strong>Thu:</strong> Rest + 20–30 min brisk walk<br>
+      <strong>Thu:</strong> Walk (20–30 min brisk walk or incline treadmill)<br>
       <strong>Sun:</strong> Full rest<br>
       <strong>Every day:</strong> 10 min core routine (dead bug, bird dog, glute bridge, plank, cat-cow)
     </div>
@@ -2062,7 +2047,7 @@ function getTargetForWeek(weekNum) {
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-const PHASE1_PLAN = ['Run','Weights A','Run','Rest','Weights B','Run','Rest'];
+const PHASE1_PLAN = ['Run','Weights A','Run','Walk','Weights B','Run','Rest'];
 const PHASE2_PLAN = ['Run','Weights A','Tempo','Weights B','Run','Weights C','Rest'];
 
 const DEFAULT_DIET_RULES = [
@@ -2363,28 +2348,28 @@ function calcStreak() {
 // ─── WEEK NAV ────────────────────────────────────────────
 function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
-  selectedDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  selectedDay = null;
   dietDayManuallySet = false;
   collapsedMeals.clear();
-  calDay = selectedDay;
+  calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   render();
 }
 
 function changeWeek(dir) {
+  // Remember panel state and which day was active BEFORE changing week
+  const panelWasOpen  = selectedDay !== null;
+  const activeDay     = selectedDay || calDay; // the day we were viewing
+
   currentWeek = Math.max(1, Math.min(TOTAL_WEEKS(), currentWeek + dir));
   dietDayManuallySet = false;
   collapsedMeals.clear();
-  const cwk = getCurrentWeekFromDate();
-  const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
-  if (currentWeek === cwk) {
-    // Current week — keep today selected
-    calDay = todayName;
-    selectedDay = todayName;
-  } else {
-    // Past/future week — keep whichever day was selected (or Mon as fallback)
-    if (!selectedDay) selectedDay = 'Mon';
-    calDay = selectedDay;
-  }
+
+  // Always keep the same day across week navigation — never snap to today
+  // The panel stays open/closed exactly as it was
+  calDay      = activeDay;
+  dietDay     = activeDay;
+  selectedDay = panelWasOpen ? activeDay : null;
+
   render();
 }
 
@@ -2415,17 +2400,24 @@ function render() {
   if (ls) ls.textContent = streak.longest;
 
   renderWeight();
-  // On current week, always default to today if nothing selected
-  const _todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  // Auto-open today when on the current week
+  const _today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   if (currentWeek === getCurrentWeekFromDate() && !selectedDay) {
-    selectedDay = _todayName;
-    calDay = _todayName;
-    dietDay = _todayName;
+    selectedDay = _today;
+    calDay      = _today;
+    dietDay     = _today;
   }
   renderDays();
   renderWeekNotes();
+  // Keep diet and calorie sections in sync with the selected day
+  // unless the user has manually overridden them per-section
   if (!dietDayManuallySet) {
-    dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+    if (selectedDay) {
+      dietDay = selectedDay;
+      calDay  = selectedDay;
+    } else {
+      dietDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+    }
   }
   renderDiet();
   renderCalorie();
@@ -2691,8 +2683,8 @@ function renderDays() {
     if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal burned</span></div>`;
 
     // Feature C — kcal consumed indicator
-    const wd = peekWeekData(currentWeek);
-    const dayCal = wd && wd.calories && wd.calories[day];
+    const weekData = peekWeekData(currentWeek);
+    const dayCal = weekData && weekData.calories && weekData.calories[day];
     const dayEntries = dayCal ? MEALS.flatMap(m => dayCal[m] || []).concat(dayCal.entries || []) : [];
     const dayKcal = dayEntries.reduce((s, e) => s + (e.kcal || 0), 0);
     if (dayKcal > 0) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal eaten</span></div>`;
@@ -2729,7 +2721,7 @@ function getBadgeClass(activity) {
   if (a.includes('weights') || a.includes('weight')) return 'badge-weights';
   if (a.includes('padel') || a.includes('sport')) return 'badge-padel';
   if (a.includes('rest')) return 'badge-rest';
-  if (a.includes('walk')) return 'badge-rest';
+  if (a.includes('walk')) return 'badge-walk';
   return 'badge-core';
 }
 
@@ -2758,7 +2750,7 @@ function renderDayDetail(day) {
     'Run','Tempo run','Incline walk (30min)','Incline walk (45min)','Walk',
     'Weights A','Weights B','Weights C',
     'Padel (1hr)','Padel (2hr)','Sport / Other',
-    'Rest','Rest day + walk',
+    'Rest','Walk',
   ];
   const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
 
@@ -2895,7 +2887,6 @@ function renderDayDetail(day) {
     </div>
   `;
   injectInlineSession(dd.activity || planned, currentWeek);
-  // Auto-expand the workout log panel immediately
   renderWorkoutLogPanel(day);
 }
 
@@ -2906,6 +2897,7 @@ function getSessionKey(activity, week) {
   if (a.includes('weights b')) return phase === 1 ? 'wo-p1b' : 'wo-p2b';
   if (a.includes('weights c')) return 'wo-p2c';
   if (a.includes('core')) return 'wo-core';
+  if (a.includes('run') || a.includes('tempo') || a.includes('walk')) return 'wo-running';
   return null;
 }
 
@@ -2919,6 +2911,7 @@ function getSessionLinkHTML(activity, week) {
     'wo-p2b': 'Session B — Full body pull (Phase 2)',
     'wo-p2c': 'Session C — Leg emphasis (Phase 2)',
     'wo-core': 'Daily core routine',
+    'wo-running': 'Running programme',
   };
   return `
     <div class="inline-session">
@@ -3142,11 +3135,10 @@ function renderWorkoutLogPanel(day) {
   const panel = document.getElementById(`workoutLogPanel_${day}`);
   if (!panel) return;
 
-  // If no activity logged yet, infer type from the planned activity for this day
-  if (log.type === 'other' && !dd.activity) {
+  // Infer type from planned activity when none logged yet
+  if (!dd.activity) {
     const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
-    const dayIdx = DAYS.indexOf(day);
-    const planned = plan[dayIdx] || '';
+    const planned = plan[DAYS.indexOf(day)] || '';
     log.type = detectWorkoutType(planned);
   }
 
@@ -3340,7 +3332,7 @@ function saveDiet(idx, val) {
 const EXERCISE_BURN = {
   'Run': 320, 'Tempo run': 380,
   'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
-  'Walk': 160, 'Rest day + walk': 160,
+  'Walk': 160,
   'Weights A': 220, 'Weights B': 220, 'Weights C': 220,
   'Padel (1hr)': 500, 'Padel (2hr)': 950,
   'Sport / Other': 300,
@@ -3351,12 +3343,22 @@ const EXERCISE_BURN = {
 const ACTIVITY_DURATION = {
   'Run': 35, 'Tempo run': 40,
   'Incline walk (30min)': 30, 'Incline walk (45min)': 45,
-  'Walk': 30, 'Rest day + walk': 30,
+  'Walk': 30,
   'Weights A': 55, 'Weights B': 55, 'Weights C': 55,
   'Padel (1hr)': 60, 'Padel (2hr)': 120,
   'Sport / Other': 60,
   'Rest': 0,
 };
+
+// Strava activity type → app activity mapping
+function mapStravaActivity(stravaType) {
+  const t = (stravaType || '').toLowerCase();
+  if (t.includes('run'))                        return 'Run';
+  if (t.includes('walk'))                       return 'Walk';
+  if (t.includes('weight') || t.includes('strength')) return 'Weights A';
+  if (t.includes('padel') || t.includes('tennis') || t.includes('squash') || t.includes('sport')) return 'Padel (1hr)';
+  return 'Sport / Other';
+}
 
 let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
 let activeMeal = 'breakfast';
@@ -3444,7 +3446,7 @@ function renderSummary() {
   if (moodEl)   moodEl.innerHTML   = moodDays   ? (moodTotal/moodDays).toFixed(1)     + '<small>/5</small>' : '—<small>/5</small>';
   if (energyEl) energyEl.innerHTML = energyDays ? (energyTotal/energyDays).toFixed(1) + '<small>/5</small>' : '—<small>/5</small>';
 
-  // ── Feature 5: Calorie consistency + avg protein ──────────────
+  // Calorie consistency score + avg protein
   const calTarget = getTargetForWeek(currentWeek);
   let onTargetDays = 0, totalFoodDays = 0, totalProtein = 0, proteinDays = 0;
   const todayCheck = new Date(); todayCheck.setHours(0,0,0,0);
@@ -3461,13 +3463,12 @@ function renderSummary() {
     const cal = rawWd.calories[day];
     const entries = MEALS.flatMap(m => cal[m] || []);
     const consumed = entries.reduce((s, e) => s + (e.kcal || 0), 0);
-    const protein  = entries.reduce((s, e) => s + (e.protein || 0), 0);
     if (consumed > 0) {
       totalFoodDays++;
       const dd2 = (wd.days && wd.days[day]) || {};
       const burn2 = dd2.customBurn !== undefined ? dd2.customBurn : (EXERCISE_BURN[dd2.activity || ''] || 0);
       if (Math.abs((consumed - burn2) - calTarget) <= 150) onTargetDays++;
-      totalProtein += protein;
+      totalProtein += entries.reduce((s, e) => s + (e.protein || 0), 0);
       proteinDays++;
     }
   });
@@ -3484,7 +3485,7 @@ function renderSummary() {
     proteinEl.style.color = (proteinDays > 0 && avgProt >= protTarget * 0.9) ? 'var(--green)' : (proteinDays > 0 ? 'var(--amber)' : '');
   }
 
-  // Run all nudge checks
+  // Run nudge checks
   checkNudgeTdee();
   checkNudgeProtein();
   checkNudgePace();
@@ -3519,7 +3520,6 @@ function saveAllSettings() {
   else if (tdEl) delete allData._targetDate;
   if (!allData._settings) allData._settings = {};
   Object.entries(fields).forEach(([k, v]) => { if (!isNaN(v) && v > 0) allData._settings[k] = v; });
-  // Record current weight when maintenance is saved (used by TDEE nudge)
   if (!isNaN(fields.maintenance) && fields.maintenance > 0) {
     const cwt = getCurrentLoggedWeight();
     if (cwt) allData._settings._maintenanceSetAtWeight = cwt;
@@ -3529,18 +3529,11 @@ function saveAllSettings() {
   render();
   renderPlanRef();
   updateSettingsCalcs();
-  // Explicitly refresh calorie display and deficit with new targets
   updateCalTotals();
   renderProgress();
-  // Delay so CSS transition fires correctly after render() completes
   setTimeout(() => {
     const msg = document.getElementById('settingsSaveMsg');
-    if (msg) {
-      msg.textContent = 'Settings saved ✓';
-      msg.style.color = 'var(--green)';
-      msg.style.opacity = '1';
-      setTimeout(() => { msg.style.opacity = '0'; }, 3500);
-    }
+    if (msg) { msg.textContent = 'Settings saved ✓'; msg.style.color = 'var(--green)'; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3500); }
   }, 50);
 }
 
@@ -4763,18 +4756,6 @@ function saveQuickPresets(presets) {
 // Default calorie burn estimates — overridden by customBurn (watch reading)
 
 
-// Strava activity type → app activity mapping
-function mapStravaActivity(stravaType) {
-  const t = (stravaType || '').toLowerCase();
-  if (t.includes('run'))                        return 'Run';
-  if (t.includes('walk'))                       return 'Walk';
-  if (t.includes('weight') || t.includes('strength')) return 'Weights A';
-  if (t.includes('padel') || t.includes('tennis') || t.includes('squash') || t.includes('sport')) return 'Padel (1hr)';
-  return 'Sport / Other';
-}
-
-
-
 function setActiveMeal(meal) {
   activeMeal = meal;
   MEALS.forEach(m => {
@@ -4842,10 +4823,8 @@ function renderWater() {
   const slider = document.getElementById('waterSlider');
   if (slider && parseInt(slider.value) !== totalMl) slider.value = totalMl;
 
-  // Update water target note label dynamically
   const waterNoteEl = document.getElementById('waterTargetNote');
   if (waterNoteEl) waterNoteEl.textContent = 'Target: ' + getSetting('waterTargetL') + ' L/day — more on workout days and in Bangkok heat';
-
   const badge = document.getElementById('waterBadge');
   if (badge) {
     const display = totalL % 1 === 0 ? totalL.toFixed(0) : totalL.toFixed(2).replace(/0+$/, '');
@@ -5294,7 +5273,12 @@ function renderCalendar() {
       let cellClass = 'cal-future';
       let tag = '';
       if (isToday) {
-        cellClass = act.includes('padel') ? 'cal-padel' : act && !act.includes('rest') ? 'cal-workout' : act.includes('rest') ? 'cal-rest' : 'cal-rest';
+        if (act.includes('padel') || act.includes('sport')) { cellClass = 'cal-padel'; }
+        else if (act.includes('walk')) { cellClass = 'cal-walk'; }
+        else if (act.includes('run') || act.includes('tempo')) { cellClass = 'cal-run'; }
+        else if (act.includes('weight')) { cellClass = 'cal-weights'; }
+        else if (act && !act.includes('rest')) { cellClass = 'cal-workout'; }
+        else { cellClass = 'cal-rest'; }
         tag = dd.activity || '';
         cellClass += ' cal-today';
       } else if (isBeforeStart) {
@@ -5303,6 +5287,14 @@ function renderCalendar() {
       } else if (!isFuture) {
         if (act.includes('padel')) {
           cellClass = 'cal-padel'; tag = 'Padel';
+        } else if (act.includes('walk')) {
+          cellClass = 'cal-walk'; tag = 'Walk';
+        } else if (act.includes('run') || act.includes('tempo')) {
+          cellClass = 'cal-run';
+          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
+        } else if (act.includes('weight')) {
+          cellClass = 'cal-weights';
+          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
         } else if (act && !act.includes('rest')) {
           cellClass = 'cal-workout';
           tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
@@ -5554,7 +5546,6 @@ function renderCalChart() {
     ctx.fillText('Log food to see the calorie trend chart', W / 2, H / 2);
     return;
   }
-  // With only 1 data point duplicate it so we can draw a line
   if (points.length === 1) points.push({ ...points[0] });
 
   const pad = { t: 16, r: 20, b: 28, l: 46 };
@@ -5919,34 +5910,29 @@ document.addEventListener('click', (e) => {
   }
 });
 
-
 // ─── GLOBAL DAY SELECTOR ─────────────────────────────────
 function setGlobalDay(day) {
-  // Sync both calDay and dietDay to the selected day
   calDay = day;
   dietDay = day;
   dietDayManuallySet = true;
+  // Also select this day in the daily log grid and open its detail panel
+  selectedDay = day;
   renderGlobalDaySelector(day);
+  renderDays();   // re-renders grid with new selected card highlighted
   renderDiet();
   renderCalorie();
 }
-
 function renderGlobalDaySelector(activeDay) {
   DAYS.forEach(d => {
     const btn = document.getElementById('globalDay_' + d);
-    if (!btn) return;
-    btn.classList.toggle('active', d === activeDay);
+    if (btn) btn.classList.toggle('active', d === activeDay);
   });
 }
-
-// Called from render() to keep selector in sync with current calDay
 function syncGlobalDaySelector() {
   renderGlobalDaySelector(calDay);
 }
 
-// ─── NUDGE SYSTEM ────────────────────────────────────────
-
-// Shared helpers
+// ─── NUDGE SYSTEM ─────────────────────────────────────────
 function dismissNudge(id, cooldownDays) {
   localStorage.setItem('ftNudge_' + id, Date.now().toString());
   const el = document.getElementById(id);
@@ -5959,7 +5945,6 @@ function isNudgeDismissed(id, cooldownDays) {
 function showNudge(id) { const el = document.getElementById(id); if (el) el.style.display = 'flex'; }
 function hideNudge(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 
-// Get most recently logged week weight across all weeks
 function getCurrentLoggedWeight() {
   for (let w = TOTAL_WEEKS(); w >= 1; w--) {
     const d = peekWeekData(w);
@@ -5968,7 +5953,6 @@ function getCurrentLoggedWeight() {
   return null;
 }
 
-// ── TDEE nudge: shows when 8+ lbs lost since maintenance was set ──
 function checkNudgeTdee() {
   if (isNudgeDismissed('nudgeTdee', 14)) { hideNudge('nudgeTdee'); return; }
   const setAtWeight = allData._settings && allData._settings._maintenanceSetAtWeight;
@@ -5978,11 +5962,10 @@ function checkNudgeTdee() {
   if (lbsLost < 8) { hideNudge('nudgeTdee'); return; }
   const estDrop = Math.round(lbsLost * 4.5);
   const msgEl = document.getElementById('nudgeTdeeMsg');
-  if (msgEl) msgEl.textContent = "You've lost " + lbsLost.toFixed(1) + " lbs since your maintenance was set at " + setAtWeight + " lbs. Your TDEE has likely dropped by ~" + estDrop + " kcal/day — update it in Settings for accurate deficit tracking.";
+  if (msgEl) msgEl.textContent = "You've lost " + lbsLost.toFixed(1) + " lbs since your maintenance was set at " + setAtWeight + " lbs. Your TDEE has likely dropped by ~" + estDrop + " kcal/day.";
   showNudge('nudgeTdee');
 }
 
-// ── Protein nudge: shows when consistently missing protein target ──
 function checkNudgeProtein() {
   if (isNudgeDismissed('nudgeProtein', 7)) { hideNudge('nudgeProtein'); return; }
   const protTarget = getSetting('proteinTarget');
@@ -6009,11 +5992,10 @@ function checkNudgeProtein() {
   if (daysLogged < 3 || (daysLogged - daysHit) < Math.ceil(daysLogged / 2)) { hideNudge('nudgeProtein'); return; }
   const avg = Math.round(totalProt / daysLogged);
   const msgEl = document.getElementById('nudgeProteinMsg');
-  if (msgEl) msgEl.textContent = 'Averaging ' + avg + 'g protein/day this week (target: ' + protTarget + 'g). Hit on ' + daysHit + '/' + daysLogged + ' logged days. Low protein in a deficit accelerates muscle loss — prioritise eggs, chicken, shakes, paneer.';
+  if (msgEl) msgEl.textContent = 'Averaging ' + avg + 'g protein/day (target: ' + protTarget + 'g). Hit on ' + daysHit + '/' + daysLogged + ' logged days. Prioritise eggs, chicken, shakes, paneer.';
   showNudge('nudgeProtein');
 }
 
-// ── Pace-of-loss nudge: checks every 4 weeks ──
 function checkNudgePace() {
   if (isNudgeDismissed('nudgePace', 14)) { hideNudge('nudgePace'); return; }
   if (currentWeek < 4 || currentWeek % 4 !== 0) { hideNudge('nudgePace'); return; }
@@ -6031,16 +6013,15 @@ function checkNudgePace() {
   const msgEl   = document.getElementById('nudgePaceMsg');
   if (rate > 1.2) {
     if (titleEl) titleEl.textContent = 'Warning: losing weight too fast';
-    if (msgEl)   msgEl.textContent = 'Lost ' + lostOver4.toFixed(1) + ' lbs over 4 weeks (' + rate.toFixed(2) + ' lbs/week). Consistently above 1 lb/week risks muscle loss. Consider eating a little more on workout days.';
+    if (msgEl) msgEl.textContent = 'Lost ' + lostOver4.toFixed(1) + ' lbs over 4 weeks (' + rate.toFixed(2) + ' lbs/wk). Above 1 lb/week risks muscle loss. Consider eating a little more on workout days.';
     showNudge('nudgePace');
   } else if (rate < 0.2 && currentWeek >= 8) {
     if (titleEl) titleEl.textContent = 'Weight loss has stalled';
-    if (msgEl)   msgEl.textContent = 'Only ' + lostOver4.toFixed(1) + ' lbs lost over 4 weeks (' + rate.toFixed(2) + ' lbs/week vs 0.7 target). Check food logging accuracy. If accurate, try a strict 1,750 kcal reset for 3-5 days.';
+    if (msgEl) msgEl.textContent = 'Only ' + lostOver4.toFixed(1) + ' lbs lost over 4 weeks (' + rate.toFixed(2) + ' lbs/wk vs 0.7 target). Check logging accuracy. Try a strict 1,750 kcal reset for 3-5 days.';
     showNudge('nudgePace');
   } else { hideNudge('nudgePace'); }
 }
 
-// ── Monday weigh-in nudge ──
 function checkNudgeWeighIn() {
   if (isNudgeDismissed('nudgeWeighIn', 1)) { hideNudge('nudgeWeighIn'); return; }
   if (new Date().getDay() !== 1) { hideNudge('nudgeWeighIn'); return; }
@@ -6050,7 +6031,6 @@ function checkNudgeWeighIn() {
   showNudge('nudgeWeighIn');
 }
 
-// ── Water nudge: shows if today's water < 50% of target ──
 function checkNudgeWater() {
   if (isNudgeDismissed('nudgeWater', 1)) { hideNudge('nudgeWater'); return; }
   if (currentWeek !== getCurrentWeekFromDate()) { hideNudge('nudgeWater'); return; }
@@ -6061,7 +6041,7 @@ function checkNudgeWater() {
   if (!waterTarget || logged >= waterTarget * 0.5) { hideNudge('nudgeWater'); return; }
   const remaining = ((waterTarget - logged) / 1000).toFixed(1);
   const msgEl = document.getElementById('nudgeWaterMsg');
-  if (msgEl) msgEl.textContent = (logged / 1000).toFixed(1) + 'L logged today — ' + remaining + 'L still to go. Dehydration mimics hunger and makes calorie tracking harder.';
+  if (msgEl) msgEl.textContent = (logged / 1000).toFixed(1) + 'L logged today — ' + remaining + 'L still to go. Dehydration mimics hunger.';
   showNudge('nudgeWater');
 }
 
