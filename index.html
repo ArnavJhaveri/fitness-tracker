@@ -1607,14 +1607,50 @@
       </div>
       <div id="measurementHistory" style="font-size:12px;color:var(--text3);">Log your first measurements above — history will appear here.</div>
       <div id="bmiTdeeCard" style="display:none;margin-top:14px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:10px;">Estimated stats</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
-          <div><div style="font-size:11px;color:var(--text3);">BMI</div><div id="bmiValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div id="bmiLabel" style="font-size:11px;color:var(--text3);margin-top:2px;"></div></div>
-          <div><div style="font-size:11px;color:var(--text3);">BMR (Mifflin)</div><div id="bmrValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">kcal/day at rest</div></div>
-          <div><div style="font-size:11px;color:var(--text3);">TDEE (moderate activity)</div><div id="tdeeValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">kcal/day estimated</div></div>
-          <div style="display:flex;align-items:flex-end;"><button onclick="applyTdeeToMaintenance()" style="font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);">Use as maintenance →</button></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;">Estimated stats</div>
+
+        <!-- Inputs for TDEE calculation -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;">
+          <div>
+            <label class="set-label">Age</label>
+            <input type="number" id="tdeeAge" min="16" max="100" step="1" class="set-input" placeholder="e.g. 26"
+              oninput="updateBmiTdeeCard()" style="width:100%;">
+          </div>
+          <div>
+            <label class="set-label">Activity level</label>
+            <select id="tdeeActivity" class="set-input" style="width:100%;" onchange="updateBmiTdeeCard()">
+              <option value="">— select —</option>
+              <option value="sedentary">Sedentary — desk job, little/no exercise</option>
+              <option value="light">Lightly active — exercise 1–3×/week</option>
+              <option value="moderate">Moderately active — exercise 3–5×/week</option>
+              <option value="active">Very active — exercise 6–7×/week</option>
+              <option value="veryActive">Extra active — physical job + daily exercise</option>
+            </select>
+          </div>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:10px;">BMR uses Mifflin-St Jeor formula. TDEE assumes moderate activity (×1.55). For accuracy, enter your weight and height above. Male formula used — adjust in Settings if needed.</div>
+
+        <!-- Results grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text3);">BMI</div>
+            <div id="bmiValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div>
+            <div id="bmiLabel" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);">BMR (Mifflin-St Jeor)</div>
+            <div id="bmrValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">kcal/day at complete rest</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);">TDEE <span id="tdeeActivityLabel" style="color:var(--text3);"></span></div>
+            <div id="tdeeValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="tdeeMultiplierNote"></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button onclick="applyTdeeToMaintenance()" style="font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);">Use as maintenance →</button>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:10px;">BMR uses Mifflin-St Jeor formula (male). Enter age and select your activity level above for an accurate TDEE estimate.</div>
       </div>
     </div>
 
@@ -5476,37 +5512,72 @@ function calcBmiTdee() {
   if (!allData._body) return null;
   const dates = Object.keys(allData._body).sort().reverse();
   if (!dates.length) return null;
-  const latest = allData._body[dates[0]];
-  const heightCm = latest.height;
+  const latest    = allData._body[dates[0]];
+  const heightCm  = latest.height;
   const weightLbs = latest.currentWeight || (peekWeekData(getCurrentWeekFromDate())?.weight);
   if (!heightCm || !weightLbs) return null;
+
   const weightKg = weightLbs * 0.453592;
   const heightM  = heightCm / 100;
-  const bmi = weightKg / (heightM * heightM);
-  // Mifflin-St Jeor (male)
-  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * 30) + 5; // assuming age ~30
-  const tdee = bmr * 1.55; // moderate activity
+  const bmi      = weightKg / (heightM * heightM);
+
+  // Read age and activity level from UI inputs
+  const age      = parseInt(document.getElementById('tdeeAge')?.value) || null;
+  const activity = document.getElementById('tdeeActivity')?.value || '';
+
+  // Mifflin-St Jeor (male) — requires age
+  const bmr = age ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5) : null;
+
+  const MULTIPLIERS = {
+    sedentary:  { val: 1.2,   label: 'Sedentary',        note: '\u00d71.2'   },
+    light:      { val: 1.375, label: 'Lightly active',    note: '\u00d71.375' },
+    moderate:   { val: 1.55,  label: 'Moderately active', note: '\u00d71.55'  },
+    active:     { val: 1.725, label: 'Very active',        note: '\u00d71.725' },
+    veryActive: { val: 1.9,   label: 'Extra active',       note: '\u00d71.9'  },
+  };
+  const mult = MULTIPLIERS[activity] || null;
+  const tdee = (bmr && mult) ? Math.round(bmr * mult.val) : null;
+
   const bmiLabel = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
   const bmiColor = bmi < 18.5 ? 'var(--blue)' : bmi < 25 ? 'var(--green)' : bmi < 30 ? 'var(--amber)' : 'var(--red)';
-  return { bmi: bmi.toFixed(1), bmr: Math.round(bmr), tdee: Math.round(tdee), bmiLabel, bmiColor };
+  return { bmi: bmi.toFixed(1), bmiLabel, bmiColor, bmr, tdee,
+           activityLabel: mult?.label || '', multiplierNote: mult?.note || '' };
 }
 
 function updateBmiTdeeCard() {
-  const card = document.getElementById('bmiTdeeCard');
+  const card   = document.getElementById('bmiTdeeCard');
   const result = calcBmiTdee();
   if (!result || !card) return;
   card.style.display = 'block';
-  document.getElementById('bmiValue').textContent  = result.bmi;
-  document.getElementById('bmiValue').style.color  = result.bmiColor;
-  document.getElementById('bmiLabel').textContent  = result.bmiLabel;
-  document.getElementById('bmrValue').textContent  = result.bmr.toLocaleString() + ' kcal';
-  document.getElementById('tdeeValue').textContent = result.tdee.toLocaleString() + ' kcal';
+
+  const bmiEl = document.getElementById('bmiValue');
+  if (bmiEl) { bmiEl.textContent = result.bmi; bmiEl.style.color = result.bmiColor; }
+  const bmiLblEl = document.getElementById('bmiLabel');
+  if (bmiLblEl) bmiLblEl.textContent = result.bmiLabel;
+
+  const bmrEl = document.getElementById('bmrValue');
+  if (bmrEl) bmrEl.textContent = result.bmr ? result.bmr.toLocaleString() + ' kcal' : 'Enter age →';
+
+  const tdeeEl = document.getElementById('tdeeValue');
+  if (tdeeEl) {
+    if (!result.bmr)  tdeeEl.textContent = 'Enter age →';
+    else if (!result.tdee) tdeeEl.textContent = 'Select activity →';
+    else tdeeEl.textContent = result.tdee.toLocaleString() + ' kcal';
+  }
+  const actLbl = document.getElementById('tdeeActivityLabel');
+  if (actLbl) actLbl.textContent = result.activityLabel ? '· ' + result.activityLabel : '';
+  const noteEl = document.getElementById('tdeeMultiplierNote');
+  if (noteEl) noteEl.textContent = result.multiplierNote ? 'multiplier ' + result.multiplierNote : 'select activity level above';
 }
 
 function applyTdeeToMaintenance() {
   const result = calcBmiTdee();
   if (!result) return;
-  if (!confirm(`Set maintenance calories to ${result.tdee.toLocaleString()} kcal/day (TDEE estimate)?`)) return;
+  if (!result.tdee) {
+    alert('Please enter your age and select an activity level first to calculate your TDEE.');
+    return;
+  }
+  if (!confirm(`Set maintenance calories to ${result.tdee.toLocaleString()} kcal/day (${result.activityLabel} TDEE estimate)?`)) return;
   if (!allData._settings) allData._settings = {};
   allData._settings.maintenance = result.tdee;
   autoPersist();
