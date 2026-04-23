@@ -1184,6 +1184,9 @@
       <button onclick="exportData()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">↓</span> Export backup
       </button>
+      <button onclick="exportCSV()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">↓</span> Export CSV
+      </button>
       <label style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">↑</span> Import backup
         <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
@@ -1232,6 +1235,20 @@
     <div class="section-title" style="margin-top:8px;">Weight trend</div>
     <div class="history-card" style="padding:16px;">
       <canvas id="weightChart" style="width:100%;height:200px;display:block;"></canvas>
+    </div>
+    <div class="section-title" style="margin-top:8px;">Calorie trend <span style="font-size:11px;font-weight:400;color:var(--text3);">avg kcal/day per week</span></div>
+    <div class="history-card" style="padding:16px;">
+      <canvas id="calChart" style="width:100%;height:160px;display:block;"></canvas>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text3);">
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:3px;background:#f97316;border-radius:2px;"></div>Avg eaten</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:3px;background:var(--border2);border-radius:2px;border-top:2px dashed var(--border2);"></div>Phase target</div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:8px;">Progressive overload <span style="font-size:11px;font-weight:400;color:var(--text3);">weight used per exercise across sessions</span></div>
+    <div class="history-card" style="padding:16px;">
+      <div id="progressiveOverloadView">
+        <div style="font-size:13px;color:var(--text3);">Log weights in your workout sessions on the Home tab to see progression here.</div>
+      </div>
     </div>
     <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
     <div class="history-card" id="activityHistory">
@@ -1580,8 +1597,8 @@
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Log your measurements here. Stored against today's date so you can track changes over time.</div>
     <div class="plan-ref" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
-        <div><label class="set-label">Height (cm)</label><input type="number" id="settingHeight" step="0.5" min="100" max="250" class="set-input" placeholder="e.g. 176" oninput="saveBodySetting('height',this.value)"></div>
-        <div><label class="set-label">Weight (lbs)</label><input type="number" id="settingCurrentWeight" step="0.1" min="50" max="400" class="set-input" placeholder="Today" oninput="saveBodySetting('currentWeight',this.value)"></div>
+        <div><label class="set-label">Height (cm)</label><input type="number" id="settingHeight" step="0.5" min="100" max="250" class="set-input" placeholder="e.g. 176" oninput="saveBodySetting('height',this.value);renderBMICalc();"></div>
+        <div><label class="set-label">Weight (lbs)</label><input type="number" id="settingCurrentWeight" step="0.1" min="50" max="400" class="set-input" placeholder="Today" oninput="saveBodySetting('currentWeight',this.value);renderBMICalc();"></div>
         <div><label class="set-label">Waist (cm)</label><input type="number" id="settingWaist" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('waist',this.value)"></div>
         <div><label class="set-label">Chest (cm)</label><input type="number" id="settingChest" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('chest',this.value)"></div>
         <div><label class="set-label">Hips (cm)</label><input type="number" id="settingHips" step="0.5" min="40" max="200" class="set-input" oninput="saveBodySetting('hips',this.value)"></div>
@@ -1589,6 +1606,16 @@
         <div><label class="set-label">Thighs (cm)</label><input type="number" id="settingThighs" step="0.5" min="20" max="100" class="set-input" oninput="saveBodySetting('thighs',this.value)"></div>
       </div>
       <div id="measurementHistory" style="font-size:12px;color:var(--text3);">Log your first measurements above — history will appear here.</div>
+      <div id="bmiTdeeCard" style="display:none;margin-top:14px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:10px;">Estimated stats</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+          <div><div style="font-size:11px;color:var(--text3);">BMI</div><div id="bmiValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div id="bmiLabel" style="font-size:11px;color:var(--text3);margin-top:2px;"></div></div>
+          <div><div style="font-size:11px;color:var(--text3);">BMR (Mifflin)</div><div id="bmrValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">kcal/day at rest</div></div>
+          <div><div style="font-size:11px;color:var(--text3);">TDEE (moderate activity)</div><div id="tdeeValue" style="font-size:20px;font-weight:600;font-family:var(--mono);color:var(--text);">—</div><div style="font-size:11px;color:var(--text3);margin-top:2px;">kcal/day estimated</div></div>
+          <div style="display:flex;align-items:flex-end;"><button onclick="applyTdeeToMaintenance()" style="font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);">Use as maintenance →</button></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:10px;">BMR uses Mifflin-St Jeor formula. TDEE assumes moderate activity (×1.55). For accuracy, enter your weight and height above. Male formula used — adjust in Settings if needed.</div>
+      </div>
     </div>
 
     <!-- PLAN START DATE -->
@@ -1605,6 +1632,12 @@
 
     <!-- SECURITY -->
     <div class="section-title">Security</div>
+    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+      <div class="plan-ref-title">Daily reminders</div>
+      <div style="font-size:13px;color:var(--text2);">Get a browser notification at 9pm if you haven't logged your weight or today's food.</div>
+      <button id="notifBtn" onclick="requestNotifPermission()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;width:fit-content;">Enable daily reminders</button>
+      <div style="font-size:11px;color:var(--text3);">Works in Chrome and Edge on desktop. Safari on iOS 16.4+ also supported. Must keep the tab open (or pinned) for reminders to fire.</div>
+    </div>
     <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
       <div class="plan-ref-title">Biometric login</div>
       <div style="font-size:13px;color:var(--text2);" id="passkeyDesc">Use Touch ID or Face ID to unlock the app instantly on supported devices.</div>
@@ -1638,9 +1671,10 @@
 
 <script>
 // ─── AUTH ─────────────────────────────────────────────────
-const DEFAULT_PASSWORD = 'Arnav2002!';
+// Default password hash (SHA-256 of default password) — plaintext not stored in source
+const DEFAULT_PW_HASH = 'bf2782dc96e0a61b66904855e6bdd0e9f0d834d0139fd60857899f4e21802a24';
 const PW_KEY      = 'ftPwHash';
-const PASSKEY_KEY = 'ftPasskeyId';   // stores base64 credential ID
+const PASSKEY_KEY = 'ftPasskeyId';
 const RP_ID       = location.hostname || 'localhost';
 const RP_NAME     = "Arnav's Fitness Tracker";
 
@@ -1673,9 +1707,9 @@ function unlockApp() {
 }
 
 async function initAuth() {
-  // Ensure password hash exists
+  // Seed default password hash if not yet set — plaintext never stored
   if (!localStorage.getItem(PW_KEY)) {
-    localStorage.setItem(PW_KEY, await hashStr(DEFAULT_PASSWORD));
+    localStorage.setItem(PW_KEY, DEFAULT_PW_HASH);
   }
 
   // Already unlocked this session
@@ -1952,18 +1986,63 @@ function renderDietTab() {
   if (rules.length === 0) {
     container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0 12px;">No rules yet — add one below.</div>`;
   } else {
-    container.innerHTML = rules.map((r, i) => `
-      <div id="dietRuleRow_${i}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:18px;">${i + 1}.</span>
-        <span style="flex:1;font-size:13px;color:var(--text);">${r.text}</span>
-        <button onclick="editDietRule(${i})" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
-        <button onclick="deleteDietRule(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;">×</button>
-      </div>`).join('');
+    container.innerHTML = '';
+    rules.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.id = `dietRuleRow_${i}`;
+      row.draggable = true;
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);cursor:default;';
+      row.ondragstart = (e) => dietRuleDragStart(e, i);
+      row.ondragover  = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+      row.ondrop      = (e) => dietRuleDrop(e, i);
+      row.ondragend   = (e) => { e.currentTarget.style.opacity = ''; };
+
+      const handle = document.createElement('span');
+      handle.textContent = '⠿';
+      handle.style.cssText = 'color:var(--border2);font-size:16px;cursor:grab;flex-shrink:0;';
+
+      const num = document.createElement('span');
+      num.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);min-width:18px;';
+      num.textContent = `${i + 1}.`;
+
+      const text = document.createElement('span');
+      text.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
+      text.textContent = r.text; // XSS-safe
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'edit';
+      editBtn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);';
+      editBtn.onclick = () => editDietRule(i);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;';
+      delBtn.onclick = () => deleteDietRule(i);
+
+      row.append(handle, num, text, editBtn, delBtn);
+      container.appendChild(row);
+    });
   }
 
-  // Update rule count in description
   const countEl = document.getElementById('dietRuleCount');
   if (countEl) countEl.textContent = rules.length;
+}
+
+let _dietRuleDragIdx = null;
+function dietRuleDragStart(e, idx) {
+  _dietRuleDragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.4';
+}
+function dietRuleDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_dietRuleDragIdx === null || _dietRuleDragIdx === targetIdx) return;
+  const rules = getDietRules();
+  const [moved] = rules.splice(_dietRuleDragIdx, 1);
+  rules.splice(targetIdx, 0, moved);
+  saveDietRules(rules);
+  _dietRuleDragIdx = null;
+  renderDietTab();
 }
 
 function addDietRule() {
@@ -2131,7 +2210,12 @@ function getCurrentWeekFromDate() {
   return Math.min(TOTAL_WEEKS(), Math.max(1, diff + 1));
 }
 
+// Cache for expensive streak calculation — invalidated when activity saved
+let _streakCache = null;
+function invalidateStreakCache() { _streakCache = null; }
+
 function calcStreak() {
+  if (_streakCache) return _streakCache;
   const start = getStartDate();
   if (!start) return { current: 0, longest: 0 };
   const today = new Date(); today.setHours(0,0,0,0);
@@ -2163,7 +2247,8 @@ function calcStreak() {
     if (days[i]) current++;
     else break;
   }
-  return { current, longest };
+  _streakCache = { current, longest };
+  return _streakCache;
 }
 
 
@@ -2172,6 +2257,7 @@ function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
   selectedDay = null;
   dietDayManuallySet = false;
+  collapsedMeals.clear();
   calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   render();
 }
@@ -2180,7 +2266,7 @@ function changeWeek(dir) {
   currentWeek = Math.max(1, Math.min(TOTAL_WEEKS(), currentWeek + dir));
   selectedDay = null;
   dietDayManuallySet = false;
-  // Feature 10 — reset calDay to today when navigating to current week
+  collapsedMeals.clear();
   const cwk = getCurrentWeekFromDate();
   if (currentWeek === cwk) {
     calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
@@ -2303,12 +2389,12 @@ function renderProgress() {
 
   // Weekly calorie deficit (vs maintenance — real fat burn, not vs eating goal)
   const maintenance = getSetting('maintenance');
+  const maintenanceSet = allData._settings && allData._settings.maintenance != null;
   const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(currentWeek);
   const defEl  = document.getElementById('weeklyDeficit');
   const defSub = document.getElementById('weeklyDeficitSub');
   if (defEl) {
-    if (!maintenance || maintenance === 2350) {
-      // Default maintenance not customised yet — show a nudge
+    if (!maintenanceSet) {
       defEl.innerHTML = '— <span>kcal</span>';
       defEl.style.color = '';
       if (defSub) defSub.textContent = 'Set maintenance kcal in Settings';
@@ -2439,9 +2525,9 @@ function renderDays() {
   const actualStart = allData._startDate ? new Date(allData._startDate) : null;
   if (actualStart) actualStart.setHours(0,0,0,0);
 
+  const wd = peekWeekData(currentWeek) || { days: {} };
   DAYS.forEach((day, i) => {
-    const dd = getDayData(currentWeek, day);
-    const planned = plan[i];
+    const dd = (wd.days && wd.days[day]) || {};
     const dayDate = getDayDate(currentWeek, i);
     const dateStr = dayDate ? formatDate(dayDate, { day: 'numeric', month: 'short' }) : '';
 
@@ -2815,8 +2901,8 @@ function clearSection(day, section) {
 function saveDayActivity(day, val) {
   const dd = getDayData(currentWeek, day);
   dd.activity = val;
-  // Reset workout log type if activity type changes
   if (dd.workoutLog) dd.workoutLog.type = detectWorkoutType(val);
+  invalidateStreakCache();
   autoPersist();
   renderSummary();
   renderDays();
@@ -2873,13 +2959,6 @@ function saveDayEnergy(day, val) {
 function saveDaySleep(day, val) {
   const parsed = parseFloat(val);
   getDayData(currentWeek, day).sleepHrs = (val === '' || isNaN(parsed)) ? undefined : parsed;
-  autoPersist();
-}
-function saveDayMeasurement(day, key, val) {
-  const dd = getDayData(currentWeek, day);
-  if (!dd.measurements) dd.measurements = {};
-  const parsed = parseFloat(val);
-  dd.measurements[key] = (val === '' || isNaN(parsed)) ? undefined : parsed;
   autoPersist();
 }
 
@@ -3098,7 +3177,17 @@ function renderDiet() {
     if (isChecked) checked++;
     const item = document.createElement('label');
     item.className = 'diet-item';
-    item.innerHTML = `<input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="saveDiet(${i}, this.checked)"><label for="${id}">${rule.text}</label>`;
+    // Use createElement + textContent to safely handle user-entered rule text (XSS safe)
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.checked = isChecked;
+    checkbox.onchange = (e) => saveDiet(i, e.target.checked);
+    const lbl = document.createElement('label');
+    lbl.htmlFor = id;
+    lbl.textContent = rule.text; // textContent is XSS-safe
+    item.appendChild(checkbox);
+    item.appendChild(lbl);
     container.appendChild(item);
   });
   document.getElementById('dietScore').textContent = checked + '/' + rules.length;
@@ -3385,8 +3474,7 @@ function changeStartDate() {
   if (!confirm('Update start date to ' + inp.value + '? All week dates will shift accordingly.')) return;
   setStartDate(inp.value);
   currentWeek = getCurrentWeekFromDate();
-  autoPersist();
-  pushToSheets();
+  autoPersist(); // autoPersist already schedules pushToSheets after 1.5s
   render();
   const el = document.getElementById('currentStartDate');
   if (el) el.textContent = formatDateFull(getStartDate());
@@ -3431,6 +3519,7 @@ function saveBodySetting(key, val) {
   allData._body[today][key] = (val === '' || isNaN(parsed)) ? undefined : parsed;
   autoPersist();
   renderMeasurementHistory();
+  updateBmiTdeeCard();
 }
 
 function renderSettingsTab() {
@@ -3467,6 +3556,8 @@ function renderSettingsTab() {
     if (el && latest[f] != null) el.value = latest[f];
   });
   renderMeasurementHistory();
+  updateBmiTdeeCard();
+  updateNotifBtn();
 }
 
 function renderMeasurementHistory() {
@@ -3919,45 +4010,186 @@ function renderMealsTabTemplates() {
     container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0 12px;">No templates yet — create one below.</div>`;
     return;
   }
-  container.innerHTML = templates.map((t, ti) => {
+  container.innerHTML = '';
+  templates.forEach((t, ti) => {
     const totalKcal = (t.items || []).reduce((s, e) => s + (e.kcal || 0), 0);
     const totalProt = (t.items || []).reduce((s, e) => s + (e.protein || 0), 0);
-    return `
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">
-        <input type="text" value="${t.name.replace(/"/g,'&quot;')}" onchange="renameMealTemplate(${ti},this.value)"
-          style="font-size:14px;font-weight:500;color:var(--text);background:none;border:none;border-bottom:1px solid var(--border);outline:none;padding:2px 4px;flex:1;min-width:100px;">
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${totalKcal} kcal · ${Math.round(totalProt)}g prot</span>
-          <button onclick="addMealTemplate(${ti})" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:var(--sans);">+ Add to log</button>
-          <button onclick="deleteMealTemplate(${ti})" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);">Delete</button>
-        </div>
-      </div>
-      ${(t.items || []).length === 0
-        ? `<div style="font-size:12px;color:var(--text3);padding:4px 0;">No items yet — add one below.</div>`
-        : (t.items || []).map((item, ii) => `
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
-            <span style="flex:1;font-size:13px;color:var(--text);">${item.name}</span>
-            <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${item.kcal} kcal · ${item.protein||0}g prot${item.carbs!=null?' · '+item.carbs+'g carbs':''}${item.fats!=null?' · '+item.fats+'g fat':''}${item.sugar!=null?' · '+item.sugar+'g sugar':''}</span>
-            <button onclick="removeTemplateItem(${ti},${ii})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">×</button>
-          </div>`).join('')}
-      <div id="tplItems_${ti}"></div>
-      <button onclick="addItemToTemplate(${ti})" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ add item</button>
-    </div>`;
-  }).join('');
+
+    const card = document.createElement('div');
+    card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);';
+
+    // Header row
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = t.name;
+    nameInput.style.cssText = 'font-size:14px;font-weight:500;color:var(--text);background:none;border:none;border-bottom:1px solid var(--border);outline:none;padding:2px 4px;flex:1;min-width:100px;';
+    nameInput.onchange = () => renameMealTemplate(ti, nameInput.value);
+    const headerRight = document.createElement('div');
+    headerRight.style.cssText = 'display:flex;gap:6px;align-items:center;flex-shrink:0;';
+    const totalSpan = document.createElement('span');
+    totalSpan.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);';
+    totalSpan.textContent = `${totalKcal} kcal · ${Math.round(totalProt)}g prot`;
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '+ Add to log';
+    addBtn.style.cssText = 'font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-family:var(--sans);';
+    addBtn.onclick = () => addMealTemplate(ti);
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.style.cssText = 'font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--red-bg);background:none;color:var(--red);cursor:pointer;font-family:var(--sans);';
+    delBtn.onclick = () => deleteMealTemplate(ti);
+    headerRight.append(totalSpan, addBtn, delBtn);
+    header.append(nameInput, headerRight);
+    card.appendChild(header);
+
+    // Items (draggable)
+    if (!t.items || t.items.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--text3);padding:4px 0;';
+      empty.textContent = 'No items yet — add one below.';
+      card.appendChild(empty);
+    } else {
+      t.items.forEach((item, ii) => {
+        const itemRow = document.createElement('div');
+        itemRow.draggable = true;
+        itemRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:default;';
+        itemRow.ondragstart = (e) => tplItemDragStart(e, ti, ii);
+        itemRow.ondragover  = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+        itemRow.ondrop      = (e) => tplItemDrop(e, ti, ii);
+        itemRow.ondragend   = (e) => { e.currentTarget.style.opacity = ''; };
+
+        const grip = document.createElement('span');
+        grip.textContent = '⠿';
+        grip.style.cssText = 'color:var(--border2);font-size:14px;cursor:grab;flex-shrink:0;';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
+        nameSpan.textContent = item.name;
+
+        const macroSpan = document.createElement('span');
+        macroSpan.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);';
+        let ms = `${item.kcal} kcal · ${item.protein||0}g prot`;
+        if (item.carbs != null) ms += ` · ${item.carbs}g carbs`;
+        if (item.fats  != null) ms += ` · ${item.fats}g fat`;
+        if (item.sugar != null) ms += ` · ${item.sugar}g sugar`;
+        macroSpan.textContent = ms;
+
+        const rmBtn = document.createElement('button');
+        rmBtn.textContent = '×';
+        rmBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;';
+        rmBtn.onclick = () => removeTemplateItem(ti, ii);
+
+        itemRow.append(grip, nameSpan, macroSpan, rmBtn);
+        card.appendChild(itemRow);
+      });
+    }
+
+    // Add item area + button
+    const addItemArea = document.createElement('div');
+    addItemArea.id = `tplItems_${ti}`;
+    const addItemBtn = document.createElement('button');
+    addItemBtn.textContent = '+ add item';
+    addItemBtn.style.cssText = 'margin-top:10px;font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);';
+    addItemBtn.onclick = () => addItemToTemplate(ti);
+    card.append(addItemArea, addItemBtn);
+    container.appendChild(card);
+  });
+}
+
+let _tplDragTi = null, _tplDragIi = null;
+function tplItemDragStart(e, ti, ii) {
+  _tplDragTi = ti; _tplDragIi = ii;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.4';
+}
+function tplItemDrop(e, ti, targetIi) {
+  e.preventDefault();
+  if (_tplDragTi === null || _tplDragTi !== ti || _tplDragIi === targetIi) return;
+  const templates = getMealTemplates();
+  const items = templates[ti].items;
+  const [moved] = items.splice(_tplDragIi, 1);
+  items.splice(targetIi, 0, moved);
+  saveMealTemplates(templates);
+  _tplDragTi = null; _tplDragIi = null;
+  renderMealsTabTemplates();
 }
 
 function renderMealsTabPresets() {
   const container = document.getElementById('mealsTabPresets');
   if (!container) return;
   const presets = getQuickPresets();
-  container.innerHTML = presets.map((p, i) => `
-    <div id="presetRow_${i}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
-      <span style="flex:1;font-size:13px;color:var(--text);">${p.label}</span>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${p.kcal} kcal · ${p.protein}g prot</span>
-      <button onclick="editQuickPreset(${i})" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">edit</button>
-      <button onclick="deleteQuickPreset(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;">×</button>
-    </div>`).join('');
+  if (presets.length === 0) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:8px 0 12px;">No presets yet — add one below.</div>`;
+    return;
+  }
+  container.innerHTML = '';
+  presets.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.id = `presetRow_${i}`;
+    row.draggable = true;
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);';
+    row.ondragstart = (e) => presetDragStart(e, i);
+    row.ondragover  = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+    row.ondrop      = (e) => presetDrop(e, i);
+    row.ondragend   = (e) => { e.currentTarget.style.opacity = ''; };
+
+    const handle = document.createElement('span');
+    handle.textContent = '⠿';
+    handle.style.cssText = 'color:var(--border2);font-size:16px;cursor:grab;flex-shrink:0;';
+
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
+    nameEl.textContent = p.label;
+
+    const macroEl = document.createElement('span');
+    macroEl.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);';
+    let macroStr = `${p.kcal} kcal · ${p.protein}g prot`;
+    if (p.carbs != null) macroStr += ` · ${p.carbs}g carbs`;
+    if (p.fats  != null) macroStr += ` · ${p.fats}g fat`;
+    if (p.sugar != null) macroStr += ` · ${p.sugar}g sugar`;
+    macroEl.textContent = macroStr;
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'edit';
+    editBtn.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);';
+    editBtn.onclick = () => editQuickPreset(i);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '×';
+    delBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;';
+    delBtn.onclick = () => deleteQuickPreset(i);
+
+    row.append(handle, nameEl, macroEl, editBtn, delBtn);
+    container.appendChild(row);
+  });
+}
+
+let _presetDragIdx = null;
+function presetDragStart(e, idx) {
+  _presetDragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.4';
+}
+function presetDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_presetDragIdx === null || _presetDragIdx === targetIdx) return;
+  const presets = getQuickPresets();
+  const [moved] = presets.splice(_presetDragIdx, 1);
+  presets.splice(targetIdx, 0, moved);
+  saveQuickPresets(presets);
+  _presetDragIdx = null;
+  renderMealsTabPresets();
+  // Also refresh the quick-add row on Home tab
+  const qRow = document.getElementById('quickAddRow');
+  if (qRow) {
+    qRow.innerHTML = presets.map(p => {
+      const carbs = p.carbs != null ? p.carbs : 'undefined';
+      const fats  = p.fats  != null ? p.fats  : 'undefined';
+      const sugar = p.sugar != null ? p.sugar  : 'undefined';
+      return `<button class="quick-btn" onclick="quickAdd('${p.label.replace(/'/g,"\\'")}',${p.kcal},${p.protein},${carbs},${fats},${sugar})">${p.label} <span style="color:var(--text3)">${p.kcal}</span></button>`;
+    }).join('');
+  }
 }
 
 function renderMealsTabRecent() {
@@ -4447,6 +4679,7 @@ function renderWater() {
 
 function switchCalDay(day) {
   calDay = day;
+  collapsedMeals.clear();
   const existing = document.getElementById('customEntryRow');
   if (existing) existing.remove();
   const picker = document.getElementById('foodServingPicker');
@@ -4850,7 +5083,7 @@ function renderCalendar() {
       if (!date) { html += `<div class="cal-day-cell cal-empty"></div>`; continue; }
       date.setHours(0,0,0,0);
       const dayName = DAYS[d];
-      const dd = getDayData(w, dayName);
+      const dd = (wd.days && wd.days[dayName]) || {};
       const act = (dd.activity || '').toLowerCase();
       const isFuture = date > today;
       const isBeforeStart = date < actualStart;
@@ -5076,21 +5309,317 @@ function renderHistory() {
   ctx.textBaseline = 'top';
   ctx.fillText(chartLabels[0], xScale(0), H - 16);
   if (chartData.length > 1) ctx.fillText(chartLabels[chartLabels.length - 1], xScale(chartData.length - 1), H - 16);
+
+  // ── Calorie trend chart ────────────────────────────────
+  renderCalChart();
+
+  // ── Progressive overload view ─────────────────────────
+  renderProgressiveOverload();
+}
+
+function renderCalChart() {
+  const canvas = document.getElementById('calChart');
+  if (!canvas) return;
+  const W = canvas.offsetWidth || canvas.parentElement.offsetWidth || 300;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 160 * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = '160px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const H = 160;
+
+  // Collect weekly avg kcal for weeks that have food data
+  const points = [];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (!wd || !wd.calories) continue;
+    let total = 0, days = 0;
+    DAYS.forEach(day => {
+      const cal = wd.calories[day];
+      if (!cal) return;
+      const eaten = MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal || 0), 0);
+      if (eaten > 0) { total += eaten; days++; }
+    });
+    if (days > 0) points.push({ w, avg: Math.round(total / days), target: getTargetForWeek(w) });
+  }
+
+  if (points.length < 2) {
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '12px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Log food for at least 2 weeks to see the calorie trend', W / 2, H / 2);
+    return;
+  }
+
+  const pad = { t: 16, r: 20, b: 28, l: 46 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+  const vals = points.map(p => p.avg);
+  const targets = points.map(p => p.target);
+  const allVals = [...vals, ...targets];
+  const minV = Math.min(...allVals) * 0.93;
+  const maxV = Math.max(...allVals) * 1.05;
+  const xScale = i => pad.l + (i / (points.length - 1)) * cW;
+  const yScale = v => pad.t + cH - ((v - minV) / (maxV - minV)) * cH;
+
+  // Phase target dashed line
+  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = '#6b625955';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  targets.forEach((v, i) => { i === 0 ? ctx.moveTo(xScale(i), yScale(v)) : ctx.lineTo(xScale(i), yScale(v)); });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Avg kcal line
+  ctx.beginPath();
+  vals.forEach((v, i) => { i === 0 ? ctx.moveTo(xScale(i), yScale(v)) : ctx.lineTo(xScale(i), yScale(v)); });
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Dots + labels
+  vals.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(xScale(i), yScale(v), 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f97316';
+    ctx.fill();
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(v, xScale(i), yScale(v) - 4);
+  });
+
+  // Y axis labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '10px DM Mono, monospace';
+  [minV, maxV].forEach(v => ctx.fillText(Math.round(v), pad.l - 4, yScale(v)));
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Wk ' + points[0].w, xScale(0), H - pad.b + 4);
+  if (points.length > 1) ctx.fillText('Wk ' + points[points.length - 1].w, xScale(points.length - 1), H - pad.b + 4);
+}
+
+function renderProgressiveOverload() {
+  const el = document.getElementById('progressiveOverloadView');
+  if (!el) return;
+
+  // Collect all workout logs with weights entries, keyed by exercise name
+  const exerciseHistory = {}; // { "Bench Press": [{week, date, sets:[{reps,weight}]}] }
+
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (!wd || !wd.days) continue;
+    DAYS.forEach((day, di) => {
+      const dd = (wd.days && wd.days[day]) || {};
+      const log = dd.workoutLog;
+      if (!log || log.type !== 'weights' || !log.entries || log.entries.length === 0) return;
+      const date = getDayDate(w, di);
+      const dateStr = date ? date.toISOString().slice(0, 10) : `Wk ${w}`;
+      log.entries.forEach(ex => {
+        if (!ex.exercise || !ex.sets || ex.sets.length === 0) return;
+        const name = ex.exercise.trim();
+        if (!name) return;
+        if (!exerciseHistory[name]) exerciseHistory[name] = [];
+        const maxWeight = Math.max(...ex.sets.map(s => parseFloat(s.weight) || 0));
+        const totalVol = ex.sets.reduce((s, set) => s + ((parseFloat(set.reps) || 0) * (parseFloat(set.weight) || 0)), 0);
+        exerciseHistory[name].push({ week: w, dateStr, sets: ex.sets, maxWeight, totalVol });
+      });
+    });
+  }
+
+  const exercises = Object.keys(exerciseHistory);
+  if (exercises.length === 0) {
+    el.innerHTML = `<div style="font-size:13px;color:var(--text3);">Log weights in your workout sessions on the Home tab to see progression here.</div>`;
+    return;
+  }
+
+  el.innerHTML = exercises.sort().map(name => {
+    const sessions = exerciseHistory[name];
+    const first = sessions[0];
+    const last  = sessions[sessions.length - 1];
+    const weightChange = last.maxWeight - first.maxWeight;
+    const changeHtml = sessions.length > 1
+      ? `<span style="color:${weightChange >= 0 ? 'var(--green)' : 'var(--red)'};">${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)} kg</span>`
+      : '';
+
+    const sessionRows = sessions.map(s => {
+      const setsStr = s.sets.map(set => `${set.reps || '?'}×${set.weight || '?'}kg`).join(' · ');
+      return `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span style="color:var(--text3);font-family:var(--mono);font-size:11px;">Wk ${s.week}</span>
+        <span style="color:var(--text2);flex:1;padding:0 12px;">${setsStr}</span>
+        <span style="color:var(--text);font-family:var(--mono);font-size:11px;">${s.maxWeight > 0 ? s.maxWeight + 'kg max' : ''}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+        <span style="font-size:14px;font-weight:600;color:var(--text);">${name}</span>
+        <span style="font-size:12px;color:var(--text3);">${sessions.length} session${sessions.length > 1 ? 's' : ''}</span>
+        ${changeHtml}
+      </div>
+      ${sessionRows}
+    </div>`;
+  }).join('');
+}
+
+// ─── BMI / TDEE ────────────────────────────────────────────
+function calcBmiTdee() {
+  if (!allData._body) return null;
+  const dates = Object.keys(allData._body).sort().reverse();
+  if (!dates.length) return null;
+  const latest = allData._body[dates[0]];
+  const heightCm = latest.height;
+  const weightLbs = latest.currentWeight || (peekWeekData(getCurrentWeekFromDate())?.weight);
+  if (!heightCm || !weightLbs) return null;
+  const weightKg = weightLbs * 0.453592;
+  const heightM  = heightCm / 100;
+  const bmi = weightKg / (heightM * heightM);
+  // Mifflin-St Jeor (male)
+  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * 30) + 5; // assuming age ~30
+  const tdee = bmr * 1.55; // moderate activity
+  const bmiLabel = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+  const bmiColor = bmi < 18.5 ? 'var(--blue)' : bmi < 25 ? 'var(--green)' : bmi < 30 ? 'var(--amber)' : 'var(--red)';
+  return { bmi: bmi.toFixed(1), bmr: Math.round(bmr), tdee: Math.round(tdee), bmiLabel, bmiColor };
+}
+
+function updateBmiTdeeCard() {
+  const card = document.getElementById('bmiTdeeCard');
+  const result = calcBmiTdee();
+  if (!result || !card) return;
+  card.style.display = 'block';
+  document.getElementById('bmiValue').textContent  = result.bmi;
+  document.getElementById('bmiValue').style.color  = result.bmiColor;
+  document.getElementById('bmiLabel').textContent  = result.bmiLabel;
+  document.getElementById('bmrValue').textContent  = result.bmr.toLocaleString() + ' kcal';
+  document.getElementById('tdeeValue').textContent = result.tdee.toLocaleString() + ' kcal';
+}
+
+function applyTdeeToMaintenance() {
+  const result = calcBmiTdee();
+  if (!result) return;
+  if (!confirm(`Set maintenance calories to ${result.tdee.toLocaleString()} kcal/day (TDEE estimate)?`)) return;
+  if (!allData._settings) allData._settings = {};
+  allData._settings.maintenance = result.tdee;
+  autoPersist();
+  // Reflect in settings fields if open
+  const el = document.getElementById('setMaintenance');
+  if (el) { el.value = result.tdee; updateSettingsCalcs(); }
+  const msg = document.getElementById('settingsSaveMsg');
+  if (msg) { msg.textContent = `Maintenance set to ${result.tdee.toLocaleString()} kcal ✓`; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3000); }
+}
+
+// ─── BROWSER NOTIFICATION REMINDERS ──────────────────────
+const NOTIF_KEY = 'ftNotifEnabled';
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    alert('Your browser does not support notifications.'); return;
+  }
+  Notification.requestPermission().then(perm => {
+    localStorage.setItem(NOTIF_KEY, perm === 'granted' ? 'yes' : 'no');
+    updateNotifBtn();
+    if (perm === 'granted') scheduleReminders();
+  });
+}
+
+function updateNotifBtn() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const enabled = localStorage.getItem(NOTIF_KEY) === 'yes';
+  const supported = 'Notification' in window;
+  if (!supported) { btn.textContent = 'Not supported on this browser'; btn.disabled = true; return; }
+  btn.textContent = enabled ? 'Reminders on ✓' : 'Enable daily reminders';
+  btn.style.background = enabled ? 'var(--green-bg)' : '';
+  btn.style.color = enabled ? 'var(--green)' : '';
+  btn.style.borderColor = enabled ? 'var(--green)' : '';
+}
+
+function scheduleReminders() {
+  // Check daily — fire reminder if today's weight or food not logged by 9pm
+  const checkTime = 21 * 60; // 9pm in minutes
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  if (localStorage.getItem(NOTIF_KEY) !== 'yes') return;
+  if (Notification.permission !== 'granted') return;
+
+  const wd = peekWeekData(getCurrentWeekFromDate());
+  const today = DAYS[now.getDay() === 0 ? 6 : now.getDay() - 1];
+  const hasWeight = wd && wd.weight;
+  const hasFoodToday = wd && wd.calories && wd.calories[today] &&
+    MEALS.some(m => (wd.calories[today][m] || []).length > 0);
+
+  if (nowMins >= checkTime) {
+    if (!hasWeight) new Notification("Fitness tracker", { body: "Don't forget to log this week's weight! 💪", icon: '/favicon.ico' });
+    else if (!hasFoodToday) new Notification("Fitness tracker", { body: `Log today's food before midnight — stay on track! 🥗` });
+  }
+}
+
+function initReminders() {
+  if (localStorage.getItem(NOTIF_KEY) === 'yes' && Notification.permission === 'granted') {
+    scheduleReminders();
+    // Check every 30 minutes
+    setInterval(scheduleReminders, 30 * 60 * 1000);
+  }
 }
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────
 function exportData() {
   const payload = {
     exportedAt: new Date().toISOString(),
-    version: 1,
+    version: 2,
     data: allData,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
   a.href = url;
-  a.download = `fitness-tracker-backup-${date}.json`;
+  a.download = `fitness-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const rows = [['Week','Day','Date','Activity','Duration (min)','Kcal Burned','Kcal Eaten','Net Kcal','Protein (g)','Carbs (g)','Fat (g)','Sugar (g)','Water (ml)','Sleep (hrs)','Mood','Energy','RPE','Weight (lbs)']];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (!wd) continue;
+    DAYS.forEach((day, di) => {
+      const dd  = (wd.days && wd.days[day]) || {};
+      const cal = wd.calories && wd.calories[day];
+      const entries = cal ? MEALS.flatMap(m => cal[m] || []) : [];
+      const eaten   = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+      const protein = entries.reduce((s, e) => s + (e.protein || 0), 0);
+      const carbs   = entries.reduce((s, e) => s + (e.carbs || 0), 0);
+      const fat     = entries.reduce((s, e) => s + (e.fats || 0), 0);
+      const sugar   = entries.reduce((s, e) => s + (e.sugar || 0), 0);
+      const burned  = dd.customBurn !== undefined ? dd.customBurn : (EXERCISE_BURN[dd.activity || ''] || 0);
+      const water   = (wd.water && wd.water[day]) || 0;
+      const date    = getDayDate(w, di);
+      const dateStr = date ? date.toISOString().slice(0, 10) : '';
+      rows.push([
+        w, day, dateStr,
+        dd.activity || '', dd.durationMin || '', burned,
+        eaten || '', eaten ? (eaten - burned) : '', protein || '', carbs || '', fat || '', sugar || '',
+        water || '', dd.sleepHrs || '', dd.mood || '', dd.energy || '', dd.rpe || '',
+        di === 0 && wd.weight ? wd.weight : '',
+      ]);
+    });
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `fitness-tracker-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -5103,18 +5632,29 @@ function importData(event) {
     try {
       const parsed = JSON.parse(e.target.result);
       const incoming = parsed.data || parsed;
-      if (typeof incoming !== 'object' || Array.isArray(incoming)) {
-        alert('Invalid backup file — could not restore data.');
-        return;
+
+      // ── Validation ─────────────────────────────────────────
+      if (typeof incoming !== 'object' || Array.isArray(incoming) || incoming === null) {
+        alert('Invalid backup file — root data is not an object.'); return;
       }
+      // Check for required keys
+      const hasWeekData = Object.keys(incoming).some(k => !isNaN(parseInt(k)));
+      const hasSettings = typeof incoming._settings === 'object' || incoming._startDate;
+      if (!hasWeekData && !hasSettings) {
+        alert('This file doesn\'t look like a fitness tracker backup. No week data or settings found.'); return;
+      }
+      // Warn if version mismatch
+      if (parsed.version && parsed.version > 2) {
+        if (!confirm(`This backup was created with a newer version (v${parsed.version}). Some data may not load correctly. Continue?`)) return;
+      }
+      // ── Restore ────────────────────────────────────────────
       allData = incoming;
       autoPersist();
       checkStartDateSetup();
       render();
       renderHistory();
       const msg = document.getElementById('importMsg');
-      msg.classList.add('show');
-      setTimeout(() => msg.classList.remove('show'), 3000);
+      if (msg) { msg.classList.add('show'); setTimeout(() => msg.classList.remove('show'), 3000); }
     } catch {
       alert('Could not read file. Make sure it is a valid fitness tracker backup (.json).');
     }
@@ -5122,6 +5662,8 @@ function importData(event) {
   reader.readAsText(file);
   event.target.value = '';
 }
+
+
 
 // Close food search dropdown when clicking outside
 document.addEventListener('click', (e) => {
@@ -5142,6 +5684,7 @@ async function loadAndRender() {
   if (local) { allData = JSON.parse(local); checkStartDateSetup(); render(); }
   const pulled = await pullFromSheets();
   if (pulled) { checkStartDateSetup(); render(); }
+  initReminders();
 }
 
 async function init() {
