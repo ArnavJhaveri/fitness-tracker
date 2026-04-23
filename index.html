@@ -903,7 +903,10 @@
     <div class="header-name">Arnav — Fitness Tracker</div>
   </div>
   <div class="header-right">
-    <div style="font-family:var(--mono);font-size:11px;margin-bottom:6px;min-height:16px;text-align:right;" id="syncStatus"></div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:6px;">
+      <div style="font-family:var(--mono);font-size:11px;min-height:16px;" id="syncStatus"></div>
+      <button onclick="lockApp()" title="Lock app" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#f5f2ee;cursor:pointer;font-family:var(--sans);letter-spacing:0.01em;">🔒 Lock</button>
+    </div>
     <div class="week-nav">
       <button class="week-btn" onclick="changeWeek(-1)">‹</button>
       <div class="week-label" id="weekLabel">Week 1</div>
@@ -1797,6 +1800,27 @@ function storeCredentialId(credId) {
 function unlockApp() {
   sessionStorage.setItem('ftUnlocked', 'yes');
   document.getElementById('lockScreen').classList.add('hidden');
+}
+
+function lockApp() {
+  sessionStorage.removeItem('ftUnlocked');
+  // Clear biometric status display
+  const statusEl = document.getElementById('biometricStatus');
+  if (statusEl) statusEl.textContent = '';
+  // Reset password input
+  const pwInp = document.getElementById('pwInput');
+  if (pwInp) pwInp.value = '';
+  const errEl = document.getElementById('lockError');
+  if (errEl) errEl.textContent = '';
+  // Show lock screen
+  document.getElementById('lockScreen').classList.remove('hidden');
+  // Re-trigger biometric if registered
+  const hasPasskey = !!getStoredCredentialId();
+  if (webAuthnSupported() && hasPasskey) {
+    setTimeout(() => attemptBiometric(), 300);
+  } else {
+    if (pwInp) pwInp.focus();
+  }
 }
 
 async function initAuth() {
@@ -6011,7 +6035,9 @@ function setGlobalDay(day) {
   calDay = day;
   dietDay = day;
   dietDayManuallySet = true;
-  selectedDay = day;
+  // Only change selectedDay (and thus open the panel) if it was already open
+  // If it was closed (null), keep it closed — just update calDay/dietDay
+  if (selectedDay !== null) selectedDay = day;
   renderGlobalDaySelector(day);
   renderDays();
   renderDiet();
