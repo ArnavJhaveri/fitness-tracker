@@ -829,6 +829,13 @@
   .meal-tab-btn { font-size:12px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);font-weight:500;transition:all 0.15s;white-space:nowrap; }
   .meal-tab-btn:hover { border-color:var(--accent);color:var(--accent);background:var(--accent-bg,#fdf3ef); }
   .meal-tab-active { background:var(--accent)!important;color:white!important;border-color:var(--accent)!important;box-shadow:0 2px 8px rgba(196,80,26,0.25); }
+  .global-day-btn {
+    font-size:12px; font-weight:500; padding:5px 11px; border-radius:7px;
+    border:1px solid var(--border2); background:var(--surface2); color:var(--text2);
+    cursor:pointer; font-family:var(--sans); transition:all 0.12s;
+  }
+  .global-day-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .global-day-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
   .meal-section-header { display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;padding:5px 10px;border-radius:6px; }
   .meal-section-title { font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase; }
   .meal-section-kcal { font-family:var(--mono);font-size:10px;opacity:0.8; }
@@ -1000,6 +1007,21 @@
     <div class="days-grid" id="daysGrid"></div>
     <div id="dayDetail" style="display:none"></div>
 
+    <!-- GLOBAL DAY SELECTOR -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;">View day:</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button id="globalDay_Mon" onclick="setGlobalDay('Mon')" class="global-day-btn">Mon</button>
+        <button id="globalDay_Tue" onclick="setGlobalDay('Tue')" class="global-day-btn">Tue</button>
+        <button id="globalDay_Wed" onclick="setGlobalDay('Wed')" class="global-day-btn">Wed</button>
+        <button id="globalDay_Thu" onclick="setGlobalDay('Thu')" class="global-day-btn">Thu</button>
+        <button id="globalDay_Fri" onclick="setGlobalDay('Fri')" class="global-day-btn">Fri</button>
+        <button id="globalDay_Sat" onclick="setGlobalDay('Sat')" class="global-day-btn">Sat</button>
+        <button id="globalDay_Sun" onclick="setGlobalDay('Sun')" class="global-day-btn">Sun</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);flex:1;text-align:right;">Syncs diet + calorie sections · each section still has its own day selector</div>
+    </div>
+
     <!-- DIET CHECKLIST -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div class="section-title" style="margin-bottom:0;">Diet rules — did you stick to them today?</div>
@@ -1149,7 +1171,7 @@
           </div>
           <span id="waterPct" style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:32px;text-align:right;">0%</span>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Target: 2.5 L/day — more on workout days and in Bangkok heat</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;" id="waterTargetNote">Target: 2.5 L/day — more on workout days and in Bangkok heat</div>
       </div>
     </div>
 
@@ -1639,7 +1661,7 @@
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
       <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
-      <span id="settingsSaveMsg" style="font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s;"></span>
+      <span id="settingsSaveMsg" style="font-size:13px;font-weight:500;color:var(--green);opacity:0;transition:opacity 0.4s;"></span>
     </div>
 
     <!-- BODY MEASUREMENTS -->
@@ -2341,21 +2363,27 @@ function calcStreak() {
 // ─── WEEK NAV ────────────────────────────────────────────
 function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
-  selectedDay = null;
+  selectedDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   dietDayManuallySet = false;
   collapsedMeals.clear();
-  calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  calDay = selectedDay;
   render();
 }
 
 function changeWeek(dir) {
   currentWeek = Math.max(1, Math.min(TOTAL_WEEKS(), currentWeek + dir));
-  selectedDay = null;
   dietDayManuallySet = false;
   collapsedMeals.clear();
   const cwk = getCurrentWeekFromDate();
+  const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
   if (currentWeek === cwk) {
-    calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+    // Current week — keep today selected
+    calDay = todayName;
+    selectedDay = todayName;
+  } else {
+    // Past/future week — keep whichever day was selected (or Mon as fallback)
+    if (!selectedDay) selectedDay = 'Mon';
+    calDay = selectedDay;
   }
   render();
 }
@@ -2387,6 +2415,13 @@ function render() {
   if (ls) ls.textContent = streak.longest;
 
   renderWeight();
+  // On current week, always default to today if nothing selected
+  const _todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  if (currentWeek === getCurrentWeekFromDate() && !selectedDay) {
+    selectedDay = _todayName;
+    calDay = _todayName;
+    dietDay = _todayName;
+  }
   renderDays();
   renderWeekNotes();
   if (!dietDayManuallySet) {
@@ -2396,6 +2431,7 @@ function render() {
   renderCalorie();
   renderSummary();
   renderProgress();
+  syncGlobalDaySelector();
 }
 
 function calcWeeklyDeficit(weekNum) {
@@ -2600,7 +2636,7 @@ function renderDays() {
     const ws = getWeekStartDate(currentWeek);
     const wLabel = ws ? formatDate(ws, {day:'numeric',month:'short'}) : '';
     const prevDis = currentWeek <= 1 ? 'opacity:0.35;cursor:default;pointer-events:none;' : '';
-    const nextDis = currentWeek >= 20 ? 'opacity:0.35;cursor:default;pointer-events:none;' : '';
+    const nextDis = currentWeek >= TOTAL_WEEKS() ? 'opacity:0.35;cursor:default;pointer-events:none;' : '';
     nav.innerHTML = `
       <button onclick="changeWeek(-1)" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);${prevDis}">‹ Prev</button>
       <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;min-width:90px;">Wk ${currentWeek}${wLabel ? ' · ' + wLabel : ''}</div>
@@ -2640,6 +2676,7 @@ function renderDays() {
       return;
     }
 
+    const planned = plan[i];
     const activity = dd.activity || planned;
     const card = document.createElement('div');
     card.className = 'day-card' + (selectedDay === day ? ' selected' : '');
@@ -2824,11 +2861,8 @@ function renderDayDetail(day) {
 
         <!-- WORKOUT DETAIL LOG -->
         <div class="detail-section" style="grid-column:1/-1;">
-          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
-            Workout details
-            <button onclick="renderWorkoutLogPanel('${day}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ log details</button>
-          </div>
-          <div id="workoutLogPanel_${day}">${renderWorkoutLogSummary(day, dd)}</div>
+          <div class="detail-label">Workout details</div>
+          <div id="workoutLogPanel_${day}"></div>
         </div>
 
         <!-- MOOD / SLEEP / ENERGY -->
@@ -2861,6 +2895,8 @@ function renderDayDetail(day) {
     </div>
   `;
   injectInlineSession(dd.activity || planned, currentWeek);
+  // Auto-expand the workout log panel immediately
+  renderWorkoutLogPanel(day);
 }
 
 function getSessionKey(activity, week) {
@@ -3105,6 +3141,14 @@ function renderWorkoutLogPanel(day) {
   const log = getWorkoutLog(day);
   const panel = document.getElementById(`workoutLogPanel_${day}`);
   if (!panel) return;
+
+  // If no activity logged yet, infer type from the planned activity for this day
+  if (log.type === 'other' && !dd.activity) {
+    const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
+    const dayIdx = DAYS.indexOf(day);
+    const planned = plan[dayIdx] || '';
+    log.type = detectWorkoutType(planned);
+  }
 
   if (log.type === 'weights') {
     panel.innerHTML = `
@@ -3459,8 +3503,19 @@ function saveAllSettings() {
   render();
   renderPlanRef();
   updateSettingsCalcs();
-  const msg = document.getElementById('settingsSaveMsg');
-  if (msg) { msg.textContent = 'Settings saved ✓'; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3000); }
+  // Explicitly refresh calorie display and deficit with new targets
+  updateCalTotals();
+  renderProgress();
+  // Delay so CSS transition fires correctly after render() completes
+  setTimeout(() => {
+    const msg = document.getElementById('settingsSaveMsg');
+    if (msg) {
+      msg.textContent = 'Settings saved ✓';
+      msg.style.color = 'var(--green)';
+      msg.style.opacity = '1';
+      setTimeout(() => { msg.style.opacity = '0'; }, 3500);
+    }
+  }, 50);
 }
 
 function populateSettingsFields() {
@@ -4783,6 +4838,10 @@ function renderWater() {
   const slider = document.getElementById('waterSlider');
   if (slider && parseInt(slider.value) !== totalMl) slider.value = totalMl;
 
+  // Update water target note label dynamically
+  const waterNoteEl = document.getElementById('waterTargetNote');
+  if (waterNoteEl) waterNoteEl.textContent = 'Target: ' + getSetting('waterTargetL') + ' L/day — more on workout days and in Bangkok heat';
+
   const badge = document.getElementById('waterBadge');
   if (badge) {
     const display = totalL % 1 === 0 ? totalL.toFixed(0) : totalL.toFixed(2).replace(/0+$/, '');
@@ -4817,6 +4876,7 @@ function renderWater() {
 
 function switchCalDay(day) {
   calDay = day;
+  renderGlobalDaySelector(calDay);
   collapsedMeals.clear();
   const existing = document.getElementById('customEntryRow');
   if (existing) existing.remove();
@@ -5482,14 +5542,16 @@ function renderCalChart() {
     if (days > 0) points.push({ w, avg: Math.round(total / days), target: getTargetForWeek(w) });
   }
 
-  if (points.length < 2) {
+  if (points.length === 0) {
     ctx.fillStyle = '#a89e93';
     ctx.font = '12px DM Sans, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Log food for at least 2 weeks to see the calorie trend', W / 2, H / 2);
+    ctx.fillText('Log food to see the calorie trend chart', W / 2, H / 2);
     return;
   }
+  // With only 1 data point duplicate it so we can draw a line
+  if (points.length === 1) points.push({ ...points[0] });
 
   const pad = { t: 16, r: 20, b: 28, l: 46 };
   const cW = W - pad.l - pad.r;
@@ -5853,6 +5915,30 @@ document.addEventListener('click', (e) => {
   }
 });
 
+
+// ─── GLOBAL DAY SELECTOR ─────────────────────────────────
+function setGlobalDay(day) {
+  // Sync both calDay and dietDay to the selected day
+  calDay = day;
+  dietDay = day;
+  dietDayManuallySet = true;
+  renderGlobalDaySelector(day);
+  renderDiet();
+  renderCalorie();
+}
+
+function renderGlobalDaySelector(activeDay) {
+  DAYS.forEach(d => {
+    const btn = document.getElementById('globalDay_' + d);
+    if (!btn) return;
+    btn.classList.toggle('active', d === activeDay);
+  });
+}
+
+// Called from render() to keep selector in sync with current calDay
+function syncGlobalDaySelector() {
+  renderGlobalDaySelector(calDay);
+}
 
 // ─── NUDGE SYSTEM ────────────────────────────────────────
 
