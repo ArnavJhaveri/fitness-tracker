@@ -1163,9 +1163,59 @@
       <div class="sum-stat"><div class="sum-label">Active hours</div><div class="sum-val" id="sumWorkoutHours">0<small>h</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
+      <div class="sum-stat"><div class="sum-label">On target</div><div class="sum-val" id="sumOnTarget">—<small>/7</small></div></div>
+      <div class="sum-stat"><div class="sum-label">Avg protein</div><div class="sum-val" id="sumProtein">—<small>g</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg sleep</div><div class="sum-val" id="sumSleep">—<small>h</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg mood</div><div class="sum-val" id="sumMood">—<small>/5</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg energy</div><div class="sum-val" id="sumEnergy">—<small>/5</small></div></div>
+    </div>
+
+    <!-- TDEE NUDGE -->
+    <div id="nudgeTdee" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696;&#xfe0f; Time to update your maintenance calories</div>
+        <div style="font-size:12px;color:var(--text2);" id="nudgeTdeeMsg">You&apos;ve lost significant weight since your maintenance was last set. Your TDEE has likely dropped &mdash; recalculate for accurate deficit tracking.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button onclick="showTab('settings');dismissNudge('nudgeTdee',14);" style="padding:6px 14px;border-radius:8px;border:none;background:var(--blue);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;white-space:nowrap;">Update in Settings &rarr;</button>
+        <button onclick="dismissNudge('nudgeTdee',14)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Dismiss</button>
+      </div>
+    </div>
+
+    <!-- PROTEIN NUDGE -->
+    <div id="nudgeProtein" style="display:none;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:2px;">&#x1f969; Protein target missed most days</div>
+        <div style="font-size:12px;color:var(--text2);" id="nudgeProteinMsg"></div>
+      </div>
+      <button onclick="dismissNudge('nudgeProtein',7)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Dismiss</button>
+    </div>
+
+    <!-- PACE NUDGE -->
+    <div id="nudgePace" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;" id="nudgePaceTitle">&#x1f4ca; Pace check</div>
+        <div style="font-size:12px;color:var(--text2);" id="nudgePaceMsg"></div>
+      </div>
+      <button onclick="dismissNudge('nudgePace',14)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Dismiss</button>
+    </div>
+
+    <!-- MONDAY WEIGH-IN NUDGE -->
+    <div id="nudgeWeighIn" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x2696;&#xfe0f; Monday weigh-in</div>
+        <div style="font-size:12px;color:var(--text2);">It&apos;s Monday &mdash; don&apos;t forget to log your weight before eating. Same time, same conditions every week gives the most accurate trend.</div>
+      </div>
+      <button onclick="dismissNudge('nudgeWeighIn',1)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Got it</button>
+    </div>
+
+    <!-- WATER NUDGE -->
+    <div id="nudgeWater" style="display:none;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:10px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:500;color:var(--blue);margin-bottom:2px;">&#x1f4a7; Water intake low today</div>
+        <div style="font-size:12px;color:var(--text2);" id="nudgeWaterMsg">You&apos;re under halfway to your daily water target. Dehydration mimics hunger and makes it harder to stay on your calorie target.</div>
+      </div>
+      <button onclick="dismissNudge('nudgeWater',1)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;flex-shrink:0;">Got it</button>
     </div>
 
     <div style="margin-bottom:14px;">
@@ -3323,6 +3373,53 @@ function renderSummary() {
   if (sleepEl)  sleepEl.innerHTML  = sleepDays  ? (sleepTotal/sleepDays).toFixed(1)   + '<small>h</small>'  : '—<small>h</small>';
   if (moodEl)   moodEl.innerHTML   = moodDays   ? (moodTotal/moodDays).toFixed(1)     + '<small>/5</small>' : '—<small>/5</small>';
   if (energyEl) energyEl.innerHTML = energyDays ? (energyTotal/energyDays).toFixed(1) + '<small>/5</small>' : '—<small>/5</small>';
+
+  // ── Feature 5: Calorie consistency + avg protein ──────────────
+  const calTarget = getTargetForWeek(currentWeek);
+  let onTargetDays = 0, totalFoodDays = 0, totalProtein = 0, proteinDays = 0;
+  const todayCheck = new Date(); todayCheck.setHours(0,0,0,0);
+  const startCheck = allData._startDate ? new Date(allData._startDate) : null;
+  if (startCheck) startCheck.setHours(0,0,0,0);
+  DAYS.forEach((day, i) => {
+    const dayDate = getDayDate(currentWeek, i);
+    if (!dayDate) return;
+    dayDate.setHours(0,0,0,0);
+    if (startCheck && dayDate < startCheck) return;
+    if (dayDate > todayCheck) return;
+    const rawWd = peekWeekData(currentWeek);
+    if (!rawWd || !rawWd.calories || !rawWd.calories[day]) return;
+    const cal = rawWd.calories[day];
+    const entries = MEALS.flatMap(m => cal[m] || []);
+    const consumed = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    const protein  = entries.reduce((s, e) => s + (e.protein || 0), 0);
+    if (consumed > 0) {
+      totalFoodDays++;
+      const dd2 = (wd.days && wd.days[day]) || {};
+      const burn2 = dd2.customBurn !== undefined ? dd2.customBurn : (EXERCISE_BURN[dd2.activity || ''] || 0);
+      if (Math.abs((consumed - burn2) - calTarget) <= 150) onTargetDays++;
+      totalProtein += protein;
+      proteinDays++;
+    }
+  });
+  const onTargetEl = document.getElementById('sumOnTarget');
+  if (onTargetEl) {
+    onTargetEl.innerHTML = totalFoodDays > 0 ? onTargetDays + '<small>/' + totalFoodDays + '</small>' : '—<small>/7</small>';
+    onTargetEl.style.color = (totalFoodDays > 0 && onTargetDays >= totalFoodDays * 0.7) ? 'var(--green)' : '';
+  }
+  const proteinEl = document.getElementById('sumProtein');
+  if (proteinEl) {
+    const avgProt = proteinDays > 0 ? Math.round(totalProtein / proteinDays) : 0;
+    proteinEl.innerHTML = proteinDays > 0 ? avgProt + '<small>g</small>' : '—<small>g</small>';
+    const protTarget = getSetting('proteinTarget');
+    proteinEl.style.color = (proteinDays > 0 && avgProt >= protTarget * 0.9) ? 'var(--green)' : (proteinDays > 0 ? 'var(--amber)' : '');
+  }
+
+  // Run all nudge checks
+  checkNudgeTdee();
+  checkNudgeProtein();
+  checkNudgePace();
+  checkNudgeWeighIn();
+  checkNudgeWater();
 }
 
 // ─── TABS ─────────────────────────────────────────────────
@@ -3352,6 +3449,11 @@ function saveAllSettings() {
   else if (tdEl) delete allData._targetDate;
   if (!allData._settings) allData._settings = {};
   Object.entries(fields).forEach(([k, v]) => { if (!isNaN(v) && v > 0) allData._settings[k] = v; });
+  // Record current weight when maintenance is saved (used by TDEE nudge)
+  if (!isNaN(fields.maintenance) && fields.maintenance > 0) {
+    const cwt = getCurrentLoggedWeight();
+    if (cwt) allData._settings._maintenanceSetAtWeight = cwt;
+  }
   autoPersist();
   if (currentWeek > TOTAL_WEEKS()) currentWeek = TOTAL_WEEKS();
   render();
@@ -5580,6 +5682,8 @@ function applyTdeeToMaintenance() {
   if (!confirm(`Set maintenance calories to ${result.tdee.toLocaleString()} kcal/day (${result.activityLabel} TDEE estimate)?`)) return;
   if (!allData._settings) allData._settings = {};
   allData._settings.maintenance = result.tdee;
+  const cwt2 = getCurrentLoggedWeight();
+  if (cwt2) allData._settings._maintenanceSetAtWeight = cwt2;
   autoPersist();
   // Reflect in settings fields if open
   const el = document.getElementById('setMaintenance');
@@ -5748,6 +5852,128 @@ document.addEventListener('click', (e) => {
     results.style.display = 'none';
   }
 });
+
+
+// ─── NUDGE SYSTEM ────────────────────────────────────────
+
+// Shared helpers
+function dismissNudge(id, cooldownDays) {
+  localStorage.setItem('ftNudge_' + id, Date.now().toString());
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+function isNudgeDismissed(id, cooldownDays) {
+  const ts = parseInt(localStorage.getItem('ftNudge_' + id) || '0');
+  return Date.now() - ts < cooldownDays * 24 * 60 * 60 * 1000;
+}
+function showNudge(id) { const el = document.getElementById(id); if (el) el.style.display = 'flex'; }
+function hideNudge(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+
+// Get most recently logged week weight across all weeks
+function getCurrentLoggedWeight() {
+  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+    const d = peekWeekData(w);
+    if (d && d.weight) return d.weight;
+  }
+  return null;
+}
+
+// ── TDEE nudge: shows when 8+ lbs lost since maintenance was set ──
+function checkNudgeTdee() {
+  if (isNudgeDismissed('nudgeTdee', 14)) { hideNudge('nudgeTdee'); return; }
+  const setAtWeight = allData._settings && allData._settings._maintenanceSetAtWeight;
+  const currentWt   = getCurrentLoggedWeight();
+  if (!setAtWeight || !currentWt) { hideNudge('nudgeTdee'); return; }
+  const lbsLost = setAtWeight - currentWt;
+  if (lbsLost < 8) { hideNudge('nudgeTdee'); return; }
+  const estDrop = Math.round(lbsLost * 4.5);
+  const msgEl = document.getElementById('nudgeTdeeMsg');
+  if (msgEl) msgEl.textContent = "You've lost " + lbsLost.toFixed(1) + " lbs since your maintenance was set at " + setAtWeight + " lbs. Your TDEE has likely dropped by ~" + estDrop + " kcal/day — update it in Settings for accurate deficit tracking.";
+  showNudge('nudgeTdee');
+}
+
+// ── Protein nudge: shows when consistently missing protein target ──
+function checkNudgeProtein() {
+  if (isNudgeDismissed('nudgeProtein', 7)) { hideNudge('nudgeProtein'); return; }
+  const protTarget = getSetting('proteinTarget');
+  const wd = peekWeekData(currentWeek);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startD = allData._startDate ? new Date(allData._startDate) : null;
+  if (startD) startD.setHours(0,0,0,0);
+  let daysLogged = 0, daysHit = 0, totalProt = 0;
+  DAYS.forEach((day, i) => {
+    const d = getDayDate(currentWeek, i);
+    if (!d) return;
+    d.setHours(0,0,0,0);
+    if (startD && d < startD) return;
+    if (d > today) return;
+    const cal = wd && wd.calories && wd.calories[day];
+    if (!cal) return;
+    const entries = MEALS.flatMap(m => cal[m] || []);
+    const kcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    if (kcal === 0) return;
+    const prot = entries.reduce((s, e) => s + (e.protein || 0), 0);
+    totalProt += prot; daysLogged++;
+    if (prot >= protTarget * 0.85) daysHit++;
+  });
+  if (daysLogged < 3 || (daysLogged - daysHit) < Math.ceil(daysLogged / 2)) { hideNudge('nudgeProtein'); return; }
+  const avg = Math.round(totalProt / daysLogged);
+  const msgEl = document.getElementById('nudgeProteinMsg');
+  if (msgEl) msgEl.textContent = 'Averaging ' + avg + 'g protein/day this week (target: ' + protTarget + 'g). Hit on ' + daysHit + '/' + daysLogged + ' logged days. Low protein in a deficit accelerates muscle loss — prioritise eggs, chicken, shakes, paneer.';
+  showNudge('nudgeProtein');
+}
+
+// ── Pace-of-loss nudge: checks every 4 weeks ──
+function checkNudgePace() {
+  if (isNudgeDismissed('nudgePace', 14)) { hideNudge('nudgePace'); return; }
+  if (currentWeek < 4 || currentWeek % 4 !== 0) { hideNudge('nudgePace'); return; }
+  let currentWt = null, pastWt = null;
+  for (let w = currentWeek; w >= 1; w--) {
+    const d = peekWeekData(w);
+    if (d && d.weight && !currentWt) currentWt = d.weight;
+    if (w <= currentWeek - 4 && d && d.weight && !pastWt) pastWt = d.weight;
+    if (currentWt && pastWt) break;
+  }
+  if (!currentWt || !pastWt) { hideNudge('nudgePace'); return; }
+  const lostOver4 = pastWt - currentWt;
+  const rate = lostOver4 / 4;
+  const titleEl = document.getElementById('nudgePaceTitle');
+  const msgEl   = document.getElementById('nudgePaceMsg');
+  if (rate > 1.2) {
+    if (titleEl) titleEl.textContent = 'Warning: losing weight too fast';
+    if (msgEl)   msgEl.textContent = 'Lost ' + lostOver4.toFixed(1) + ' lbs over 4 weeks (' + rate.toFixed(2) + ' lbs/week). Consistently above 1 lb/week risks muscle loss. Consider eating a little more on workout days.';
+    showNudge('nudgePace');
+  } else if (rate < 0.2 && currentWeek >= 8) {
+    if (titleEl) titleEl.textContent = 'Weight loss has stalled';
+    if (msgEl)   msgEl.textContent = 'Only ' + lostOver4.toFixed(1) + ' lbs lost over 4 weeks (' + rate.toFixed(2) + ' lbs/week vs 0.7 target). Check food logging accuracy. If accurate, try a strict 1,750 kcal reset for 3-5 days.';
+    showNudge('nudgePace');
+  } else { hideNudge('nudgePace'); }
+}
+
+// ── Monday weigh-in nudge ──
+function checkNudgeWeighIn() {
+  if (isNudgeDismissed('nudgeWeighIn', 1)) { hideNudge('nudgeWeighIn'); return; }
+  if (new Date().getDay() !== 1) { hideNudge('nudgeWeighIn'); return; }
+  if (currentWeek !== getCurrentWeekFromDate()) { hideNudge('nudgeWeighIn'); return; }
+  const wd = peekWeekData(currentWeek);
+  if (wd && wd.weight) { hideNudge('nudgeWeighIn'); return; }
+  showNudge('nudgeWeighIn');
+}
+
+// ── Water nudge: shows if today's water < 50% of target ──
+function checkNudgeWater() {
+  if (isNudgeDismissed('nudgeWater', 1)) { hideNudge('nudgeWater'); return; }
+  if (currentWeek !== getCurrentWeekFromDate()) { hideNudge('nudgeWater'); return; }
+  const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const waterTarget = WATER_TARGET_ML();
+  const wd = peekWeekData(currentWeek);
+  const logged = (wd && wd.water && wd.water[todayName]) || 0;
+  if (!waterTarget || logged >= waterTarget * 0.5) { hideNudge('nudgeWater'); return; }
+  const remaining = ((waterTarget - logged) / 1000).toFixed(1);
+  const msgEl = document.getElementById('nudgeWaterMsg');
+  if (msgEl) msgEl.textContent = (logged / 1000).toFixed(1) + 'L logged today — ' + remaining + 'L still to go. Dehydration mimics hunger and makes calorie tracking harder.';
+  showNudge('nudgeWater');
+}
 
 // ─── INIT ──────────────────────────────────────────────────
 async function loadAndRender() {
