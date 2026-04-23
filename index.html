@@ -4027,7 +4027,13 @@ function addMealTemplate(idx) {
   const t = templates[idx];
   if (!t || !t.items) return;
   const cd = getCalData(currentWeek, calDay);
-  t.items.forEach(item => cd[activeMeal].push({ ...item }));
+  t.items.forEach(item => cd[activeMeal].push({
+    ...item,
+    _per1:      { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fats: item.fats, sugar: item.sugar },
+    _baseName:  item.name,
+    _portions:  1,
+    _fromTemplate: t.name,
+  }));
   autoPersist();
   renderCalEntries();
   updateCalTotals();
@@ -4132,8 +4138,11 @@ function addQuickPreset() {
   div.innerHTML = `
     <input type="text" id="${tempId}_label" placeholder="Name (e.g. Banana)" style="flex:1;min-width:130px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
       onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
-    <input type="number" id="${tempId}_kcal"  placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:70px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
-    <input type="number" id="${tempId}_prot"  placeholder="protein g" class="cal-num-input" min="0" max="500" style="width:80px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_kcal"  placeholder="kcal"      class="cal-num-input" min="0" max="5000" style="width:65px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_prot"  placeholder="protein g"  class="cal-num-input" min="0" max="500"  style="width:75px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_carbs" placeholder="carbs g"    class="cal-num-input" min="0" max="500"  style="width:68px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_fats"  placeholder="fats g"     class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
+    <input type="number" id="${tempId}_sugar" placeholder="sugar g"    class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmNewPreset('${tempId}');">
     <button onclick="confirmNewPreset('${tempId}')" style="padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
     <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
   `;
@@ -4146,11 +4155,17 @@ function confirmNewPreset(tempId) {
   const kcalEl  = document.getElementById(tempId + '_kcal');
   const protEl  = document.getElementById(tempId + '_prot');
   if (!labelEl || !labelEl.value.trim()) return;
+  const carbsEl = document.getElementById(tempId + '_carbs');
+  const fatsEl  = document.getElementById(tempId + '_fats');
+  const sugarEl = document.getElementById(tempId + '_sugar');
   const presets = getQuickPresets();
   presets.push({
     label:   labelEl.value.trim(),
-    kcal:    parseInt(kcalEl.value) || 0,
-    protein: parseInt(protEl.value) || 0,
+    kcal:    parseInt(kcalEl.value)  || 0,
+    protein: parseInt(protEl.value)  || 0,
+    carbs:   carbsEl && carbsEl.value !== '' ? parseFloat(carbsEl.value) : undefined,
+    fats:    fatsEl  && fatsEl.value  !== '' ? parseFloat(fatsEl.value)  : undefined,
+    sugar:   sugarEl && sugarEl.value !== '' ? parseFloat(sugarEl.value) : undefined,
   });
   saveQuickPresets(presets);
   const row = document.getElementById('newPresetRow');
@@ -4706,6 +4721,10 @@ function confirmFoodAdd() {
     carbs:   Math.round(carb100  * scale * 10) / 10,
     fats:    Math.round(fat100   * scale * 10) / 10,
     sugar:   Math.round(sugar100 * scale * 10) / 10,
+    // Store source data so serving size can be re-edited later
+    _per100: { kcal: kcal100, protein: prot100, carbs: carb100, fats: fat100, sugar: sugar100 },
+    _baseName: name,
+    _servingG: g,
   };
   const cd = getCalData(currentWeek, calDay);
   cd[activeMeal].push(entry);
@@ -4909,16 +4928,19 @@ function renderCalEntries() {
   if (!container) return;
 
   const allEntries = MEALS.flatMap(m => (cd[m] || []));
+
+  // Copy prev buttons — always shown above the food log
+  let copyBtnsHtml = `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+    <span style="font-size:11px;color:var(--text3);align-self:center;margin-right:2px;">Copy from prev day:</span>
+    ${MEALS.map(m => `<button onclick="copyMealFromPrevDay('${m}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">+ ${MEAL_LABELS[m]}</button>`).join('')}
+  </div>`;
+
   if (allEntries.length === 0) {
-    container.innerHTML = `
-      <div style="font-size:12px;color:var(--text3);padding:8px 0 4px;">No items logged yet — search above, use quick add, or add manually.</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:8px;">
-        ${MEALS.map(m => `<button onclick="copyMealFromPrevDay('${m}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">Copy prev ${MEAL_LABELS[m]}</button>`).join('')}
-      </div>`;
+    container.innerHTML = copyBtnsHtml + `<div style="font-size:12px;color:var(--text3);padding:4px 0 4px;">No items logged yet — search above, use quick add, or add manually.</div>`;
     return;
   }
 
-  container.innerHTML = MEALS.map(meal => {
+  container.innerHTML = copyBtnsHtml + MEALS.map(meal => {
     const entries = cd[meal] || [];
     if (entries.length === 0) return '';
     const mealKcal   = entries.reduce((s, e) => s + (e.kcal || 0), 0);
@@ -4992,6 +5014,41 @@ function dragDrop(e, targetMeal, targetIdx) {
   updateCalTotals();
 }
 
+function recalcFromPortions(meal, idx, portionsStr) {
+  const cd = getCalData(currentWeek, calDay);
+  const e = cd[meal][idx];
+  if (!e || !e._per1) return;
+  const portions = parseFloat(portionsStr) || 1;
+  const r = v => v != null ? Math.round(v * portions * 10) / 10 : undefined;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+  set(`edit_kcal_${meal}_${idx}`,  Math.round(e._per1.kcal * portions));
+  set(`edit_prot_${meal}_${idx}`,  r(e._per1.protein));
+  set(`edit_carbs_${meal}_${idx}`, r(e._per1.carbs));
+  set(`edit_fats_${meal}_${idx}`,  r(e._per1.fats));
+  set(`edit_sugar_${meal}_${idx}`, r(e._per1.sugar));
+  const nameEl = document.getElementById(`edit_name_${meal}_${idx}`);
+  if (nameEl && e._baseName) nameEl.value = portions === 1 ? e._baseName : `${e._baseName} ×${portions}`;
+}
+
+function recalcFromServing(meal, idx, gStr) {
+  const cd = getCalData(currentWeek, calDay);
+  const e = cd[meal][idx];
+  if (!e || !e._per100) return;
+  const g = parseFloat(gStr) || 100;
+  const scale = g / 100;
+  const r = v => Math.round(v * scale * 10) / 10;
+  // Update the macro fields live
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set(`edit_kcal_${meal}_${idx}`,  Math.round(e._per100.kcal * scale));
+  set(`edit_prot_${meal}_${idx}`,  r(e._per100.protein));
+  set(`edit_carbs_${meal}_${idx}`, r(e._per100.carbs));
+  set(`edit_fats_${meal}_${idx}`,  r(e._per100.fats));
+  set(`edit_sugar_${meal}_${idx}`, r(e._per100.sugar));
+  // Update name field to reflect new serving
+  const nameEl = document.getElementById(`edit_name_${meal}_${idx}`);
+  if (nameEl && e._baseName) nameEl.value = `${e._baseName} (${g}g)`;
+}
+
 function editCalEntry(meal, idx) {
   const cd = getCalData(currentWeek, calDay);
   const e = cd[meal][idx];
@@ -5003,7 +5060,29 @@ function editCalEntry(meal, idx) {
     `<option value="${m}" ${m === meal ? 'selected' : ''}>${MEAL_LABELS[m]}</option>`
   ).join('');
 
-  row.innerHTML = `
+  // If entry has per-100g data, show serving size editor; otherwise show manual fields
+  const hasSourceData = e._per100 && e._baseName;
+  const hasPortionData = e._per1 && e._baseName;
+  const servingSection = hasSourceData ? `
+    <div style="width:100%;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--text2);font-weight:500;">${e._baseName}</span>
+      <span style="font-size:11px;color:var(--text3);">Change serving size:</span>
+      <input type="number" id="edit_serving_${meal}_${idx}" value="${e._servingG || 100}" min="1" max="2000" step="1"
+        class="cal-num-input" style="width:72px;"
+        oninput="recalcFromServing('${meal}',${idx},this.value)">
+      <span style="font-size:11px;color:var(--text3);">g — macros update automatically</span>
+    </div>` : hasPortionData ? `
+    <div style="width:100%;padding:6px 10px;background:var(--surface2);border-radius:8px;margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--text2);font-weight:500;">${e._baseName}</span>
+      ${e._fromTemplate ? `<span style="font-size:11px;color:var(--text3);">from ${e._fromTemplate}</span>` : ''}
+      <span style="font-size:11px;color:var(--text3);">Portions:</span>
+      <input type="number" id="edit_portions_${meal}_${idx}" value="${e._portions || 1}" min="0.25" max="20" step="0.25"
+        class="cal-num-input" style="width:64px;"
+        oninput="recalcFromPortions('${meal}',${idx},this.value)">
+      <span style="font-size:11px;color:var(--text3);">— macros update automatically</span>
+    </div>` : '';
+
+  row.innerHTML = servingSection + `
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;">
       <input type="text" id="edit_name_${meal}_${idx}" value="${e.name.replace(/"/g,'&quot;')}"
         style="flex:1;min-width:140px;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
@@ -5036,13 +5115,22 @@ function saveCalEntry(meal, idx) {
   if (!nameEl) return;
 
   const newMeal = mealEl ? mealEl.value : meal;
+  const servingEl = document.getElementById(`edit_serving_${meal}_${idx}`);
+  const origEntry = cd[meal][idx];
   const updated = {
-    name:    nameEl.value.trim() || cd[meal][idx].name,
+    name:    nameEl.value.trim() || origEntry.name,
     kcal:    get(`edit_kcal_${meal}_${idx}`)  || 0,
     protein: get(`edit_prot_${meal}_${idx}`)  || 0,
     carbs:   get(`edit_carbs_${meal}_${idx}`),
     fats:    get(`edit_fats_${meal}_${idx}`),
     sugar:   get(`edit_sugar_${meal}_${idx}`),
+    // Preserve source data for future re-editing
+    _per100:       origEntry._per100,
+    _baseName:     origEntry._baseName,
+    _servingG:     servingEl ? (parseFloat(servingEl.value) || origEntry._servingG) : origEntry._servingG,
+    _per1:         origEntry._per1,
+    _fromTemplate: origEntry._fromTemplate,
+    _portions:     (() => { const el = document.getElementById(`edit_portions_${meal}_${idx}`); return el ? (parseFloat(el.value) || origEntry._portions) : origEntry._portions; })(),
   };
 
   // If meal changed, remove from old and push to new
@@ -5070,6 +5158,10 @@ function quickAdd(name, kcal, protein, carbs, fats, sugar) {
     carbs: scale(carbs),
     fats:  scale(fats),
     sugar: scale(sugar),
+    // Source data for re-editing portion count
+    _per1:     { kcal, protein, carbs, fats, sugar },
+    _baseName: name,
+    _portions: servings,
   };
   const cd = getCalData(currentWeek, calDay);
   cd[activeMeal].push(entry);
