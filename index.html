@@ -271,6 +271,8 @@
   .badge-padel { background: var(--purple-bg); color: var(--purple); }
   .badge-rest { background: var(--surface2); color: var(--text3); }
   .badge-walk { background: var(--amber-bg); color: var(--amber); }
+  .badge-sport { background: var(--purple-bg); color: var(--purple); }
+  .badge-other { background: var(--red-bg); color: var(--red); }
   .badge-core { background: var(--amber-bg); color: var(--amber); }
   .badge-empty { background: var(--surface2); color: var(--text3); }
 
@@ -827,6 +829,15 @@
   .cal-walk { background: var(--amber-bg); border-color: #fbbf24; }
   .cal-walk .cal-day-num { color: var(--amber); }
   .cal-walk .cal-day-tag { color: var(--amber); }
+  .cal-sport { background: var(--purple-bg); border-color: #c4b5fd; }
+  .cal-sport .cal-day-num { color: var(--purple); }
+  .cal-sport .cal-day-tag { color: var(--purple); }
+  .cal-other { background: var(--red-bg); border-color: #fca5a5; }
+  .cal-other .cal-day-num { color: var(--red); }
+  .cal-other .cal-day-tag { color: var(--red); }
+  .cal-other { background: var(--red-bg); border-color: #fca5a5; }
+  .cal-other .cal-day-num { color: var(--red); }
+  .cal-other .cal-day-tag { color: var(--red); }
   .cal-skipped { background: var(--red-bg); border-color: #F7C1C1; }
   .cal-skipped .cal-day-num { color: var(--red); }
   .cal-today { border-color: var(--accent) !important; border-width: 2px !important; }
@@ -1194,7 +1205,8 @@
       <div class="sum-stat"><div class="sum-label">Runs</div><div class="sum-val" id="sumRuns">0<small>/3</small></div></div>
       <div class="sum-stat"><div class="sum-label">Weights</div><div class="sum-val" id="sumWeights">0<small>/2</small></div></div>
       <div class="sum-stat"><div class="sum-label">Core days</div><div class="sum-val" id="sumCore">0<small>/7</small></div></div>
-      <div class="sum-stat"><div class="sum-label">Padel</div><div class="sum-val" id="sumPadel">0</div></div>
+      <div class="sum-stat"><div class="sum-label">Sport</div><div class="sum-val" id="sumSport">0</div></div>
+      <div class="sum-stat"><div class="sum-label">Other</div><div class="sum-val" id="sumOther">0</div></div>
       <div class="sum-stat"><div class="sum-label">Active hours</div><div class="sum-val" id="sumWorkoutHours">0<small>h</small></div></div>
       <div class="sum-stat"><div class="sum-label">Diet score</div><div class="sum-val" id="sumDiet">—<small>%</small></div></div>
       <div class="sum-stat"><div class="sum-label">Avg kcal/day</div><div class="sum-val" id="sumAvgKcal">—</div></div>
@@ -1321,9 +1333,13 @@
     <div id="calendarLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid var(--green);"></div>Run</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Weights</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid var(--purple);"></div>Padel</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid #c4b5fd;"></div>Sport</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid #fca5a5;"></div>Other</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid #fca5a5;"></div>Other</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;"></div>Sport</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid var(--red);"></div>Skipped</div>
     </div>
     <div id="calendarGrid"></div>
@@ -2743,7 +2759,8 @@ function getBadgeClass(activity) {
   const a = activity.toLowerCase();
   if (a.includes('run') || a.includes('tempo')) return 'badge-run';
   if (a.includes('weights') || a.includes('weight')) return 'badge-weights';
-  if (a.includes('padel') || a.includes('sport')) return 'badge-padel';
+  if (a === 'sport') return 'badge-sport';
+  if (a === 'other') return 'badge-other';
   if (a.includes('rest')) return 'badge-rest';
   if (a.includes('walk')) return 'badge-walk';
   return 'badge-core';
@@ -2773,8 +2790,8 @@ function renderDayDetail(day) {
   const activityOptions = [
     'Run','Tempo run','Incline walk (30min)','Incline walk (45min)','Walk',
     'Weights A','Weights B','Weights C',
-    'Padel (1hr)','Padel (2hr)','Sport / Other',
-    'Rest','Walk',
+    'Sport','Other',
+    'Rest',
   ];
   const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
 
@@ -3116,8 +3133,7 @@ function detectWorkoutType(activity) {
   const a = (activity || '').toLowerCase();
   if (a.includes('weight')) return 'weights';
   if (a.includes('run') || a.includes('walk') || a.includes('tempo')) return 'cardio';
-  if (a.includes('padel') || a.includes('sport')) return 'sport';
-  return 'other';
+  if (a === 'sport' || a === 'other') return 'sport';
 }
 
 function renderWorkoutLogSummary(day, dd) {
@@ -3218,7 +3234,7 @@ function renderWorkoutLogPanel(day) {
     panel.innerHTML = `
       <div style="margin-top:8px;">
         <label class="set-label">Notes</label>
-        <input type="text" class="set-input" value="${((log.entries[0]||{}).notes||'').replace(/"/g,'&quot;')}" placeholder="e.g. 2hr padel session, intense..."
+        <input type="text" class="set-input" value="${((log.entries[0]||{}).notes||'').replace(/"/g,'&quot;')}" placeholder="e.g. 1hr football, padel, tennis, intense..."
           oninput="updateSportLog('${day}','notes',this.value)">
       </div>`;
   }
@@ -3358,8 +3374,7 @@ const EXERCISE_BURN = {
   'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
   'Walk': 160,
   'Weights A': 220, 'Weights B': 220, 'Weights C': 220,
-  'Padel (1hr)': 500, 'Padel (2hr)': 950,
-  'Sport / Other': 300,
+  'Sport': 400, 'Other': 300,
   'Rest': 0,
 };
 
@@ -3369,8 +3384,7 @@ const ACTIVITY_DURATION = {
   'Incline walk (30min)': 30, 'Incline walk (45min)': 45,
   'Walk': 30,
   'Weights A': 55, 'Weights B': 55, 'Weights C': 55,
-  'Padel (1hr)': 60, 'Padel (2hr)': 120,
-  'Sport / Other': 60,
+  'Sport': 60, 'Other': 45,
   'Rest': 0,
 };
 
@@ -3380,8 +3394,9 @@ function mapStravaActivity(stravaType) {
   if (t.includes('run'))                        return 'Run';
   if (t.includes('walk'))                       return 'Walk';
   if (t.includes('weight') || t.includes('strength')) return 'Weights A';
-  if (t.includes('padel') || t.includes('tennis') || t.includes('squash') || t.includes('sport')) return 'Padel (1hr)';
-  return 'Sport / Other';
+  if (t.includes('padel') || t.includes('tennis') || t.includes('squash') || t.includes('sport')) return 'Sport';
+  if (t.includes('other') || t.includes('misc')) return 'Other';
+  return 'Other';
 }
 
 let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
@@ -3391,7 +3406,7 @@ const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', 
 
 function renderSummary() {
   const wd = peekWeekData(currentWeek) || { days: {}, diet: {} };
-  let runs = 0, weights = 0, core = 0, padel = 0, dietTotal = 0, dietPossible = 0;
+  let runs = 0, weights = 0, core = 0, sport = 0, other = 0, dietTotal = 0, dietPossible = 0;
   const rules = getDietRules();
 
   DAYS.forEach(day => {
@@ -3399,7 +3414,8 @@ function renderSummary() {
     const act = (dd.activity || '').toLowerCase();
     if (act.includes('run') || act.includes('tempo')) runs++;
     if (act.includes('weight')) weights++;
-    if (act.includes('padel')) padel++;
+    if (act === 'sport') sport++;
+    if (act === 'other') other++;
     if (dd.core) core++;
 
     const diet = (wd.diet && wd.diet[day]) || {};
@@ -3413,7 +3429,8 @@ function renderSummary() {
   document.getElementById('sumRuns').innerHTML = runs + '<small>/' + (ph === 1 ? '3' : '4') + '</small>';
   document.getElementById('sumWeights').innerHTML = weights + '<small>/' + (ph === 1 ? '2' : '3') + '</small>';
   document.getElementById('sumCore').innerHTML = core + '<small>/7</small>';
-  document.getElementById('sumPadel').textContent = padel;
+  const sportEl = document.getElementById('sumSport'); if (sportEl) sportEl.textContent = sport;
+  const otherEl = document.getElementById('sumOther'); if (otherEl) otherEl.textContent = other;
 
   // Workout hours
   const totalMin = calcWeeklyWorkoutHours(currentWeek);
@@ -5393,7 +5410,8 @@ function renderCalendar() {
       let cellClass = 'cal-future';
       let tag = '';
       if (isToday) {
-        if (act.includes('padel') || act.includes('sport')) { cellClass = 'cal-padel'; }
+        if (act === 'sport') { cellClass = 'cal-sport'; }
+        else if (act === 'other') { cellClass = 'cal-other'; }
         else if (act.includes('walk')) { cellClass = 'cal-walk'; }
         else if (act.includes('run') || act.includes('tempo')) { cellClass = 'cal-run'; }
         else if (act.includes('weight')) { cellClass = 'cal-weights'; }
@@ -5405,13 +5423,15 @@ function renderCalendar() {
         cellClass = 'cal-future';
         tag = '';
       } else if (!isFuture) {
-        if (act.includes('padel')) {
-          cellClass = 'cal-padel'; tag = 'Padel';
+        if (act === 'sport') {
+          cellClass = 'cal-sport'; tag = 'Sport';
+        } else if (act === 'other') {
+          cellClass = 'cal-other'; tag = 'Other';
         } else if (act.includes('walk')) {
-          cellClass = 'cal-walk'; tag = 'Walk';
+          cellClass = 'cal-walk'; tag = act.includes('incline') ? 'Incline' : 'Walk';
         } else if (act.includes('run') || act.includes('tempo')) {
           cellClass = 'cal-run';
-          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
+          tag = act.includes('tempo') ? 'Tempo' : 'Run';
         } else if (act.includes('weight')) {
           cellClass = 'cal-weights';
           tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
