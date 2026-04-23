@@ -3337,6 +3337,32 @@ function saveDiet(idx, val) {
   renderSummary();
 }
 
+const EXERCISE_BURN = {
+  'Run': 320, 'Tempo run': 380,
+  'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
+  'Walk': 160, 'Rest day + walk': 160,
+  'Weights A': 220, 'Weights B': 220, 'Weights C': 220,
+  'Padel (1hr)': 500, 'Padel (2hr)': 950,
+  'Sport / Other': 300,
+  'Rest': 0,
+};
+
+// Default duration estimates in minutes
+const ACTIVITY_DURATION = {
+  'Run': 35, 'Tempo run': 40,
+  'Incline walk (30min)': 30, 'Incline walk (45min)': 45,
+  'Walk': 30, 'Rest day + walk': 30,
+  'Weights A': 55, 'Weights B': 55, 'Weights C': 55,
+  'Padel (1hr)': 60, 'Padel (2hr)': 120,
+  'Sport / Other': 60,
+  'Rest': 0,
+};
+
+let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+let activeMeal = 'breakfast';
+const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
+
 function renderSummary() {
   const wd = peekWeekData(currentWeek) || { days: {}, diet: {} };
   let runs = 0, weights = 0, core = 0, padel = 0, dietTotal = 0, dietPossible = 0;
@@ -4735,26 +4761,7 @@ function saveQuickPresets(presets) {
 
 // Exercise calorie estimates
 // Default calorie burn estimates — overridden by customBurn (watch reading)
-const EXERCISE_BURN = {
-  'Run': 320, 'Tempo run': 380,
-  'Incline walk (30min)': 310, 'Incline walk (45min)': 370,
-  'Walk': 160, 'Rest day + walk': 160,
-  'Weights A': 220, 'Weights B': 220, 'Weights C': 220,
-  'Padel (1hr)': 500, 'Padel (2hr)': 950,
-  'Sport / Other': 300,
-  'Rest': 0,
-};
 
-// Default duration estimates in minutes
-const ACTIVITY_DURATION = {
-  'Run': 35, 'Tempo run': 40,
-  'Incline walk (30min)': 30, 'Incline walk (45min)': 45,
-  'Walk': 30, 'Rest day + walk': 30,
-  'Weights A': 55, 'Weights B': 55, 'Weights C': 55,
-  'Padel (1hr)': 60, 'Padel (2hr)': 120,
-  'Sport / Other': 60,
-  'Rest': 0,
-};
 
 // Strava activity type → app activity mapping
 function mapStravaActivity(stravaType) {
@@ -4766,10 +4773,7 @@ function mapStravaActivity(stravaType) {
   return 'Sport / Other';
 }
 
-let calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
-let activeMeal = 'breakfast';
-const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
-const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
+
 
 function setActiveMeal(meal) {
   activeMeal = meal;
