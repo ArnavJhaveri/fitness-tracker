@@ -4883,6 +4883,7 @@ function switchCalDay(day) {
   calDay = day;
   renderGlobalDaySelector(calDay);
   collapsedMeals.clear();
+  if (typeof checkNudgeWater === 'function') checkNudgeWater();
   const existing = document.getElementById('customEntryRow');
   if (existing) existing.remove();
   const picker = document.getElementById('foodServingPicker');
@@ -6010,12 +6011,12 @@ function setGlobalDay(day) {
   calDay = day;
   dietDay = day;
   dietDayManuallySet = true;
-  // Also select this day in the daily log grid and open its detail panel
   selectedDay = day;
   renderGlobalDaySelector(day);
-  renderDays();   // re-renders grid with new selected card highlighted
+  renderDays();
   renderDiet();
   renderCalorie();
+  if (typeof checkNudgeWater === 'function') checkNudgeWater();
 }
 function renderGlobalDaySelector(activeDay) {
   DAYS.forEach(d => {
@@ -6128,8 +6129,13 @@ function checkNudgeWeighIn() {
 
 function checkNudgeWater() {
   if (isNudgeDismissed('nudgeWater', 1)) { hideNudge('nudgeWater'); return; }
-  if (currentWeek !== getCurrentWeekFromDate()) { hideNudge('nudgeWater'); return; }
   const todayName = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  const viewingDay = calDay || todayName;
+  const viewingToday = (currentWeek === getCurrentWeekFromDate() && viewingDay === todayName);
+
+  // Only show the nudge when viewing today — hide it for any other day
+  if (!viewingToday) { hideNudge('nudgeWater'); return; }
+
   const waterTarget = WATER_TARGET_ML();
   const wd = peekWeekData(currentWeek);
   const logged = (wd && wd.water && wd.water[todayName]) || 0;
