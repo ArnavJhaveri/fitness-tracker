@@ -716,8 +716,8 @@
   .phase-2 { background: var(--blue-bg); color: var(--blue); }
 
   /* WORKOUT SPLITS */
-  .wo-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
-  .wo-tab { font-size: 12px; font-weight: 500; padding: 6px 12px; border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+  .wo-tabs { display: flex; gap: 2px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; scrollbar-width: none; }
+  .wo-tab { font-size: 11px; font-weight: 500; padding: 6px 9px; border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .wo-tab.active { color: var(--text); border-bottom-color: var(--accent); }
   .wo-panel { display: none; }
   .wo-panel.active { display: block; }
@@ -1329,11 +1329,11 @@
   <!-- WORKOUTS -->
   <div id="workouts" class="tab-panel">
     <div class="wo-tabs">
-      <button class="wo-tab active" onclick="showWoTab('wo-p1a',this)">Phase 1 — Session A</button>
-      <button class="wo-tab" onclick="showWoTab('wo-p1b',this)">Phase 1 — Session B</button>
-      <button class="wo-tab" onclick="showWoTab('wo-p2a',this)">Phase 2 — Session A</button>
-      <button class="wo-tab" onclick="showWoTab('wo-p2b',this)">Phase 2 — Session B</button>
-      <button class="wo-tab" onclick="showWoTab('wo-p2c',this)">Phase 2 — Session C</button>
+      <button class="wo-tab active" onclick="showWoTab('wo-p1a',this)">P1 — Session A</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p1b',this)">P1 — Session B</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2a',this)">P2 — Session A</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2b',this)">P2 — Session B</button>
+      <button class="wo-tab" onclick="showWoTab('wo-p2c',this)">P2 — Session C</button>
       <button class="wo-tab" onclick="showWoTab('wo-running',this)">Running &amp; Walking</button>
       <button class="wo-tab" onclick="showWoTab('wo-core',this)">Daily core</button>
     </div>
