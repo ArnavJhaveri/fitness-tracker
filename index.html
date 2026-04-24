@@ -6810,78 +6810,77 @@ function renderShareCard() {
   const canvas = document.getElementById('shareCard');
   if (!canvas) return;
 
-  // ── Collect all data ─────────────────────────────────────────
-  const sw = START_WEIGHT();
+  // ── Collect data ─────────────────────────────────────────────
+  const sw   = START_WEIGHT();
+  const goal1 = GOAL1();
+  const ph   = getPhase(currentWeek);
   let latestWt = null;
   for (let w = TOTAL_WEEKS(); w >= 1; w--) {
     const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
   }
-  const totalLost  = latestWt ? +(sw - latestWt).toFixed(1) : null;
+  const totalLost = latestWt ? +(sw - latestWt).toFixed(1) : null;
   const { current: streak } = calcStreak();
-  const goal1 = GOAL1();
-  const pct   = (latestWt && sw !== goal1) ? Math.min(100, Math.max(0, Math.round(((sw - latestWt) / (sw - goal1)) * 100))) : 0;
-  const ph    = getPhase(currentWeek);
+  const pct = (latestWt && sw !== goal1)
+    ? Math.min(100, Math.max(0, Math.round(((sw - latestWt) / (sw - goal1)) * 100))) : 0;
 
-  // This week's stats
+  // This week
   const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
   const totalMin = calcWeeklyWorkoutHours(currentWeek);
   const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
   const activeStr = totalMin > 0 ? (hh > 0 ? hh + 'h ' : '') + (mm > 0 ? mm + 'm' : '') : '—';
 
-  // Avg sleep this week
+  // Avg sleep
   const wd = peekWeekData(currentWeek) || {};
   let sleepTotal = 0, sleepDays = 0;
-  DAYS.forEach(day => {
-    const dd = (wd.days && wd.days[day]) || {};
-    if (dd.sleepHrs) { sleepTotal += dd.sleepHrs; sleepDays++; }
-  });
+  DAYS.forEach(day => { const d = (wd.days && wd.days[day]) || {}; if (d.sleepHrs) { sleepTotal += d.sleepHrs; sleepDays++; } });
   const avgSleep = sleepDays > 0 ? (sleepTotal / sleepDays).toFixed(1) : null;
 
-  // Avg kcal this week
-  let kcalTotal = 0, kcalDays = 0;
-  DAYS.forEach(day => {
+  // Per-day kcal + activity for the activity/calorie chart
+  const target = getTargetForWeek(currentWeek);
+  const dayData = DAYS.map(day => {
+    const dd = (wd.days && wd.days[day]) || {};
+    const act = (dd.activity || '').toLowerCase();
     const cal = wd.calories && wd.calories[day];
-    if (!cal) return;
-    const eaten = MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal || 0), 0);
-    if (eaten > 0) { kcalTotal += eaten; kcalDays++; }
+    const kcal = cal ? MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal||0), 0) : 0;
+    let color = '#2d2724'; // rest/none
+    if (act.includes('run') || act.includes('tempo'))   color = '#5aad8a';
+    else if (act.includes('weight'))                     color = '#5b8dd9';
+    else if (act.includes('walk'))                       color = '#f7a94b';
+    else if (act === 'sport')                            color = '#a78bfa';
+    else if (act === 'other')                            color = '#f87171';
+    return { day, kcal, color, hasActivity: !!dd.activity };
   });
-  const avgKcal = kcalDays > 0 ? Math.round(kcalTotal / kcalDays) : null;
 
-  // Weight history for mini chart
+  // Weight history for trend chart
   const wPoints = [];
   for (let w = 1; w <= TOTAL_WEEKS(); w++) {
-    const d = peekWeekData(w);
-    if (d && d.weight) wPoints.push({ w, wt: d.weight });
+    const d = peekWeekData(w); if (d && d.weight) wPoints.push({ w, wt: d.weight });
   }
+  const hasWeightTrend = wPoints.length >= 2;
 
-  // ── Canvas setup — 2× retina ─────────────────────────────────
-  const CW = 380, CH = 300;
-  canvas.width  = CW * 2;
-  canvas.height = CH * 2;
-  canvas.style.width  = CW + 'px';
-  canvas.style.height = CH + 'px';
+  // ── Canvas setup ─────────────────────────────────────────────
+  const CW = 380, CH = hasWeightTrend ? 340 : 300;
+  canvas.width  = CW * 2; canvas.height = CH * 2;
+  canvas.style.width = CW + 'px'; canvas.style.height = CH + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(2, 2);
 
-  // roundRect polyfill
   if (!ctx.roundRect) {
-    ctx.roundRect = function(x, y, w, h, r) {
-      this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.quadraticCurveTo(x+w,y,x+w,y+r);
-      this.lineTo(x+w,y+h-r); this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-      this.lineTo(x+r,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r);
-      this.lineTo(x,y+r); this.quadraticCurveTo(x,y,x+r,y); this.closePath();
+    ctx.roundRect = function(x,y,w,h,r){
+      this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+      this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+      this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
     };
   }
 
-  // Background
+  // Background + dividers
   ctx.fillStyle = '#1a1714';
-  ctx.beginPath(); ctx.roundRect(0, 0, CW, CH, 16); ctx.fill();
-
-  // Dividers
+  ctx.beginPath(); ctx.roundRect(0,0,CW,CH,16); ctx.fill();
   const divY1 = 58, divY2 = 130, divY3 = 202;
   ctx.strokeStyle = '#2d2724'; ctx.lineWidth = 1;
   [divY1, divY2, divY3].forEach(y => {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(CW,y); ctx.stroke();
   });
 
   // ── HEADER ───────────────────────────────────────────────────
@@ -6889,129 +6888,195 @@ function renderShareCard() {
   ctx.font = 'bold 14px DM Sans, system-ui, sans-serif';
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillText('Arnav — Fitness progress', 20, 14);
-  ctx.fillStyle = '#6b5e55';
-  ctx.font = '10px DM Mono, monospace';
+  ctx.fillStyle = '#6b5e55'; ctx.font = '10px DM Mono, monospace';
   ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 34);
-
-  // Phase pill
   ctx.fillStyle = '#c4501a';
-  ctx.beginPath(); ctx.roundRect(CW - 74, 13, 58, 22, 7); ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 10px DM Sans, system-ui';
+  ctx.beginPath(); ctx.roundRect(CW-74,13,58,22,7); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px DM Sans, system-ui';
   ctx.textAlign = 'center';
-  ctx.fillText(`Phase ${ph}`, CW - 45, 18);
+  ctx.fillText(`Phase ${ph}`, CW-45, 18);
 
   // ── ROW 1: Weight stats ───────────────────────────────────────
-  const row1stats = [
-    { label: 'START',   val: sw + ' lbs',                     color: '#f5f2ee' },
-    { label: 'NOW',     val: latestWt ? latestWt + ' lbs' : '—', color: '#f5f2ee' },
-    { label: 'LOST',    val: totalLost != null ? (totalLost > 0 ? '↓ ' : '') + Math.abs(totalLost) + ' lbs' : '—',
-                        color: totalLost > 0 ? '#7bc9a8' : '#f5f2ee' },
-    { label: 'STREAK',  val: streak + ' d',                   color: streak >= 3 ? '#f7a94b' : '#f5f2ee' },
+  const row1 = [
+    { label:'START',  val: sw + ' lbs',  color:'#f5f2ee' },
+    { label:'NOW',    val: latestWt ? latestWt+' lbs' : '—', color:'#f5f2ee' },
+    { label:'LOST',   val: totalLost != null ? (totalLost>0?'↓ ':'')+Math.abs(totalLost)+' lbs':'—', color: totalLost>0?'#7bc9a8':'#f5f2ee' },
+    { label:'STREAK', val: streak+' d',  color: streak>=3?'#f7a94b':'#f5f2ee' },
   ];
-  const cW4 = CW / 4;
-  row1stats.forEach((s, i) => {
-    const x = i * cW4 + cW4 / 2;
-    ctx.fillStyle = '#6b5e55'; ctx.font = '8px DM Mono, monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(s.label, x, divY1 + 10);
-    ctx.fillStyle = s.color; ctx.font = 'bold 15px DM Sans, system-ui';
-    ctx.fillText(s.val, x, divY1 + 24);
+  const cW4 = CW/4;
+  row1.forEach((s,i) => {
+    const x = i*cW4 + cW4/2;
+    ctx.fillStyle='#6b5e55'; ctx.font='8px DM Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(s.label, x, divY1+10);
+    ctx.fillStyle=s.color; ctx.font='bold 15px DM Sans, system-ui';
+    ctx.fillText(s.val, x, divY1+25);
   });
 
-  // ── ROW 2: This week's stats ──────────────────────────────────
-  const defStr = daysWithData > 0 ? (totalDeficit >= 0 ? '+' : '') + totalDeficit.toLocaleString() + ' kcal' : '—';
-  const defColor = daysWithData > 0 ? (totalDeficit > 0 ? '#7bc9a8' : '#e07070') : '#6b5e55';
-  const row2stats = [
-    { label: 'ACTIVE',    val: activeStr,                                  color: '#f5f2ee' },
-    { label: 'WK DEFICIT',val: defStr,                                     color: defColor  },
-    { label: 'AVG KCAL',  val: avgKcal ? avgKcal.toLocaleString() : '—',   color: '#f5f2ee' },
-    { label: 'AVG SLEEP', val: avgSleep ? avgSleep + 'h' : '—',            color: avgSleep >= 7 ? '#7bc9a8' : avgSleep ? '#f7a94b' : '#6b5e55' },
+  // ── ROW 2: Week stats ─────────────────────────────────────────
+  const defStr = daysWithData>0 ? (totalDeficit>=0?'+':'')+totalDeficit.toLocaleString()+' kcal' : '—';
+  const defColor = daysWithData>0 ? (totalDeficit>0?'#7bc9a8':'#e07070') : '#6b5e55';
+  const row2 = [
+    { label:'ACTIVE',     val: activeStr,                                       color:'#f5f2ee'  },
+    { label:'WK DEFICIT', val: defStr,                                          color: defColor  },
+    { label:'AVG KCAL',   val: daysWithData>0 ? Math.round(dayData.filter(d=>d.kcal>0).reduce((s,d)=>s+d.kcal,0)/Math.max(1,dayData.filter(d=>d.kcal>0).length)).toLocaleString() : '—', color:'#f5f2ee' },
+    { label:'AVG SLEEP',  val: avgSleep ? avgSleep+'h' : '—',                  color: avgSleep>=7?'#7bc9a8':avgSleep?'#f7a94b':'#6b5e55' },
   ];
-  row2stats.forEach((s, i) => {
-    const x = i * cW4 + cW4 / 2;
-    ctx.fillStyle = '#6b5e55'; ctx.font = '8px DM Mono, monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(s.label, x, divY2 + 10);
-    ctx.fillStyle = s.color; ctx.font = 'bold 15px DM Sans, system-ui';
-    ctx.fillText(s.val, x, divY2 + 24);
+  row2.forEach((s,i) => {
+    const x = i*cW4 + cW4/2;
+    ctx.fillStyle='#6b5e55'; ctx.font='8px DM Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(s.label, x, divY2+10);
+    ctx.fillStyle=s.color; ctx.font='bold 15px DM Sans, system-ui';
+    ctx.fillText(s.val, x, divY2+25);
   });
 
-  // ── ROW 3: Progress bar + goal ────────────────────────────────
-  const barX = 20, barY = divY3 + 14, barW = CW - 40, barH = 10;
-  ctx.fillStyle = '#2d2724';
-  ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 5); ctx.fill();
-  if (pct > 0) {
-    // Gradient fill
-    const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
-    grad.addColorStop(0, '#c4501a');
-    grad.addColorStop(1, '#f7a94b');
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.roundRect(barX, barY, barW * pct / 100, barH, 5); ctx.fill();
+  // ── ROW 3: Progress bar ───────────────────────────────────────
+  const barX=20, barY=divY3+14, barW=CW-40, barH=10;
+  ctx.fillStyle='#2d2724';
+  ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,5); ctx.fill();
+  if (pct>0) {
+    const g = ctx.createLinearGradient(barX,0,barX+barW,0);
+    g.addColorStop(0,'#c4501a'); g.addColorStop(1,'#f7a94b');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.roundRect(barX,barY,barW*pct/100,barH,5); ctx.fill();
   }
-  ctx.fillStyle = '#6b5e55'; ctx.font = '9px DM Mono, monospace';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText(`Goal 1: ${pct}% complete`, barX, barY + 16);
-  ctx.textAlign = 'right';
-  ctx.fillText(`target ${goal1} lbs`, barX + barW, barY + 16);
+  ctx.fillStyle='#6b5e55'; ctx.font='9px DM Mono, monospace';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText(`Goal 1: ${pct}% complete`, barX, barY+16);
+  ctx.textAlign='right';
+  ctx.fillText(`target ${goal1} lbs`, barX+barW, barY+16);
 
-  // ── ROW 4: Mini weight chart OR placeholder ───────────────────
-  const chartY = divY3 + 42, chartH = CH - chartY - 16;
-  if (wPoints.length >= 2) {
-    const chartX = 20, chartW = CW - 40;
-    const minW = Math.min(...wPoints.map(p => p.wt), goal1) - 1;
-    const maxW = Math.max(sw, ...wPoints.map(p => p.wt)) + 1;
-    const xS = w => chartX + ((w - 1) / (TOTAL_WEEKS() - 1)) * chartW;
-    const yS = w => chartY + chartH - ((w - minW) / (maxW - minW)) * chartH;
+  // ── ROW 4: This week activity + calorie bars ──────────────────
+  const chartTop = divY3+42;
+  const actH  = hasWeightTrend ? 56 : 80;   // activity bars
+  const calH  = hasWeightTrend ? 28 : 40;   // calorie bars
+  const gap   = 6;
+  const padX  = 20;
+  const barArea = CW - padX*2;
+  const barGroupW = barArea / 7;
+  const barW7 = barGroupW * 0.55;
+  const maxKcal = Math.max(target*1.1, ...dayData.map(d=>d.kcal), 1);
 
-    // Goal dashed line
-    ctx.strokeStyle = '#3a3430'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.moveTo(chartX, yS(goal1)); ctx.lineTo(chartX + chartW, yS(goal1)); ctx.stroke();
+  // Section label
+  ctx.fillStyle='#4a3e38'; ctx.font='8px DM Mono, monospace';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('this week ─────────────────────', padX, chartTop);
+
+  // Activity bars
+  dayData.forEach((d,i) => {
+    const x = padX + i*barGroupW + (barGroupW-barW7)/2;
+    const barTop = chartTop+12;
+    // Background slot
+    ctx.fillStyle='#252120';
+    ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
+    // Coloured fill if activity logged
+    if (d.hasActivity) {
+      ctx.fillStyle = d.color;
+      ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
+      // Subtle shine
+      const shine = ctx.createLinearGradient(x, barTop, x, barTop+actH);
+      shine.addColorStop(0,'rgba(255,255,255,0.12)'); shine.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=shine;
+      ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
+    }
+    // Day label
+    ctx.fillStyle = d.hasActivity ? '#f5f2ee' : '#3a3430';
+    ctx.font='bold 8px DM Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(d.day[0], x + barW7/2, barTop + actH/2 - 5);
+    if (d.hasActivity) {
+      // Activity abbreviation
+      const act = (wd.days && wd.days[d.day]?.activity) || '';
+      const abbr = act.includes('Weight') ? 'W' : act.includes('Run')||act.includes('Tempo') ? 'R'
+                 : act.includes('Walk') ? 'WK' : act.includes('Sport') ? 'SP'
+                 : act === 'Other' ? 'OT' : act === 'Rest' ? '—' : '●';
+      ctx.font='7px DM Mono, monospace';
+      ctx.fillText(abbr, x + barW7/2, barTop + actH/2 + 3);
+    }
+  });
+
+  // Calorie bars (below activity bars)
+  const calTop = chartTop + 12 + actH + gap;
+  const loggedDays = dayData.filter(d=>d.kcal>0);
+  if (loggedDays.length > 0) {
+    dayData.forEach((d,i) => {
+      const x = padX + i*barGroupW + (barGroupW-barW7)/2;
+      // Background
+      ctx.fillStyle='#252120';
+      ctx.beginPath(); ctx.roundRect(x, calTop, barW7, calH, 2); ctx.fill();
+      if (d.kcal>0) {
+        const fillH = Math.max(2, (d.kcal / maxKcal) * calH);
+        const overTarget = d.kcal > target;
+        ctx.fillStyle = overTarget ? '#e07070' : '#5aad8a';
+        ctx.beginPath(); ctx.roundRect(x, calTop+calH-fillH, barW7, fillH, 2); ctx.fill();
+      }
+    });
+    // Target dashed line
+    const targetY = calTop + calH - (target / maxKcal) * calH;
+    ctx.strokeStyle='#c4501a'; ctx.lineWidth=0.8; ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.moveTo(padX, targetY); ctx.lineTo(CW-padX, targetY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#c4501a'; ctx.font='7px DM Mono, monospace';
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText('target', CW-padX, targetY-1);
+    // Calorie label
+    ctx.fillStyle='#4a3e38'; ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText('kcal', padX, calTop-1);
+  }
+
+  // ── ROW 5: Weight trend (only if 2+ weeks of data) ───────────
+  if (hasWeightTrend) {
+    const wtTop  = calTop + calH + gap + 4;
+    const wtH    = CH - wtTop - 18;
+    const wtW    = CW - padX*2;
+
+    ctx.strokeStyle='#2d2724'; ctx.lineWidth=1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(0,wtTop-4); ctx.lineTo(CW,wtTop-4); ctx.stroke();
+
+    ctx.fillStyle='#4a3e38'; ctx.font='8px DM Mono, monospace';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('weight trend ───────────────────', padX, wtTop);
+
+    const minW = Math.min(...wPoints.map(p=>p.wt), goal1)-1;
+    const maxW = Math.max(sw,...wPoints.map(p=>p.wt))+1;
+    const xS = w => padX + ((w-1)/(TOTAL_WEEKS()-1))*wtW;
+    const yS = v => wtTop+12 + wtH - ((v-minW)/(maxW-minW))*wtH;
+
+    // Goal line
+    ctx.strokeStyle='#3a3430'; ctx.lineWidth=0.8; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(padX,yS(goal1)); ctx.lineTo(padX+wtW,yS(goal1)); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Area fill under weight line
+    // Area fill
     ctx.beginPath();
-    wPoints.forEach((p, i) => { i===0 ? ctx.moveTo(xS(p.w), yS(p.wt)) : ctx.lineTo(xS(p.w), yS(p.wt)); });
-    ctx.lineTo(xS(wPoints[wPoints.length-1].w), chartY + chartH);
-    ctx.lineTo(xS(wPoints[0].w), chartY + chartH);
+    wPoints.forEach((p,i)=>{ i===0?ctx.moveTo(xS(p.w),yS(p.wt)):ctx.lineTo(xS(p.w),yS(p.wt)); });
+    ctx.lineTo(xS(wPoints[wPoints.length-1].w), wtTop+12+wtH);
+    ctx.lineTo(xS(wPoints[0].w), wtTop+12+wtH);
     ctx.closePath();
-    const areaGrad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
-    areaGrad.addColorStop(0, 'rgba(196,80,26,0.25)');
-    areaGrad.addColorStop(1, 'rgba(196,80,26,0)');
-    ctx.fillStyle = areaGrad; ctx.fill();
+    const ag = ctx.createLinearGradient(0,wtTop,0,wtTop+wtH);
+    ag.addColorStop(0,'rgba(196,80,26,0.3)'); ag.addColorStop(1,'rgba(196,80,26,0)');
+    ctx.fillStyle=ag; ctx.fill();
 
-    // Weight line
+    // Line
     ctx.beginPath();
-    wPoints.forEach((p, i) => { i===0 ? ctx.moveTo(xS(p.w), yS(p.wt)) : ctx.lineTo(xS(p.w), yS(p.wt)); });
-    ctx.strokeStyle = '#c4501a'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+    wPoints.forEach((p,i)=>{ i===0?ctx.moveTo(xS(p.w),yS(p.wt)):ctx.lineTo(xS(p.w),yS(p.wt)); });
+    ctx.strokeStyle='#c4501a'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
 
     // Last dot
-    const last = wPoints[wPoints.length-1];
-    ctx.beginPath(); ctx.arc(xS(last.w), yS(last.wt), 3.5, 0, Math.PI*2);
-    ctx.fillStyle = '#c4501a'; ctx.fill();
-    ctx.beginPath(); ctx.arc(xS(last.w), yS(last.wt), 3.5, 0, Math.PI*2);
-    ctx.strokeStyle = '#f5f2ee'; ctx.lineWidth = 1.5; ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#4a3e38'; ctx.font = '8px DM Mono, monospace';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText('weight trend ──', chartX, chartY - 2);
-  } else {
-    // Placeholder when no weight logged yet
-    ctx.fillStyle = '#3a3430';
-    ctx.font = '9px DM Mono, monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('log your weekly weight to see trend chart', CW / 2, chartY + chartH / 2);
+    const last=wPoints[wPoints.length-1];
+    ctx.beginPath(); ctx.arc(xS(last.w),yS(last.wt),3.5,0,Math.PI*2);
+    ctx.fillStyle='#c4501a'; ctx.fill();
+    ctx.beginPath(); ctx.arc(xS(last.w),yS(last.wt),3.5,0,Math.PI*2);
+    ctx.strokeStyle='#f5f2ee'; ctx.lineWidth=1.5; ctx.stroke();
   }
 
   // Watermark
-  ctx.fillStyle = '#2d2724'; ctx.font = '8px DM Mono, monospace';
-  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-  ctx.fillText('fitness tracker', CW - 12, CH - 6);
+  ctx.fillStyle='#2d2724'; ctx.font='8px DM Mono, monospace';
+  ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillText('fitness tracker', CW-12, CH-6);
 
   _shareCardDataUrl = canvas.toDataURL('image/png');
 }
-
 function downloadShareCard() {
   if (!_shareCardDataUrl) return;
   const a = document.createElement('a');
