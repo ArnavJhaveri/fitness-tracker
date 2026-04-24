@@ -1795,7 +1795,7 @@
   </div>
 
 <script>
-// ─── AUTH ─────────────────────────────────────────────────
+// ─── AUTH — passkey / biometric / lock ─────────────────────
 // Default password hash (SHA-256 of default password) — plaintext not stored in source
 const DEFAULT_PW_HASH = 'bf2782dc96e0a61b66904855e6bdd0e9f0d834d0139fd60857899f4e21802a24';
 const PW_KEY      = 'ftPwHash';
@@ -2066,7 +2066,7 @@ async function changePassword() {
   setTimeout(() => msg.style.opacity = '0', 3000);
 }
 
-// ─── STATE ───────────────────────────────────────────────
+// ─── STATE — app globals, defaults, settings ───────────────
 // Default values — overridden by user settings stored in allData._settings
 const DEFAULTS = { startWeight: 168, goal1: 155.5, goal2: 143, dailyTarget1: 1750, dailyTarget2: 1750, waterTargetL: 2.5, proteinTarget: 120, carbTarget: 175, fatTarget: 55, sugarTarget: 35, totalWeeks: 35, phase1Weeks: 18, maintenance: 2100, weeklyHoursGoal: 4 };
 
@@ -2123,7 +2123,7 @@ function saveDietRules(rules) {
   autoPersist();
 }
 
-// ─── DIET TAB ─────────────────────────────────────────────
+// ─── DIET TAB — rules, checklist, drag-to-reorder ──────────
 function renderDietTab() {
   const rules = getDietRules();
   const container = document.getElementById('dietTabRules');
@@ -2302,7 +2302,7 @@ function getDietData(w, d) {
   return wd.diet[d];
 }
 
-// ─── DATE UTILITIES ──────────────────────────────────────
+// ─── DATE UTILITIES — start date, week/day helpers, streak ─
 function getStartDate() {
   return allData._startDate ? new Date(allData._startDate) : null;
 }
@@ -2398,7 +2398,7 @@ function calcStreak() {
 }
 
 
-// ─── WEEK NAV ────────────────────────────────────────────
+// ─── WEEK NAVIGATION — prev/next/today ─────────────────────
 function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
   const _today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
@@ -2429,7 +2429,7 @@ function changeWeek(dir) {
   render();
 }
 
-// ─── RENDER ──────────────────────────────────────────────
+// ─── RENDER — main render loop, progress, weight ───────────
 function render() {
   const ws = getWeekStartDate(currentWeek);
   const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
@@ -2673,6 +2673,7 @@ function updateWeightDelta() {
   renderProgress();
 }
 
+// ─── DAY CARDS — render week grid, badges, day selection ───
 function renderDays() {
   const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
   const grid = document.getElementById('daysGrid');
@@ -3109,7 +3110,7 @@ function saveDayNotes(day, val) {
   autoPersist();
 }
 
-// ─── NEW DAY FIELDS ───────────────────────────────────────
+// ─── DAY FIELDS — activity, sleep, mood, energy, RPE ───────
 function saveDayDuration(day, val) {
   const parsed = parseFloat(val);
   getDayData(currentWeek, day).durationMin = (val === '' || isNaN(parsed)) ? undefined : parsed;
@@ -3137,7 +3138,7 @@ function saveDaySleep(day, val) {
   autoPersist();
 }
 
-// ─── WORKOUT DETAIL LOG ───────────────────────────────────
+// ─── WORKOUT LOG — sets/reps/kg, cardio, sport logging ─────
 // Structure: dd.workoutLog = { type:'weights'|'cardio'|'other', entries:[] }
 // Weights entry: { exercise, sets:[{reps,weight}] }
 // Cardio entry:  { distanceKm, durationMin, notes }
@@ -3319,7 +3320,7 @@ function renderWorkoutLogPanelSummary(day) {
   if (panel) panel.innerHTML = renderWorkoutLogSummary(day, dd);
 }
 
-// ─── WEEKLY HOURS CALCULATION ─────────────────────────────
+// ─── WEEKLY STATS — hours, diet day, EXERCISE_BURN ─────────
 function calcWeeklyWorkoutHours(weekNum) {
   const wd = peekWeekData(weekNum);
   if (!wd) return 0;
@@ -3423,6 +3424,7 @@ let activeMeal = 'breakfast';
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
 const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
 
+// ─── WEEKLY SUMMARY CARD — stats, on-target, nudge calls ───
 function renderSummary() {
   const wd = peekWeekData(currentWeek) || { days: {}, diet: {} };
   let runs = 0, weights = 0, core = 0, sport = 0, other = 0, dietTotal = 0, dietPossible = 0;
@@ -3553,7 +3555,7 @@ function renderSummary() {
   checkNudgeWater();
 }
 
-// ─── TABS ─────────────────────────────────────────────────
+// ─── SETTINGS TAB — save, populate, plan reference ─────────
 function saveAllSettings() {
   const gv = id => { const el = document.getElementById(id); return el ? el.value : ''; };
   const fields = {
@@ -3768,7 +3770,7 @@ function showTab(id) {
   }
 }
 
-// ─── PASSWORD SHOW/HIDE ───────────────────────────────────
+// ─── PASSWORD UI — show/hide toggle ────────────────────────
 function togglePwVisibility(inputId, btn) {
   const inp = document.getElementById(inputId);
   if (!inp) return;
@@ -3782,7 +3784,7 @@ function togglePwVisibility(inputId, btn) {
   }
 }
 
-// ─── SETTINGS TAB ────────────────────────────────────────
+// ─── BODY MEASUREMENTS — log, history, BMI/TDEE ────────────
 function saveBodySetting(key, val) {
   const parsed = parseFloat(val);
   if (!allData._body) allData._body = {};
@@ -3881,7 +3883,7 @@ function showWoTab(id, btn) {
   }
 }
 
-// ─── GOOGLE SHEETS SYNC ───────────────────────────────────
+// ─── GOOGLE SHEETS SYNC — autoPersist, retry logic ─────────
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLm8q4MF3SzERGbk4KV46mazsqQPVmu5AdN_AuWYfTa_J5GQupXnR3gzpq-NiEUG3cqQ/exec';
 
 function setSyncStatus(state, msg) {
@@ -3968,7 +3970,7 @@ async function pullFromSheets() {
   return false;
 }
 
-// ─── SAVE ─────────────────────────────────────────────────
+// ─── SAVE & EXPORT — persist, copy summary, export CSV ─────
 function autoPersist() {
   localStorage.setItem('fitnessTracker', JSON.stringify(allData));
   clearTimeout(syncTimer);
@@ -4059,7 +4061,7 @@ function saveWeek() {
   setTimeout(() => msg.classList.remove('show'), 2000);
 }
 
-// ─── MEAL TEMPLATES ──────────────────────────────────────
+// ─── MEAL TEMPLATES — create, rename, delete, add items ────
 function getMealTemplates() {
   if (!allData._mealTemplates) allData._mealTemplates = [];
   return allData._mealTemplates;
@@ -4405,7 +4407,7 @@ function removeTemplateItem(templateIdx, itemIdx) {
   renderMealsTab();
 }
 
-// ─── RECENT FOODS ─────────────────────────────────────────
+// ─── RECENT FOODS — log and retrieve last-used foods ───────
 function logRecentFood(entry) {
   if (!entry || !entry.name || !entry.kcal) return;
   if (!allData._recentFoods) allData._recentFoods = [];
@@ -4416,7 +4418,7 @@ function logRecentFood(entry) {
   if (allData._recentFoods.length > 20) allData._recentFoods = allData._recentFoods.slice(0, 20);
 }
 
-// ─── QUICK PRESETS — edit functions ───────────────────────
+// ─── QUICK PRESETS — add, edit, delete, reorder ────────────
 function addQuickPreset() {
   const rowId = 'newPresetRow';
   if (document.getElementById(rowId)) return;
@@ -4513,7 +4515,7 @@ function saveQuickPresetEdit(idx, rowId) {
   renderCalorie();
 }
 
-// ─── MEALS TAB RENDERER ───────────────────────────────────
+// ─── MEALS TAB — render templates, presets, recent foods ───
 function renderMealsTab() {
   renderMealsTabTemplates();
   renderMealsTabPresets();
@@ -4747,7 +4749,7 @@ function addRecentFood(idx) {
   showTab('this-week');
 }
 
-// ─── COPY FROM PREVIOUS DAY ──────────────────────────────
+// ─── COPY PREV DAY — meal copy across days/weeks ───────────
 function copyMealFromPrevDay(meal) {
   const todayIdx = DAYS.indexOf(calDay);
   let prevWeek = currentWeek;
@@ -4772,7 +4774,7 @@ function copyMealFromPrevDay(meal) {
   updateCalTotals();
 }
 
-// ─── MACRO PREFERENCES ───────────────────────────────────
+// ─── MACRO PREFERENCES — targets, display, stats bar ───────
 function getMacroPrefs() {
   return allData._macroPrefs || { carbs: false, fats: false, sugar: false };
 }
@@ -4830,7 +4832,7 @@ function renderMacroStats() {
 
 }
 
-// ─── FOOD SEARCH (USDA FoodData Central) ─────────────────
+// ─── FOOD SEARCH — USDA FoodData Central API ───────────────
 
 function cleanFoodName(raw) {
   // Convert ALL CAPS words to Title Case
@@ -5024,9 +5026,9 @@ function confirmFoodAdd() {
   updateCalTotals();
 }
 
-// ─── CALORIE COUNTER ──────────────────────────────────────
+// ─── CALORIE COUNTER — log, edit, delete, totals ───────────
 
-// ─── QUICK PRESETS (user-editable, stored in allData) ─────
+// ─── CALORIE COUNTER HELPERS — water, meals, day select ────
 const DEFAULT_QUICK_PRESETS = [
   { label: 'Banana', kcal: 90, protein: 1 },
   { label: '6 almonds', kcal: 40, protein: 1 },
@@ -5274,7 +5276,7 @@ function renderCalEntries() {
   }).join('');
 }
 
-// ─── DRAG TO REORDER ──────────────────────────────────────
+// ─── DRAG & EDIT — reorder entries, serving/portion recalc ─
 let _dragMeal = null, _dragIdx = null;
 
 function dragStart(e, meal, idx) {
@@ -5590,7 +5592,7 @@ function updateCalTotals() {
   }, 400);
 }
 
-// ─── START DATE ───────────────────────────────────────────
+// ─── START DATE — save, check, setup prompt ────────────────
 function saveStartDate() {
   const inp = document.getElementById('startDateInput');
   if (!inp || !inp.value) return;
@@ -5614,7 +5616,7 @@ function checkStartDateSetup() {
   }
 }
 
-// ─── CALENDAR RENDER ──────────────────────────────────────
+// ─── CALENDAR — monthly grid, activity colouring ───────────
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   if (!grid) return;
@@ -5715,7 +5717,7 @@ function goToWeekDay(week, day) {
   }, 150);
 }
 
-// ─── HISTORY RENDER (updated with dates + chart) ──────────
+// ─── HISTORY — weight table, charts, progressive overload ──
 function renderHistory() {
   const card = document.getElementById('historyCard');
   const actCard = document.getElementById('activityHistory');
@@ -6057,7 +6059,7 @@ function renderProgressiveOverload() {
   }).join('');
 }
 
-// ─── BMI / TDEE ────────────────────────────────────────────
+// ─── BMI / TDEE — calculate, display, apply to settings ────
 function calcBmiTdee() {
   if (!allData._body) return null;
   const dates = Object.keys(allData._body).sort().reverse();
@@ -6140,7 +6142,7 @@ function applyTdeeToMaintenance() {
   if (msg) { msg.textContent = `Maintenance set to ${result.tdee.toLocaleString()} kcal ✓`; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3000); }
 }
 
-// ─── BROWSER NOTIFICATION REMINDERS ──────────────────────
+// ─── NOTIFICATIONS — browser reminders, scheduling ─────────
 const NOTIF_KEY = 'ftNotifEnabled';
 
 function requestNotifPermission() {
@@ -6194,7 +6196,7 @@ function initReminders() {
   }
 }
 
-// ─── EXPORT / IMPORT ──────────────────────────────────────
+// ─── EXPORT / IMPORT — JSON backup, CSV download ───────────
 function exportData() {
   const payload = {
     exportedAt: new Date().toISOString(),
@@ -6301,7 +6303,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ─── GLOBAL DAY SELECTOR ─────────────────────────────────
+// ─── GLOBAL DAY SELECTOR — syncs diet + calorie sections ───
 function setGlobalDay(day) {
   calDay = day;
   dietDay = day;
@@ -6325,7 +6327,7 @@ function syncGlobalDaySelector() {
   renderGlobalDaySelector(calDay);
 }
 
-// ─── NUDGE SYSTEM ─────────────────────────────────────────
+// ─── NUDGE SYSTEM — smart alerts for TDEE, protein, pace ───
 function dismissNudge(id, cooldownDays) {
   localStorage.setItem('ftNudge_' + id, Date.now().toString());
   const el = document.getElementById(id);
@@ -6444,9 +6446,7 @@ function checkNudgeWater() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-// FEATURE 1 — WEEK-OVER-WEEK COMPARISON
-// ═══════════════════════════════════════════════════════════════
+// ─── WEEK COMPARISON — week-over-week table in History tab ─
 function renderWeekComparison() {
   const el = document.getElementById('weekComparisonView');
   if (!el) return;
@@ -6560,9 +6560,7 @@ function renderWeekComparison() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-// FEATURE 2 — BODY MEASUREMENTS TREND CHART
-// ═══════════════════════════════════════════════════════════════
+// ─── BODY MEASUREMENTS CHART — trend chart in Settings tab ─
 function renderBodyMeasChart() {
   const wrap = document.getElementById('bodyMeasurementChartWrap');
   const canvas = document.getElementById('bodyMeasChart');
@@ -6667,9 +6665,7 @@ function renderBodyMeasChart() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FEATURE 3 — STRENGTH-TO-BODYWEIGHT IN PROGRESSIVE OVERLOAD
-// ═══════════════════════════════════════════════════════════════
+// ─── STRENGTH / BODYWEIGHT — BW ratio helper ───────────────
 function getBodyweightAtWeek(weekNum) {
   // Find closest logged weight at or before this week
   for (let w = weekNum; w >= 1; w--) {
@@ -6679,9 +6675,7 @@ function getBodyweightAtWeek(weekNum) {
   return null;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FEATURE 4 — PDF / PRINT WEEKLY SUMMARY
-// ═══════════════════════════════════════════════════════════════
+// ─── PDF EXPORT — print-ready weekly summary ───────────────
 function exportWeekPDF() {
   const ws = getWeekStartDate(currentWeek);
   const we = ws ? new Date(ws.getTime() + 6 * 24 * 60 * 60 * 1000) : null;
@@ -6786,9 +6780,7 @@ ${wd.weekNotes ? `<div class="section">Weekly notes</div><div class="notes">${wd
 
 
 
-// ═══════════════════════════════════════════════════════════════
-// SHARE PROGRESS FEATURE
-// ═══════════════════════════════════════════════════════════════
+// ─── SHARE PROGRESS — canvas card, WhatsApp, download ──────
 let _shareCardDataUrl = null;
 
 function showShareModal() {
@@ -7137,7 +7129,7 @@ document.addEventListener('click', e => {
   if (modal && e.target === modal) closeShareModal();
 });
 
-// ─── INIT ──────────────────────────────────────────────────
+// ─── INIT — app bootstrap, load data, start ────────────────
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
   if (local) { allData = JSON.parse(local); checkStartDateSetup(); render(); }
