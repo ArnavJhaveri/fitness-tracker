@@ -880,12 +880,16 @@
   .cal-other { background: var(--red-bg); border-color: #fca5a5; }
   .cal-other .cal-day-num { color: var(--red); }
   .cal-other .cal-day-tag { color: var(--red); }
-  .cal-skipped { background: #fef2f2; border-color: #ef4444; border-width: 2px; }
-  .cal-skipped .cal-day-num { color: #b91c1c; font-weight: 700; }
-  .cal-skipped .cal-day-tag  { color: #b91c1c; }
+  .cal-skipped { background: #fef2f2; border-color: #fca5a5; }
+  .cal-skipped .cal-day-num { color: var(--red); font-weight: 600; }
+  .cal-skipped .cal-day-tag  { color: var(--red); }
   .cal-today { border-color: var(--accent) !important; border-width: 2px !important; }
   .cal-today .cal-day-num { color: var(--accent); font-weight: 600; }
   .cal-future { background: var(--surface); border-color: var(--border); opacity: 0.35; cursor: default; }
+  /* Future day with activity logged — activity colour but dashed + dimmed */
+  .cal-future-logged { opacity: 0.65; border-style: dashed !important; }
+  .cal-future-logged .cal-day-tag { font-style: italic; }
+  .cal-future-logged .cal-day-num { opacity: 0.8; }
   .cal-empty { opacity: 0; pointer-events: none; }
   .set-label { font-size:11px;color:var(--text3);display:block;margin-bottom:4px; }
   .set-input { width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--text);outline:none; }
@@ -1591,7 +1595,7 @@
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid #c4b5fd;"></div>Sport</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#ffe4e6;border:1px solid #fda4af;"></div>Other</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#fef2f2;border:2px solid #ef4444;"></div>Skipped</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#fef2f2;border:1px solid #fca5a5;"></div>Skipped</div>
     </div>
     <div id="calendarGrid"></div>
   </div>
@@ -2535,8 +2539,35 @@ function peekWeekData(w) {
 
 function getDayData(w, d) {
   const wd = getWeekData(w);
-  if (!wd.days[d]) wd.days[d] = { activity: '', core: false, notes: '' };
-  return wd.days[d];
+  if (!wd.days[d]) wd.days[d] = { activity: '', activities: [], core: false, notes: '' };
+  const dd = wd.days[d];
+  // Migrate legacy single-activity to activities array
+  if (!dd.activities) dd.activities = dd.activity ? [{ type: dd.activity, burn: undefined }] : [];
+  return dd;
+}
+
+// Get the activities array (always returns array, never null)
+function getActivities(dd) {
+  return dd.activities || [];
+}
+
+// Get the primary activity string (first non-rest, or first, or empty) — keeps all old code working
+function getPrimaryActivity(dd) {
+  const acts = getActivities(dd);
+  // If activities array exists (even empty), it's authoritative
+  // Only fall back to dd.activity if activities was never set (pre-migration)
+  if (dd.activities !== undefined) {
+    if (!acts.length) return '';
+  } else if (!acts.length) {
+    return dd.activity || '';
+  }
+  const nonRest = acts.find(a => a.type && a.type.toLowerCase() !== 'rest');
+  return (nonRest || acts[0]).type || '';
+}
+
+// Sync dd.activity to reflect current activities (for backward compat)
+function syncActivityField(dd) {
+  dd.activity = getPrimaryActivity(dd);
 }
 
 function getDietData(w, d) {
@@ -2620,8 +2651,10 @@ function calcStreak() {
       const dayName = DAYS[d];
       const wd = peekWeekData(w);
       const dd = (wd && wd.days && wd.days[dayName]) || {};
-      const act = (dd.activity || '').toLowerCase();
-      const isWorkout = dd.activity && !act.includes('rest');
+      const allActs2 = getActivities(dd);
+      const primaryAct = getPrimaryActivity(dd);
+      const act = primaryAct.toLowerCase();
+      const isWorkout = allActs2.length > 0 ? allActs2.some(a => a.type && a.type.toLowerCase() !== 'rest') : (dd.activity && !act.includes('rest'));
       days.push(isWorkout);
     }
   }
@@ -2979,7 +3012,12 @@ function renderDays() {
 
     let checksHtml = '';
     if (dd.core) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Core ✓</span></div>`;
-    if (dd.activity) checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>Done</span></div>`;
+    const allDayActs = getActivities(dd);
+    if (allDayActs.length > 0) {
+      allDayActs.forEach(a => { checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${a.type}</span></div>`; });
+    } else if (dd.activity) {
+      checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.activity}</span></div>`;
+    }
     if (dd.customBurn !== undefined && dd.customBurn !== '') checksHtml += `<div class="check-item"><div class="check-dot checked"></div><span>${dd.customBurn} kcal burned</span></div>`;
 
     // Feature C — kcal consumed indicator
@@ -3053,11 +3091,15 @@ function renderDayDetail(day) {
     'Sport','Other',
     'Rest',
   ];
-  const optHtml = activityOptions.map(o => `<option value="${o}" ${dd.activity === o ? 'selected' : ''}>${o}</option>`).join('');
+  const optHtml = activityOptions.map(o => `<option value="${o}">${o}</option>`).join('');
 
-  const preloadedBurn = EXERCISE_BURN[dd.activity] || 0;
-  const hasCustomBurn = dd.customBurn !== undefined;
-  const customBurn = hasCustomBurn ? dd.customBurn : '';
+  // Multi-activity: total estimated burn from all activities
+  const acts = getActivities(dd);
+  const preloadedBurn = acts.length > 0
+    ? acts.reduce((s, a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type] || 0)), 0)
+    : (EXERCISE_BURN[getPrimaryActivity(dd)] || 0);
+  const hasCustomBurn = false; // now tracked per-activity
+  const customBurn = '';
 
   document.getElementById('dayDetail').innerHTML = `
     <div class="day-detail">
@@ -3070,37 +3112,23 @@ function renderDayDetail(day) {
         </div>
       </div>
       <div class="detail-grid">
-        <div class="detail-section">
-          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
-            Activity completed
-            ${dd.activity ? `<button onclick="clearSection('${day}','activity')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× clear</button>` : ''}
+        <div class="detail-section" style="grid-column:1/-1;">
+          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            Activities logged
+            <button onclick="clearSection('${day}','activity')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× clear all</button>
           </div>
-          <select class="activity-select" onchange="saveDayActivity('${day}', this.value)">
-            <option value="">— select —</option>
-            ${optHtml}
-          </select>
-        </div>
-        <div class="detail-section">
-          <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
-            Calories burned
-            ${hasCustomBurn ? `<button onclick="clearDayBurn('${day}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;">× reset</button>` : ''}
+          <div id="activityList_${day}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+            ${renderActivityListHTML(day, dd)}
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input
-              type="number"
-              class="cal-num-input"
-              id="burnInput_${day}"
-              placeholder="${preloadedBurn || '0'}"
-              value="${customBurn}"
-              min="0" max="2000"
-              style="width:80px;"
-              oninput="saveDayBurn('${day}', this.value)"
-            >
-            <span style="font-size:12px;color:var(--text3);">kcal</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <select id="activityAddSelect_${day}" class="activity-select" style="flex:1;min-width:140px;">
+              <option value="">+ add activity…</option>
+              ${optHtml}
+            </select>
+            <input type="number" id="activityAddBurn_${day}" class="cal-num-input" placeholder="kcal (opt)" min="0" max="2000" style="width:100px;">
+            <button onclick="addDayActivity('${day}')" style="padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;">
-            ${hasCustomBurn ? `Watch says: <strong style="color:var(--text2)">${customBurn} kcal</strong>` : `Estimate: <strong style="color:var(--text2)">${preloadedBurn} kcal</strong> — enter your watch reading to override`}
-          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:5px;">Select activity and optionally enter your watch's kcal reading, then tap Add. Add as many as you like.</div>
         </div>
         <div class="detail-section">
           <div class="detail-label" style="display:flex;justify-content:space-between;align-items:center;">
@@ -3132,13 +3160,13 @@ function renderDayDetail(day) {
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" class="cal-num-input" id="durationInput_${day}"
               value="${dd.durationMin || ''}"
-              placeholder="${ACTIVITY_DURATION[dd.activity] || '—'}"
+              placeholder="${ACTIVITY_DURATION[getPrimaryActivity(dd)] || '—'}"
               min="0" max="360" style="width:72px;"
               oninput="saveDayDuration('${day}', this.value)">
             <span style="font-size:12px;color:var(--text3);">min</span>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:4px;">
-            ${dd.durationMin ? `${dd.durationMin} min logged` : `Est: ${ACTIVITY_DURATION[dd.activity] || '—'} min — enter actual to override`}
+            ${dd.durationMin ? `${dd.durationMin} min logged` : `Est: ${ACTIVITY_DURATION[getPrimaryActivity(dd)] || '—'} min — enter actual to override`}
           </div>
         </div>
 
@@ -3184,10 +3212,10 @@ function renderDayDetail(day) {
         </div>
 
       </div>
-      ${getSessionLinkHTML(dd.activity || planned, currentWeek)}
+      ${getSessionLinkHTML(getPrimaryActivity(dd) || planned, currentWeek)}
     </div>
   `;
-  injectInlineSession(dd.activity || planned, currentWeek);
+  injectInlineSession(getPrimaryActivity(dd) || planned, currentWeek);
   renderWorkoutLogPanel(day);
 }
 
@@ -3266,6 +3294,7 @@ function clearWorkout(day) {
   if (!confirm(`Clear workout data for ${day}?`)) return;
   const dd = getDayData(currentWeek, day);
   dd.activity = '';
+  dd.activities = [];     // clear all logged activities
   dd.core = false;
   dd.backOk = true;
   dd.notes = '';
@@ -3273,6 +3302,7 @@ function clearWorkout(day) {
   dd.durationMin = undefined;
   dd.rpe = undefined;
   dd.workoutLog = null;
+  invalidateStreakCache();
   autoPersist();
   renderDays();
   renderSummary();
@@ -3294,7 +3324,10 @@ function clearSection(day, section) {
   const dd = getDayData(currentWeek, day);
   if (section === 'activity') {
     dd.activity = '';
+    dd.activities = [];
     dd.customBurn = undefined;
+    invalidateStreakCache();
+    renderDays();          // update day card badge/tag to planned activity
     renderSummary();
     if (day === calDay) updateCalTotals();
   } else if (section === 'checklist') {
@@ -3388,7 +3421,7 @@ function saveDaySleep(day, val) {
 
 function getWorkoutLog(day) {
   const dd = getDayData(currentWeek, day);
-  if (!dd.workoutLog) dd.workoutLog = { type: detectWorkoutType(dd.activity), entries: [] };
+  if (!dd.workoutLog) dd.workoutLog = { type: detectWorkoutType(getPrimaryActivity(dd)), entries: [] };
   return dd.workoutLog;
 }
 
@@ -3439,7 +3472,7 @@ function renderWorkoutLogPanel(day) {
   if (!panel) return;
 
   // Infer type from planned activity when none logged yet
-  if (!dd.activity) {
+  if (!getPrimaryActivity(dd)) {
     const plan = getPhase(currentWeek) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
     const planned = plan[DAYS.indexOf(day)] || '';
     log.type = detectWorkoutType(planned);
@@ -3570,12 +3603,14 @@ function calcWeeklyWorkoutHours(weekNum) {
   let totalMin = 0;
   DAYS.forEach(day => {
     const dd = (wd.days && wd.days[day]) || {};
-    const act = dd.activity || '';
-    if (!act || act === 'Rest') return;
-    // Use logged duration first, then estimate
+    const dayActsWH = getActivities(dd);
+    const actsWH = dayActsWH.length > 0 ? dayActsWH : (dd.activity ? [{ type: dd.activity }] : []);
+    if (!actsWH.length || actsWH.every(a => !a.type || a.type === 'Rest')) return;
+    // Use logged duration first, then sum estimates across all activities
+    const estimatedTotal = actsWH.reduce((s, a) => s + (ACTIVITY_DURATION[a.type] || 0), 0);
     const dur = dd.durationMin !== undefined
       ? dd.durationMin
-      : (ACTIVITY_DURATION[act] || 0);
+      : estimatedTotal;
     totalMin += dur;
   });
   return totalMin;
@@ -3675,11 +3710,15 @@ function renderSummary() {
 
   DAYS.forEach(day => {
     const dd = (wd.days && wd.days[day]) || {};
-    const act = (dd.activity || '').toLowerCase();
-    if (act.includes('run') || act.includes('tempo')) runs++;
-    if (act.includes('weight')) weights++;
-    if (act === 'sport') sport++;
-    if (act === 'other') other++;
+    const allDayActs = getActivities(dd);
+    const actsToCount = allDayActs.length > 0 ? allDayActs : (dd.activity ? [{ type: dd.activity }] : []);
+    actsToCount.forEach(a => {
+      const act = (a.type || '').toLowerCase();
+      if (act.includes('run') || act.includes('tempo')) runs++;
+      if (act.includes('weight')) weights++;
+      if (act === 'sport') sport++;
+      if (act === 'other') other++;
+    });
     if (dd.core) core++;
 
     const diet = (wd.diet && wd.diet[day]) || {};
@@ -4232,7 +4271,7 @@ function copyWeekSummary() {
   // Activities
   const activities = DAYS.map(d => {
     const dd = (wd.days && wd.days[d]) || {};
-    return dd.activity ? `  ${d}: ${dd.activity}${dd.core ? ' + core' : ''}` : null;
+    const dayActList = getActivities(dd); const actStr = dayActList.length > 0 ? dayActList.map(a=>a.type).join(' + ') : dd.activity; return actStr ? `  ${d}: ${actStr}${dd.core ? ' + core' : ''}` : null;
   }).filter(Boolean).join('\n');
 
   // Weight
@@ -6023,10 +6062,10 @@ function updateCalTotals() {
   // Get exercise burn — custom watch value takes priority over preset
   const wd = peekWeekData(currentWeek);
   const dayActData = (wd && wd.days && wd.days[calDay]) || {};
-  const dayAct = dayActData.activity || '';
+  const dayActsAll = getActivities(dayActData);
   const burned = dayActData.customBurn !== undefined
     ? dayActData.customBurn
-    : (EXERCISE_BURN[dayAct] || 0);
+    : (dayActsAll.length > 0 ? dayActsAll.reduce((s,a) => s + (EXERCISE_BURN[a.type]||0), 0) : (EXERCISE_BURN[dayActData.activity||'']||0));
 
   const net = consumed - burned;
   const target = getTargetForWeek(currentWeek);
@@ -6161,29 +6200,54 @@ function renderCalendar() {
       } else if (isBeforeStart) {
         cellClass = 'cal-future';
         tag = '';
-      } else if (!isFuture) {
-        if (act === 'sport') {
-          cellClass = 'cal-sport'; tag = 'Sport';
-        } else if (act === 'other') {
-          cellClass = 'cal-other'; tag = 'Other';
-        } else if (act.includes('walk')) {
-          cellClass = 'cal-walk'; tag = act.includes('incline') ? 'Incline' : 'Walk';
-        } else if (act.includes('run') || act.includes('tempo')) {
-          cellClass = 'cal-run';
-          tag = act.includes('tempo') ? 'Tempo' : 'Run';
-        } else if (act.includes('weight')) {
-          cellClass = 'cal-weights';
-          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
-        } else if (act && !act.includes('rest')) {
-          cellClass = 'cal-workout';
-          tag = dd.activity.length > 9 ? dd.activity.slice(0,9)+'…' : dd.activity;
-        } else if (act.includes('rest')) {
-          cellClass = 'cal-rest'; tag = 'Rest';
+      } else {
+        // Get planned activity for this day (for smarter Skipped logic)
+        const calPlan = getPhase(w) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
+        const plannedAct = (calPlan[d] || '').toLowerCase();
+
+        if (act) {
+          // Activity has been logged — assign colour
+          if (act === 'sport') {
+            cellClass = 'cal-sport'; tag = 'Sport';
+          } else if (act === 'other') {
+            cellClass = 'cal-other'; tag = 'Other';
+          } else if (act.includes('walk')) {
+            cellClass = 'cal-walk'; tag = act.includes('incline') ? 'Incline' : 'Walk';
+          } else if (act.includes('run') || act.includes('tempo')) {
+            cellClass = 'cal-run';
+            tag = act.includes('tempo') ? 'Tempo' : 'Run';
+          } else if (act.includes('weight')) {
+            cellClass = 'cal-weights';
+            tag = (dd.activity.length > 7 ? dd.activity.slice(0,7)+'…' : dd.activity) + (getActivities(dd).length > 1 ? '+' : '');
+          } else if (act.includes('rest')) {
+            cellClass = 'cal-rest'; tag = 'Rest';
+          } else {
+            cellClass = 'cal-workout';
+            tag = (dd.activity.length > 7 ? dd.activity.slice(0,7)+'…' : dd.activity) + (getActivities(dd).length > 1 ? '+' : '');
+          }
+          // If this is a future day with a logged activity, mark it as planned-not-done
+          if (isFuture) cellClass += ' cal-future-logged';
+
+        } else if (isFuture) {
+          // Future, nothing logged — blank (will happen naturally)
+          cellClass = 'cal-future';
+          tag = '';
+
         } else {
-          cellClass = 'cal-skipped'; tag = 'Skipped';
+          // Past day, nothing logged — smart Skipped logic
+          // If planned activity was Rest → show Rest (not Skipped)
+          if (plannedAct.includes('rest')) {
+            cellClass = 'cal-rest'; tag = 'Rest';
+          } else if (plannedAct) {
+            // Had a workout planned but nothing logged → Skipped
+            cellClass = 'cal-skipped'; tag = 'Skipped';
+          } else {
+            // No plan for this day → neutral grey
+            cellClass = 'cal-rest'; tag = '';
+          }
         }
       }
-      html += `<div class="cal-day-cell ${cellClass}" ${isBeforeStart ? '' : `onclick="goToWeekDay(${w},'${dayName}')"`} style="${isBeforeStart ? 'cursor:default;pointer-events:none;' : ''}" title="${isBeforeStart ? 'Before plan start' : formatDateFull(date)+(dd.activity ? ' · '+dd.activity : '')}">
+      html += `<div class="cal-day-cell ${cellClass}" ${isBeforeStart ? '' : `onclick="goToWeekDay(${w},'${dayName}')"`} style="${isBeforeStart ? 'cursor:default;pointer-events:none;' : ''}" title="${isBeforeStart ? 'Before plan start' : formatDateFull(date)+(getActivities(dd).length > 0 ? ' · ' + getActivities(dd).map(a=>a.type).join(', ') : (dd.activity ? ' · '+dd.activity : ''))}">
         <div class="cal-day-num">${date.getDate()}</div>
         ${!isBeforeStart && tag ? `<div class="cal-day-tag">${tag}</div>` : ''}
         ${hasWeight ? `<div class="cal-weight-dot" title="${wd.weight} lbs${wd.weightNote ? ' — ' + wd.weightNote : ''}"></div>` : ''}
@@ -6262,7 +6326,7 @@ function renderHistory() {
         chartData.push(wt);
         prevWt = wt;
       }
-      let acts = DAYS.map(d => wd.days[d]?.activity).filter(Boolean);
+      let acts = DAYS.flatMap(d => { const dd = wd.days[d]; if (!dd) return []; const as = getActivities(dd); return as.length > 0 ? as.map(a=>a.type) : (dd.activity ? [dd.activity] : []); });
       if (acts.length || wd.weekNotes) {
         const { totalDeficit: wDef, daysWithFood: wFoodDays } = calcWeeklyDeficit(w);
         const calNote = wFoodDays > 0
@@ -6719,13 +6783,13 @@ function exportCSV() {
       const carbs   = entries.reduce((s, e) => s + (e.carbs || 0), 0);
       const fat     = entries.reduce((s, e) => s + (e.fats || 0), 0);
       const sugar   = entries.reduce((s, e) => s + (e.sugar || 0), 0);
-      const burned  = dd.customBurn !== undefined ? dd.customBurn : (EXERCISE_BURN[dd.activity || ''] || 0);
+      const dayActsSum = getActivities(dd); const burned = dd.customBurn !== undefined ? dd.customBurn : (dayActsSum.length > 0 ? dayActsSum.reduce((s,a)=>s+(EXERCISE_BURN[a.type]||0),0) : (EXERCISE_BURN[dd.activity||'']||0));
       const water   = (wd.water && wd.water[day]) || 0;
       const date    = getDayDate(w, di);
       const dateStr = date ? date.toISOString().slice(0, 10) : '';
       rows.push([
         w, day, dateStr,
-        dd.activity || '', dd.durationMin || '', burned,
+        (getActivities(dd).length > 0 ? getActivities(dd).map(a=>a.type).join('+') : dd.activity || ''), dd.durationMin || '', burned,
         eaten || '', eaten ? (eaten - burned) : '', protein || '', carbs || '', fat || '', sugar || '',
         water || '', dd.sleepHrs || '', dd.mood || '', dd.energy || '', dd.rpe || '',
         di === 0 && wd.weight ? wd.weight : '',
@@ -6975,10 +7039,13 @@ function renderWeekComparison() {
     let runs = 0, weights = 0, sport = 0;
     DAYS.forEach(day => {
       const dd = (wd.days && wd.days[day]) || {};
-      const act = (dd.activity || '').toLowerCase();
-      if (act.includes('run') || act.includes('tempo')) runs++;
-      if (act.includes('weight')) weights++;
-      if (act === 'sport' || act === 'other' || act.includes('walk')) sport++;
+      const nudgeDayActs = getActivities(dd); const nudgeActsList = nudgeDayActs.length > 0 ? nudgeDayActs : (dd.activity ? [{ type: dd.activity }] : []);
+      nudgeActsList.forEach(a => {
+        const t = (a.type || '').toLowerCase();
+        if (t.includes('run') || t.includes('tempo')) runs++;
+        if (t.includes('weight')) weights++;
+        if (t === 'sport' || t === 'other' || t.includes('walk')) sport++;
+      });
     });
     if (hasWeight || foodDays > 0 || daysWithData > 0) {
       const ws = getWeekStartDate(w);
@@ -7214,18 +7281,22 @@ function exportWeekPDF() {
   let runs = 0, weights = 0, core = 0, sport = 0, other = 0;
   const dayRows = DAYS.map(day => {
     const dd = (wd.days && wd.days[day]) || {};
-    const act = (dd.activity || '').toLowerCase();
-    if (act.includes('run') || act.includes('tempo')) runs++;
-    if (act.includes('weight')) weights++;
+    const pdfActs = getActivities(dd);
+    const pdfActList = pdfActs.length > 0 ? pdfActs : (dd.activity ? [{ type: dd.activity }] : []);
+    pdfActList.forEach(a => {
+      const t = (a.type || '').toLowerCase();
+      if (t.includes('run') || t.includes('tempo')) runs++;
+      if (t.includes('weight')) weights++;
+      if (t === 'sport') sport++;
+      if (t === 'other') other++;
+    });
     if (dd.core) core++;
-    if (act === 'sport') sport++;
-    if (act === 'other') other++;
     const cal = wd.calories && wd.calories[day];
     const entries = cal ? MEALS.flatMap(m => cal[m] || []) : [];
     const kcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
     const prot = entries.reduce((s, e) => s + (e.protein || 0), 0);
     const water = (wd.water && wd.water[day]) || 0;
-    return { day, activity: dd.activity || '—', core: dd.core, kcal, prot: Math.round(prot), water, rpe: dd.rpe, sleepHrs: dd.sleepHrs, mood: dd.mood };
+    return { day, activity: getActivities(dd).length > 0 ? getActivities(dd).map(a=>a.type).join(' + ') : (dd.activity || '—'), core: dd.core, kcal, prot: Math.round(prot), water, rpe: dd.rpe, sleepHrs: dd.sleepHrs, mood: dd.mood };
   });
 
   const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
@@ -7460,6 +7531,195 @@ function dismissPwaBanner() {
     setTimeout(() => showPwaBanner('ios'), 1500);
   }
 })();
+
+// ─── MULTI-ACTIVITY LOGGING ──────────────────────────────────
+
+function getBadgeClassForActivity(type) {
+  const a = (type || '').toLowerCase();
+  if (a.includes('run') || a.includes('tempo')) return 'badge-run';
+  if (a.includes('weight'))  return 'badge-weights';
+  if (a === 'sport')         return 'badge-sport';
+  if (a === 'other')         return 'badge-other';
+  if (a.includes('walk'))    return 'badge-walk';
+  return 'badge-rest';
+}
+
+function renderActivityListHTML(day, dd) {
+  const acts = getActivities(dd);
+  if (!acts.length) return '<div style="font-size:12px;color:var(--text3);">No activities logged yet — add one below.</div>';
+  return acts.map((a, i) => {
+    const badgeClass = getBadgeClassForActivity(a.type);
+    const estimatedBurn = EXERCISE_BURN[a.type] || 0;
+    const burnDisplay = a.burn !== undefined ? `${a.burn} kcal (watch)` : (estimatedBurn ? `~${estimatedBurn} kcal est.` : '');
+    const isPrimary = i === 0;
+    return `<div draggable="true"
+      data-act-day="${day}" data-act-idx="${i}"
+      ondragstart="actDragStart(event,'${day}',${i})"
+      ondragover="actDragOver(event)"
+      ondrop="actDrop(event,'${day}',${i})"
+      ondragend="actDragEnd(event)"
+      style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border-radius:7px;cursor:default;transition:opacity 0.15s;">
+      <span style="color:var(--border2);font-size:14px;cursor:grab;flex-shrink:0;" title="Drag to reorder">⠿</span>
+      <span class="${badgeClass}" style="font-size:11px;padding:2px 7px;border-radius:5px;">${a.type}</span>
+      ${isPrimary ? '<span style="font-size:10px;color:var(--text3);font-style:italic;">primary</span>' : ''}
+      ${burnDisplay ? `<span style="font-size:11px;color:var(--text3);">${burnDisplay}</span>` : ''}
+      <button onclick="editDayActivity('${day}',${i})" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:0 3px;" title="Edit">✎</button>
+      <button onclick="removeDayActivity('${day}',${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Activity list drag-to-reorder ─────────────────────────────
+let _actDragFromIdx = null;
+
+function actDragStart(e, day, idx) {
+  _actDragFromIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => { if (e.target) e.target.style.opacity = '0.4'; }, 0);
+}
+function actDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.outline = '2px solid var(--accent)';
+}
+function actDragEnd(e) {
+  if (e.target) e.target.style.opacity = '';
+  // Remove all outlines
+  document.querySelectorAll('[data-act-day]').forEach(el => el.style.outline = '');
+}
+function actDrop(e, day, toIdx) {
+  e.preventDefault();
+  e.currentTarget.style.outline = '';
+  const fromIdx = _actDragFromIdx;
+  _actDragFromIdx = null;
+  if (fromIdx === null || fromIdx === toIdx) return;
+  const dd = getDayData(currentWeek, day);
+  if (!dd.activities) return;
+  const [moved] = dd.activities.splice(fromIdx, 1);
+  dd.activities.splice(toIdx, 0, moved);
+  syncActivityField(dd);   // first item is now primary
+  autoPersist();
+  invalidateStreakCache();
+  // Refresh activity list
+  const listEl = document.getElementById(`activityList_${day}`);
+  if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
+  // Update day card badge/tag
+  renderDays();
+  renderSummary();
+  renderWorkoutLogPanel(day);
+}
+
+function addDayActivity(day) {
+  const sel = document.getElementById(`activityAddSelect_${day}`);
+  const burnEl = document.getElementById(`activityAddBurn_${day}`);
+  if (!sel || !sel.value) return;
+  const type = sel.value;
+  const burn = burnEl && burnEl.value !== '' ? parseFloat(burnEl.value) : undefined;
+  const dd = getDayData(currentWeek, day);
+  if (!dd.activities) dd.activities = [];
+  dd.activities.push({ type, burn });
+  syncActivityField(dd);
+  // Reset inputs
+  sel.value = '';
+  if (burnEl) burnEl.value = '';
+  autoPersist();
+  invalidateStreakCache();
+  // Refresh just the activity list and badges
+  const listEl = document.getElementById(`activityList_${day}`);
+  if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
+  renderDays();
+  renderSummary();
+  updateCalTotals();
+  // Re-render workout panel for the new primary activity
+  renderWorkoutLogPanel(day);
+}
+
+function removeDayActivity(day, idx) {
+  const dd = getDayData(currentWeek, day);
+  if (!dd.activities || !dd.activities[idx]) return;
+  dd.activities.splice(idx, 1);
+  syncActivityField(dd);  // updates dd.activity to new primary (or '' if empty)
+  autoPersist();
+  invalidateStreakCache();
+  // Refresh the activity list inline
+  const listEl = document.getElementById(`activityList_${day}`);
+  if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
+  // Always re-render day cards so the badge/tag updates immediately
+  renderDays();
+  renderSummary();
+  updateCalTotals();
+  // Re-render workout panel — primary activity may have changed
+  renderWorkoutLogPanel(day);
+}
+
+
+// ─── ACTIVITY ENTRY EDIT ─────────────────────────────────────
+function editDayActivity(day, idx) {
+  const dd = getDayData(currentWeek, day);
+  const a = getActivities(dd)[idx];
+  if (!a) return;
+
+  // Remove any existing edit form for this day
+  document.getElementById(`actEditForm_${day}_${idx}`)?.remove();
+
+  const activityOptions = [
+    'Run','Tempo run','Incline walk (30min)','Incline walk (45min)','Walk',
+    'Weights A','Weights B','Weights C','Sport','Other','Rest',
+  ];
+  const optHtml = activityOptions.map(o =>
+    `<option value="${o}" ${o === a.type ? 'selected' : ''}>${o}</option>`).join('');
+
+  const listEl = document.getElementById(`activityList_${day}`);
+  if (!listEl) return;
+
+  // Find the row for this index and insert form after it
+  const rows = listEl.querySelectorAll('[data-act-idx]');
+  const targetRow = [...rows].find(r => r.dataset.actIdx == idx);
+  if (!targetRow) return;
+
+  const form = document.createElement('div');
+  form.id = `actEditForm_${day}_${idx}`;
+  form.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:var(--surface);border:1px solid var(--accent);border-radius:8px;margin-top:4px;';
+  form.innerHTML = `
+    <select id="actEdit_type_${day}_${idx}" class="activity-select" style="flex:1;min-width:130px;">
+      ${optHtml}
+    </select>
+    <input type="number" id="actEdit_burn_${day}_${idx}" class="cal-num-input"
+      value="${a.burn !== undefined ? a.burn : ''}" placeholder="kcal (opt)" min="0" max="2000" style="width:100px;">
+    <button onclick="saveEditDayActivity('${day}',${idx})"
+      style="padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="document.getElementById('actEditForm_${day}_${idx}').remove()"
+      style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+  targetRow.after(form);
+  document.getElementById(`actEdit_type_${day}_${idx}`)?.focus();
+}
+
+function saveEditDayActivity(day, idx) {
+  const typeEl = document.getElementById(`actEdit_type_${day}_${idx}`);
+  const burnEl = document.getElementById(`actEdit_burn_${day}_${idx}`);
+  if (!typeEl) return;
+
+  const dd = getDayData(currentWeek, day);
+  if (!dd.activities || !dd.activities[idx]) return;
+
+  dd.activities[idx].type = typeEl.value;
+  dd.activities[idx].burn = burnEl && burnEl.value !== '' ? parseFloat(burnEl.value) : undefined;
+  syncActivityField(dd);
+  autoPersist();
+  invalidateStreakCache();
+
+  // Remove edit form and refresh list
+  document.getElementById(`actEditForm_${day}_${idx}`)?.remove();
+  const listEl = document.getElementById(`activityList_${day}`);
+  if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
+  renderDays();
+  renderSummary();
+  updateCalTotals();
+  renderWorkoutLogPanel(day);
+}
+
 
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
