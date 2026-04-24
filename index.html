@@ -1510,8 +1510,8 @@
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
       <span class="save-msg" id="importMsg" style="color:var(--green);">Imported ✓</span>
     </div>
-    <div style="height:18px;margin-top:-4px;margin-bottom:14px;text-align:left;">
-      <span class="save-msg" id="saveMsg" style="font-size:12px;display:inline-block;min-width:0;transform:translateX(calc(55px - 50%));">Saved ✓</span>
+    <div style="height:18px;margin-top:-4px;margin-bottom:14px;position:relative;">
+      <span class="save-msg" id="saveMsg" style="font-size:12px;">Saved ✓</span>
     </div>
 
   </div>
@@ -4302,6 +4302,16 @@ function saveWeek() {
   if (wv) getWeekData(currentWeek).weight = wv;
   autoPersist();
   const msg = document.getElementById('saveMsg');
+  // Centre the message under the Save week button
+  const btn = document.querySelector('.save-btn');
+  if (btn && msg) {
+    const btnRect = btn.getBoundingClientRect();
+    const parentRect = msg.parentElement.getBoundingClientRect();
+    msg.style.position = 'absolute';
+    msg.style.left = (btnRect.left - parentRect.left + btnRect.width / 2) + 'px';
+    msg.style.transform = 'translateX(-50%)';
+    msg.style.whiteSpace = 'nowrap';
+  }
   msg.classList.add('show');
   setTimeout(() => msg.classList.remove('show'), 2000);
 }
