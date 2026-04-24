@@ -9,6 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fitness Tracker">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
 <title>Arnav — Fitness Tracker</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -46,12 +48,15 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html { overflow-x: hidden; }
   body {
     font-family: var(--sans);
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
     padding: 0;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   /* HEADER */
@@ -1505,8 +1510,8 @@
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
       <span class="save-msg" id="importMsg" style="color:var(--green);">Imported ✓</span>
     </div>
-    <div style="height:20px;margin-bottom:16px;">
-      <span class="save-msg" id="saveMsg" style="font-size:12px;">Saved ✓</span>
+    <div style="height:18px;margin-top:-4px;margin-bottom:14px;text-align:left;">
+      <span class="save-msg" id="saveMsg" style="font-size:12px;display:inline-block;min-width:0;transform:translateX(calc(55px - 50%));">Saved ✓</span>
     </div>
 
   </div>
@@ -4330,8 +4335,15 @@ function addMealTemplate(idx) {
   const templates = getMealTemplates();
   const t = templates[idx];
   if (!t || !t.items) return;
+  // Ask which meal to add to
+  const mealOptions = MEALS.map((m, i) => `${i+1}. ${MEAL_LABELS[m]}`).join('\n');
+  const raw = prompt(`Add "${t.name}" to which meal?\n\n${mealOptions}\n\nEnter 1-4:`, '1');
+  if (raw === null) return;
+  const mealIdx = parseInt(raw) - 1;
+  if (mealIdx < 0 || mealIdx >= MEALS.length) return;
+  const targetMeal = MEALS[mealIdx];
   const cd = getCalData(currentWeek, calDay);
-  t.items.forEach(item => cd[activeMeal].push({
+  t.items.forEach(item => cd[targetMeal].push({
     ...item,
     _per1:      { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fats: item.fats, sugar: item.sugar },
     _baseName:  item.name,
@@ -4341,6 +4353,7 @@ function addMealTemplate(idx) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 function createMealTemplate() {
@@ -4593,16 +4606,20 @@ function tplConfirmServing(templateIdx) {
 function tplAddPreset(templateIdx, presetIdx) {
   const p = getQuickPresets()[presetIdx];
   if (!p) return;
+  const raw = prompt(`How many portions of "${p.label}"?`, '1');
+  if (raw === null) return;
+  const portions = Math.max(0.25, parseFloat(raw) || 1);
+  const scale = v => v != null ? Math.round(v * portions * 10) / 10 : undefined;
   tplSaveItem(templateIdx, {
-    name:    p.label,
-    kcal:    p.kcal    || 0,
-    protein: p.protein || 0,
-    carbs:   p.carbs,
-    fats:    p.fats,
-    sugar:   p.sugar,
+    name:    portions === 1 ? p.label : `${p.label} ×${portions}`,
+    kcal:    Math.round((p.kcal || 0) * portions),
+    protein: scale(p.protein),
+    carbs:   scale(p.carbs),
+    fats:    scale(p.fats),
+    sugar:   scale(p.sugar),
     _per1:    { kcal: p.kcal, protein: p.protein, carbs: p.carbs, fats: p.fats, sugar: p.sugar },
     _baseName: p.label,
-    _portions: 1,
+    _portions: portions,
   });
 }
 
@@ -4622,6 +4639,94 @@ function tplConfirmManual(templateIdx, tempId) {
 }
 
 // ── Common save ───────────────────────────────────────────────
+// ─── TEMPLATE ITEM EDIT ──────────────────────────────────────
+function editTemplateItem(templateIdx, itemIdx) {
+  const templates = getMealTemplates();
+  const item = templates[templateIdx] && templates[templateIdx].items[itemIdx];
+  if (!item) return;
+  const containerId = `tplItems_${templateIdx}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Remove any existing edit row for this item
+  const existingEdit = document.getElementById(`tplEditRow_${templateIdx}_${itemIdx}`);
+  if (existingEdit) { existingEdit.remove(); return; }
+
+  const div = document.createElement('div');
+  div.id = `tplEditRow_${templateIdx}_${itemIdx}`;
+  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px;padding:8px;background:var(--surface2);border-radius:8px;';
+
+  const hasPer1 = item._per1 && item._baseName;
+  const portionSection = hasPer1 ? `
+    <div style="width:100%;font-size:11px;color:var(--text3);margin-bottom:4px;">
+      Portions: <input type="number" id="tplEditPortions_${templateIdx}_${itemIdx}" value="${item._portions || 1}" min="0.25" max="20" step="0.25"
+        class="cal-num-input" style="width:60px;" oninput="tplEditRecalc(${templateIdx},${itemIdx})"> × per portion
+    </div>` : '';
+
+  div.innerHTML = portionSection + `
+    <input type="text" id="tplEdit_${templateIdx}_${itemIdx}_name" value="${item.name.replace(/"/g,'&quot;')}"
+      style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;">
+    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_kcal"  value="${item.kcal || ''}"    placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:62px;">
+    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_prot"  value="${item.protein || ''}" placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:62px;">
+    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_carbs" value="${item.carbs ?? ''}"   placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:62px;">
+    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_fats"  value="${item.fats ?? ''}"    placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:58px;">
+    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_sugar" value="${item.sugar ?? ''}"   placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:62px;">
+    <button onclick="saveTplItemEdit(${templateIdx},${itemIdx})" style="padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="document.getElementById('tplEditRow_${templateIdx}_${itemIdx}').remove()" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+  `;
+
+  // Insert after the item row
+  const allRows = container.querySelectorAll('[data-item-idx]');
+  const targetRow = [...allRows].find(r => r.dataset.itemIdx == itemIdx);
+  if (targetRow && targetRow.nextSibling) {
+    container.insertBefore(div, targetRow.nextSibling);
+  } else {
+    container.appendChild(div);
+  }
+}
+
+function tplEditRecalc(templateIdx, itemIdx) {
+  const templates = getMealTemplates();
+  const item = templates[templateIdx]?.items[itemIdx];
+  if (!item || !item._per1) return;
+  const portions = parseFloat(document.getElementById(`tplEditPortions_${templateIdx}_${itemIdx}`)?.value) || 1;
+  const r = v => v != null ? Math.round(v * portions * 10) / 10 : undefined;
+  const set = (suffix, val) => { const el = document.getElementById(`tplEdit_${templateIdx}_${itemIdx}_${suffix}`); if (el && val != null) el.value = val; };
+  set('kcal',  Math.round(item._per1.kcal * portions));
+  set('prot',  r(item._per1.protein));
+  set('carbs', r(item._per1.carbs));
+  set('fats',  r(item._per1.fats));
+  set('sugar', r(item._per1.sugar));
+  const nameEl = document.getElementById(`tplEdit_${templateIdx}_${itemIdx}_name`);
+  if (nameEl && item._baseName) nameEl.value = portions === 1 ? item._baseName : `${item._baseName} ×${portions}`;
+}
+
+function saveTplItemEdit(templateIdx, itemIdx) {
+  const templates = getMealTemplates();
+  if (!templates[templateIdx]) return;
+  const item = templates[templateIdx].items[itemIdx];
+  const get = suffix => {
+    const el = document.getElementById(`tplEdit_${templateIdx}_${itemIdx}_${suffix}`);
+    return el && el.value !== '' ? parseFloat(el.value) : undefined;
+  };
+  const nameEl = document.getElementById(`tplEdit_${templateIdx}_${itemIdx}_name`);
+  const portEl = document.getElementById(`tplEditPortions_${templateIdx}_${itemIdx}`);
+  templates[templateIdx].items[itemIdx] = {
+    ...item,
+    name:    nameEl ? nameEl.value.trim() || item.name : item.name,
+    kcal:    get('kcal')  || 0,
+    protein: get('prot')  || 0,
+    carbs:   get('carbs'),
+    fats:    get('fats'),
+    sugar:   get('sugar'),
+    _portions: portEl ? parseFloat(portEl.value) || item._portions : item._portions,
+  };
+  saveMealTemplates(templates);
+  document.getElementById(`tplEditRow_${templateIdx}_${itemIdx}`)?.remove();
+  renderMealsTab();
+}
+
+
 function tplSaveItem(templateIdx, entry) {
   const templates = getMealTemplates();
   if (!templates[templateIdx]) return;
@@ -4730,8 +4835,11 @@ function editQuickPreset(idx) {
   div.innerHTML = `
     <input type="text" id="${rowId}_label" value="${p.label.replace(/"/g,'&quot;')}" style="flex:1;min-width:130px;padding:5px 9px;border:1px solid var(--accent);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
       onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
-    <input type="number" id="${rowId}_kcal" value="${p.kcal}" class="cal-num-input" min="0" max="5000" style="width:70px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
-    <input type="number" id="${rowId}_prot" value="${p.protein}" class="cal-num-input" min="0" max="500" style="width:80px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_kcal"  value="${p.kcal}"          placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_prot"  value="${p.protein}"        placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_carbs" value="${p.carbs ?? ''}"    placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_fats"  value="${p.fats  ?? ''}"    placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <input type="number" id="${rowId}_sugar" value="${p.sugar ?? ''}"    placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
     <button onclick="saveQuickPresetEdit(${idx},'${rowId}')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
     <button onclick="document.getElementById('${rowId}').remove()" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
   `;
@@ -4745,14 +4853,68 @@ function saveQuickPresetEdit(idx, rowId) {
   const protEl  = document.getElementById(rowId + '_prot');
   if (!labelEl) return;
   const presets = getQuickPresets();
+  const carbsEl = document.getElementById(rowId + '_carbs');
+  const fatsEl  = document.getElementById(rowId + '_fats');
+  const sugarEl = document.getElementById(rowId + '_sugar');
+  const getVal = el => (el && el.value !== '') ? parseFloat(el.value) : undefined;
+  const oldLabel = presets[idx].label;
   presets[idx] = {
+    ...presets[idx],  // preserve any other fields
     label:   labelEl.value.trim() || presets[idx].label,
     kcal:    parseInt(kcalEl.value) || 0,
     protein: parseInt(protEl.value) || 0,
+    carbs:   getVal(carbsEl),
+    fats:    getVal(fatsEl),
+    sugar:   getVal(sugarEl),
   };
+  const newPreset = presets[idx];
   saveQuickPresets(presets);
+
+  // Sync calorie log entries from this preset
+  Object.keys(allData).forEach(wk => {
+    const wd = allData[wk];
+    if (!wd || !wd.calories) return;
+    DAYS.forEach(day => {
+      if (!wd.calories[day]) return;
+      MEALS.forEach(meal => {
+        if (!wd.calories[day][meal]) return;
+        wd.calories[day][meal] = wd.calories[day][meal].map(e => {
+          if (!e._per1 || (e._baseName !== oldLabel && e.name !== oldLabel)) return e;
+          const portions = e._portions || 1;
+          const scale = v => v != null ? Math.round(v * portions * 10) / 10 : undefined;
+          return { ...e, name: portions === 1 ? newPreset.label : `${newPreset.label} ×${portions}`,
+            kcal: Math.round((newPreset.kcal||0)*portions), protein: scale(newPreset.protein),
+            carbs: scale(newPreset.carbs), fats: scale(newPreset.fats), sugar: scale(newPreset.sugar),
+            _baseName: newPreset.label, _per1: { kcal: newPreset.kcal, protein: newPreset.protein,
+              carbs: newPreset.carbs, fats: newPreset.fats, sugar: newPreset.sugar } };
+        });
+      });
+    });
+  });
+
+  // Sync meal template items from this preset
+  const templates = getMealTemplates();
+  let tplChanged = false;
+  templates.forEach(t => {
+    (t.items || []).forEach((item, i) => {
+      if (!item._per1 || (item._baseName !== oldLabel && item.name !== oldLabel)) return;
+      const portions = item._portions || 1;
+      const scale = v => v != null ? Math.round(v * portions * 10) / 10 : undefined;
+      t.items[i] = { ...item, name: portions === 1 ? newPreset.label : `${newPreset.label} ×${portions}`,
+        kcal: Math.round((newPreset.kcal||0)*portions), protein: scale(newPreset.protein),
+        carbs: scale(newPreset.carbs), fats: scale(newPreset.fats), sugar: scale(newPreset.sugar),
+        _baseName: newPreset.label, _per1: { kcal: newPreset.kcal, protein: newPreset.protein,
+          carbs: newPreset.carbs, fats: newPreset.fats, sugar: newPreset.sugar } };
+      tplChanged = true;
+    });
+  });
+  if (tplChanged) saveMealTemplates(templates);
+
+  autoPersist();
   renderMealsTab();
-  renderCalorie();
+  renderCalEntries();
+  updateCalTotals();
+  renderDays();
 }
 
 // ─── MEALS TAB — render templates, presets, recent foods ───
@@ -4776,7 +4938,30 @@ function renderMealsTabTemplates() {
     const totalProt = (t.items || []).reduce((s, e) => s + (e.protein || 0), 0);
 
     const card = document.createElement('div');
-    card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);';
+    card.dataset.tplIdx = ti;
+    card.draggable = true;
+    card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);cursor:default;transition:opacity 0.15s;';
+    card.ondragstart = e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', ti);
+      setTimeout(() => card.style.opacity = '0.4', 0);
+    };
+    card.ondragend = e => { card.style.opacity = ''; card.style.outline = ''; };
+    card.ondragover = e => { e.preventDefault(); card.style.outline = '2px solid var(--accent)'; };
+    card.ondragleave = e => { card.style.outline = ''; };
+    card.ondrop = e => {
+      e.preventDefault();
+      card.style.outline = '';
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx   = parseInt(card.dataset.tplIdx);
+      if (isNaN(fromIdx) || fromIdx === toIdx) return;
+      const templates = getMealTemplates();
+      const [moved] = templates.splice(fromIdx, 1);
+      templates.splice(toIdx, 0, moved);
+      saveMealTemplates(templates);
+      renderMealTemplateRow();
+      renderMealsTab();
+    };
 
     // Header row
     const header = document.createElement('div');
@@ -4835,12 +5020,18 @@ function renderMealsTabTemplates() {
         if (item.sugar != null) ms += ` · ${item.sugar}g sugar`;
         macroSpan.textContent = ms;
 
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✎';
+        editBtn.title = 'Edit item';
+        editBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;';
+        editBtn.onclick = () => editTemplateItem(ti, ii);
+
         const rmBtn = document.createElement('button');
         rmBtn.textContent = '×';
         rmBtn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;';
         rmBtn.onclick = () => removeTemplateItem(ti, ii);
 
-        itemRow.append(grip, nameSpan, macroSpan, rmBtn);
+        itemRow.append(grip, nameSpan, macroSpan, editBtn, rmBtn);
         card.appendChild(itemRow);
       });
     }
@@ -5012,6 +5203,7 @@ function copyMealFromPrevDay(meal) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 // ─── MACRO PREFERENCES — targets, display, stats bar ───────
@@ -5264,6 +5456,7 @@ function confirmFoodAdd() {
   setTimeout(() => { const s = document.getElementById('foodSearchStatus'); if (s) s.textContent = ''; }, 3000);
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 // ─── CALORIE COUNTER — log, edit, delete, totals ───────────
@@ -5350,6 +5543,7 @@ function setWaterMl(ml) {
   getWaterData(currentWeek, calDay)[calDay] = ml;
   autoPersist();
   renderWater();
+  renderDays();
 }
 
 function setWaterFromSlider(val) {
@@ -5478,10 +5672,12 @@ function renderCalEntries() {
     const collapsed  = collapsedMeals.has(meal);
 
     const rows = collapsed ? '' : entries.map((e, i) => {
-      let macroStr = `${e.kcal} kcal · ${e.protein || 0}g prot`;
-      if (e.carbs != null) macroStr += ` · ${e.carbs}g carbs`;
-      if (e.fats  != null) macroStr += ` · ${e.fats}g fat`;
-      if (e.sugar != null) macroStr += ` · ${e.sugar}g sugar`;
+      const macroKcal   = `<span style="color:var(--accent);font-weight:500;">${e.kcal} kcal</span>`;
+      const macroProt   = `<span style="color:#2563eb;">${e.protein || 0}g protein</span>`;
+      const macroCarbs  = e.carbs != null ? ` · <span style="color:#d97706;">${e.carbs}g carbs</span>` : '';
+      const macroFats   = e.fats  != null ? ` · <span style="color:#7c3aed;">${e.fats}g fat</span>`   : '';
+      const macroSugar  = e.sugar != null ? ` · <span style="color:#e11d48;">${e.sugar}g sugar</span>` : '';
+      const macroStr = macroKcal + ' · ' + macroProt + macroCarbs + macroFats + macroSugar;
       return `
       <div id="entry_${meal}_${i}" draggable="true"
         ondragstart="dragStart(event,'${meal}',${i})"
@@ -5543,6 +5739,7 @@ function dragDrop(e, targetMeal, targetIdx) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 function recalcFromPortions(meal, idx, portionsStr) {
@@ -5675,6 +5872,7 @@ function saveCalEntry(meal, idx) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 function quickAdd(name, kcal, protein, carbs, fats, sugar) {
@@ -5700,6 +5898,7 @@ function quickAdd(name, kcal, protein, carbs, fats, sugar) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 function addCustomEntry() {
@@ -5760,6 +5959,7 @@ function deleteCalEntry(meal, idx) {
   autoPersist();
   renderCalEntries();
   updateCalTotals();
+  renderDays();
 }
 
 function updateCalTotals() {
