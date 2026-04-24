@@ -1258,6 +1258,12 @@
       <button onclick="exportCSV()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">↓</span> Export CSV
       </button>
+      <button onclick="exportWeekPDF()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">⎙</span> Export week PDF
+      </button>
+      <button onclick="showShareModal()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:14px;">↗</span> Share progress
+      </button>
       <label style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
         <span style="font-size:14px;">↑</span> Import backup
         <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
@@ -1321,6 +1327,11 @@
         <div style="font-size:13px;color:var(--text3);">Log weights in your workout sessions on the Home tab to see progression here.</div>
       </div>
     </div>
+    <div class="section-title" style="margin-top:8px;">Week-over-week comparison</div>
+    <div class="history-card" style="padding:16px;" id="weekComparisonView">
+      <div style="font-size:13px;color:var(--text3);">Log at least 2 weeks to see comparison.</div>
+    </div>
+
     <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
     <div class="history-card" id="activityHistory">
       <div style="font-size:13px; color:var(--text3); padding: 8px 0;">Activity history will appear here after saving weeks.</div>
@@ -1682,6 +1693,11 @@
         <div><label class="set-label">Thighs (cm)</label><input type="number" id="settingThighs" step="0.5" min="20" max="100" class="set-input" oninput="saveBodySetting('thighs',this.value)"></div>
       </div>
       <div id="measurementHistory" style="font-size:12px;color:var(--text3);">Log your first measurements above — history will appear here.</div>
+      <div id="bodyMeasurementChartWrap" style="display:none;margin-top:16px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Measurements trend</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="bodyChartLegend"></div>
+        <canvas id="bodyMeasChart" style="width:100%;height:200px;display:block;"></canvas>
+      </div>
       <div id="bmiTdeeCard" style="display:none;margin-top:14px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
         <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;">Estimated stats</div>
 
@@ -2055,7 +2071,7 @@ async function changePassword() {
 
 // ─── STATE ───────────────────────────────────────────────
 // Default values — overridden by user settings stored in allData._settings
-const DEFAULTS = { startWeight: 168, goal1: 154, goal2: 143, dailyTarget1: 1850, dailyTarget2: 1700, waterTargetL: 2.5, proteinTarget: 75, carbTarget: 200, fatTarget: 60, sugarTarget: 40, totalWeeks: 20, phase1Weeks: 10, maintenance: 2350, weeklyHoursGoal: 3 };
+const DEFAULTS = { startWeight: 168, goal1: 155.5, goal2: 143, dailyTarget1: 1750, dailyTarget2: 1750, waterTargetL: 2.5, proteinTarget: 120, carbTarget: 175, fatTarget: 55, sugarTarget: 35, totalWeeks: 35, phase1Weeks: 18, maintenance: 2100, weeklyHoursGoal: 4 };
 
 function getSetting(key) {
   return (allData._settings && allData._settings[key] != null) ? allData._settings[key] : DEFAULTS[key];
@@ -2088,7 +2104,7 @@ function getTargetForWeek(weekNum) {
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 const PHASE1_PLAN = ['Run','Weights A','Run','Walk','Weights B','Run','Rest'];
-const PHASE2_PLAN = ['Run','Weights A','Tempo','Weights B','Run','Weights C','Rest'];
+const PHASE2_PLAN = ['Run','Weights A','Tempo run','Weights B','Run','Weights C','Rest'];
 
 const DEFAULT_DIET_RULES = [
   'No orange juice',
@@ -2188,7 +2204,7 @@ function addDietRule() {
   div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--accent);border-radius:8px;margin-bottom:6px;';
   div.innerHTML = `
     <input type="text" id="newDietRuleInput" placeholder="e.g. No eating after 9pm..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
-      onkeydown="if(event.key==='Enter')confirmAddDietRule();if(event.key==='Escape')document.getElementById('${rowId}').remove();">
+      onkeydown="if(event.key==='Enter')confirmAddDietRule();if(event.key==='Escape')document.getElementById('newDietRuleRow').remove();">
     <button onclick="confirmAddDietRule()" style="padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
     <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
   `;
@@ -2388,10 +2404,13 @@ function calcStreak() {
 // ─── WEEK NAV ────────────────────────────────────────────
 function goToCurrentWeek() {
   currentWeek = getCurrentWeekFromDate();
-  selectedDay = null;
+  const _today = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  calDay = _today;
+  dietDay = _today;
   dietDayManuallySet = false;
   collapsedMeals.clear();
-  calDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+  // Keep panel open if it was open, snap to today; if closed keep closed
+  if (selectedDay !== null) selectedDay = _today;
   render();
 }
 
@@ -3010,6 +3029,9 @@ function clearWorkout(day) {
   dd.backOk = true;
   dd.notes = '';
   dd.customBurn = undefined;
+  dd.durationMin = undefined;
+  dd.rpe = undefined;
+  dd.workoutLog = null;
   autoPersist();
   renderDays();
   renderSummary();
@@ -3818,6 +3840,7 @@ function renderMeasurementHistory() {
   if (!el) return;
   if (!allData._body || Object.keys(allData._body).length === 0) {
     el.textContent = 'Log your first measurements above — history will appear here.';
+    renderBodyMeasChart();
     return;
   }
   const dates = Object.keys(allData._body).sort().reverse().slice(0, 8);
@@ -3846,6 +3869,7 @@ function renderMeasurementHistory() {
         </tbody>
       </table>
     </div>`;
+  renderBodyMeasChart();
 }
 
 function showWoTab(id, btn) {
@@ -4577,13 +4601,7 @@ function renderMacroStats() {
       </div>
     `).join('');
 
-  // Legacy protein elements (kept for compatibility)
-  const pl = document.getElementById('proteinLogged');
-  const pr = document.getElementById('proteinRemaining');
-  const pb = document.getElementById('proteinBar');
-  if (pl) pl.innerHTML = Math.round(protein) + ' <small>g</small>';
-  if (pr) pr.innerHTML = Math.max(0, getSetting('proteinTarget')-Math.round(protein)) + ' <small>g</small>';
-  if (pb) pb.style.width = Math.min(100,Math.round((protein/getSetting('proteinTarget'))*100))+'%';
+
 }
 
 // ─── FOOD SEARCH (USDA FoodData Central) ─────────────────
@@ -5649,6 +5667,8 @@ function renderHistory() {
 
   // ── Progressive overload view ─────────────────────────
   renderProgressiveOverload();
+  // ── Week comparison table ────────────────────────────────
+  renderWeekComparison();
 }
 
 function renderCalChart() {
@@ -5795,11 +5815,16 @@ function renderProgressiveOverload() {
       </div>`;
     }).join('');
 
+    const bwKg = getBodyweightAtWeek(last.week);
+    const bwRatio = (bwKg && last.maxWeight > 0) ? (last.maxWeight / bwKg).toFixed(2) : null;
+    const bwHtml = bwRatio ? `<span style="font-size:11px;color:var(--text3);background:var(--surface2);border-radius:5px;padding:2px 7px;">${bwRatio}× BW</span>` : '';
+
     return `<div style="margin-bottom:16px;">
-      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:14px;font-weight:600;color:var(--text);">${name}</span>
         <span style="font-size:12px;color:var(--text3);">${sessions.length} session${sessions.length > 1 ? 's' : ''}</span>
         ${changeHtml}
+        ${bwHtml}
       </div>
       ${sessionRows}
     </div>`;
@@ -6192,6 +6217,582 @@ function checkNudgeWater() {
   showNudge('nudgeWater');
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 1 — WEEK-OVER-WEEK COMPARISON
+// ═══════════════════════════════════════════════════════════════
+function renderWeekComparison() {
+  const el = document.getElementById('weekComparisonView');
+  if (!el) return;
+
+  // Collect all weeks that have at least weight or food data
+  const weeks = [];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (!wd) continue;
+    const hasWeight = !!wd.weight;
+    const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(w);
+    const totalMin = calcWeeklyWorkoutHours(w);
+    // Avg kcal
+    let totalKcal = 0, foodDays = 0;
+    DAYS.forEach(day => {
+      const cal = wd.calories && wd.calories[day];
+      if (!cal) return;
+      const eaten = MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal || 0), 0);
+      if (eaten > 0) { totalKcal += eaten; foodDays++; }
+    });
+    const avgKcal = foodDays > 0 ? Math.round(totalKcal / foodDays) : null;
+    // Avg protein
+    let totalProt = 0, protDays = 0;
+    DAYS.forEach(day => {
+      const cal = wd.calories && wd.calories[day];
+      if (!cal) return;
+      const entries = MEALS.flatMap(m => cal[m] || []);
+      const eaten = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+      if (eaten > 0) { totalProt += entries.reduce((s, e) => s + (e.protein || 0), 0); protDays++; }
+    });
+    const avgProt = protDays > 0 ? Math.round(totalProt / protDays) : null;
+    // Activities
+    let runs = 0, weights = 0, sport = 0;
+    DAYS.forEach(day => {
+      const dd = (wd.days && wd.days[day]) || {};
+      const act = (dd.activity || '').toLowerCase();
+      if (act.includes('run') || act.includes('tempo')) runs++;
+      if (act.includes('weight')) weights++;
+      if (act === 'sport' || act === 'other' || act.includes('walk')) sport++;
+    });
+    if (hasWeight || foodDays > 0 || daysWithData > 0) {
+      const ws = getWeekStartDate(w);
+      weeks.push({ w, weight: wd.weight, totalDeficit, daysWithData, avgKcal, avgProt,
+                   totalMin, runs, weights, sport, ws });
+    }
+  }
+
+  if (weeks.length < 2) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text3);">Log at least 2 weeks of data to see comparison.</div>';
+    return;
+  }
+
+  const fmt = (v, unit) => v != null ? `${v.toLocaleString()}${unit}` : '—';
+  const delta = (cur, prev, lowerBetter) => {
+    if (cur == null || prev == null) return '';
+    const d = cur - prev;
+    if (d === 0) return '<span style="color:var(--text3);font-size:10px;"> =</span>';
+    const good = lowerBetter ? d < 0 : d > 0;
+    const color = good ? 'var(--green)' : 'var(--red)';
+    const sign = d > 0 ? '+' : '';
+    return `<span style="color:${color};font-size:10px;"> ${sign}${d.toFixed(1)}</span>`;
+  };
+
+  let html = `
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left;padding:8px 10px 6px;color:var(--text3);font-weight:500;white-space:nowrap;">Week</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Weight</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Lost</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Real deficit</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Avg kcal</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Avg protein</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Active hrs</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Runs</th>
+            <th style="padding:6px 8px;color:var(--text3);font-weight:500;text-align:center;">Weights</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  weeks.forEach((wk, i) => {
+    const prev = i > 0 ? weeks[i - 1] : null;
+    const wLabel = wk.ws ? formatDate(wk.ws, { day: 'numeric', month: 'short' }) : `Wk ${wk.w}`;
+    const wtLost = prev && wk.weight && prev.weight ? (prev.weight - wk.weight).toFixed(1) : null;
+    const wtLostColor = wtLost > 0 ? 'var(--green)' : wtLost < 0 ? 'var(--red)' : 'var(--text3)';
+    const hh = Math.floor(wk.totalMin / 60), mm = wk.totalMin % 60;
+    const hStr = hh > 0 ? `${hh}h${mm > 0 ? mm + 'm' : ''}` : (mm > 0 ? `${mm}m` : '—');
+    const defColor = wk.totalDeficit > 0 ? 'var(--green)' : wk.totalDeficit < 0 ? 'var(--red)' : 'var(--text3)';
+    const isCurrentWeek = wk.w === currentWeek;
+
+    html += `<tr style="border-bottom:1px solid var(--border);${isCurrentWeek ? 'background:var(--accent-bg,#fdf3ef);' : ''}">
+      <td style="padding:8px 10px;white-space:nowrap;">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">Wk ${wk.w}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:4px;">${wLabel}</span>
+        ${isCurrentWeek ? '<span style="font-size:9px;background:var(--accent);color:white;border-radius:4px;padding:1px 5px;margin-left:4px;">now</span>' : ''}
+      </td>
+      <td style="text-align:center;font-family:var(--mono);font-weight:500;color:var(--text);">${wk.weight ? wk.weight + ' lbs' : '—'}${prev && wk.weight && prev.weight ? delta(wk.weight, prev.weight, true) : ''}</td>
+      <td style="text-align:center;font-family:var(--mono);${wtLostColor ? 'color:' + wtLostColor + ';' : ''}">${wtLost != null ? (wtLost > 0 ? '↓ ' : wtLost < 0 ? '↑ ' : '') + Math.abs(wtLost) + ' lbs' : '—'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:${defColor};">${wk.daysWithData > 0 ? (wk.totalDeficit >= 0 ? '+' : '') + wk.totalDeficit.toLocaleString() + ' kcal' : '—'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--text2);">${wk.avgKcal ? wk.avgKcal.toLocaleString() : '—'}${prev ? delta(wk.avgKcal, prev.avgKcal, true) : ''}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:${wk.avgProt >= getSetting('proteinTarget') * 0.9 ? 'var(--green)' : 'var(--amber)'};">${wk.avgProt ? wk.avgProt + 'g' : '—'}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--text2);">${hStr}</td>
+      <td style="text-align:center;font-size:11px;color:var(--text2);">${wk.runs}</td>
+      <td style="text-align:center;font-size:11px;color:var(--text2);">${wk.weights}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 2 — BODY MEASUREMENTS TREND CHART
+// ═══════════════════════════════════════════════════════════════
+function renderBodyMeasChart() {
+  const wrap = document.getElementById('bodyMeasurementChartWrap');
+  const canvas = document.getElementById('bodyMeasChart');
+  const legendEl = document.getElementById('bodyChartLegend');
+  if (!canvas || !wrap) return;
+
+  if (!allData._body || Object.keys(allData._body).length < 2) {
+    wrap.style.display = 'none'; return;
+  }
+  wrap.style.display = 'block';
+
+  const dates = Object.keys(allData._body).sort();
+  const fields = [
+    { key: 'waist',  label: 'Waist',  color: '#c4501a' },
+    { key: 'chest',  label: 'Chest',  color: '#1d4ed8' },
+    { key: 'hips',   label: 'Hips',   color: '#7c3aed' },
+    { key: 'arms',   label: 'Arms',   color: '#059669' },
+    { key: 'thighs', label: 'Thighs', color: '#b45309' },
+  ];
+
+  // Filter fields that have at least 2 data points
+  const activeFields = fields.filter(f =>
+    dates.filter(d => allData._body[d][f.key] != null).length >= 2
+  );
+  if (activeFields.length === 0) { wrap.style.display = 'none'; return; }
+
+  // Legend
+  if (legendEl) {
+    legendEl.innerHTML = activeFields.map(f =>
+      `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);">
+        <div style="width:12px;height:3px;background:${f.color};border-radius:2px;"></div>${f.label}
+      </div>`
+    ).join('');
+  }
+
+  const W = Math.max(340, canvas.parentElement.clientWidth - 20 || 360);
+  const H = 200;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { t: 10, r: 20, b: 28, l: 40 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  // Collect all values to determine Y range
+  const allVals = activeFields.flatMap(f =>
+    dates.map(d => allData._body[d][f.key]).filter(v => v != null)
+  );
+  const minV = Math.min(...allVals) - 2;
+  const maxV = Math.max(...allVals) + 2;
+
+  const xScale = i => pad.l + (i / Math.max(dates.length - 1, 1)) * cW;
+  const yScale = v => pad.t + cH - ((v - minV) / (maxV - minV)) * cH;
+
+  // Draw each metric line
+  activeFields.forEach(f => {
+    const points = dates.map((d, i) => ({ x: xScale(i), y: allData._body[d][f.key], i }))
+                        .filter(p => p.y != null);
+    if (points.length < 2) return;
+
+    ctx.beginPath();
+    points.forEach((p, pi) => {
+      if (pi === 0) ctx.moveTo(p.x, yScale(p.y));
+      else ctx.lineTo(p.x, yScale(p.y));
+    });
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Dots
+    points.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, yScale(p.y), 3, 0, Math.PI * 2);
+      ctx.fillStyle = f.color;
+      ctx.fill();
+    });
+  });
+
+  // X axis labels (dates)
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const step = Math.max(1, Math.floor(dates.length / 6));
+  dates.forEach((d, i) => {
+    if (i % step === 0 || i === dates.length - 1) {
+      ctx.fillText(d.slice(5), xScale(i), H - pad.b + 4); // MM-DD
+    }
+  });
+
+  // Y axis labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  [minV + 2, Math.round((minV + maxV) / 2), maxV - 2].forEach(v => {
+    ctx.fillText(Math.round(v) + 'cm', pad.l - 4, yScale(v));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 3 — STRENGTH-TO-BODYWEIGHT IN PROGRESSIVE OVERLOAD
+// ═══════════════════════════════════════════════════════════════
+function getBodyweightAtWeek(weekNum) {
+  // Find closest logged weight at or before this week
+  for (let w = weekNum; w >= 1; w--) {
+    const d = peekWeekData(w);
+    if (d && d.weight) return d.weight * 0.453592; // lbs to kg
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURE 4 — PDF / PRINT WEEKLY SUMMARY
+// ═══════════════════════════════════════════════════════════════
+function exportWeekPDF() {
+  const ws = getWeekStartDate(currentWeek);
+  const we = ws ? new Date(ws.getTime() + 6 * 24 * 60 * 60 * 1000) : null;
+  const dateRange = ws ? formatDate(ws) + ' – ' + formatDate(we) : `Week ${currentWeek}`;
+  const wd = peekWeekData(currentWeek) || { days: {}, diet: {}, calories: {} };
+  const phase = getPhase(currentWeek);
+
+  // Collect data
+  let runs = 0, weights = 0, core = 0, sport = 0, other = 0;
+  const dayRows = DAYS.map(day => {
+    const dd = (wd.days && wd.days[day]) || {};
+    const act = (dd.activity || '').toLowerCase();
+    if (act.includes('run') || act.includes('tempo')) runs++;
+    if (act.includes('weight')) weights++;
+    if (dd.core) core++;
+    if (act === 'sport') sport++;
+    if (act === 'other') other++;
+    const cal = wd.calories && wd.calories[day];
+    const entries = cal ? MEALS.flatMap(m => cal[m] || []) : [];
+    const kcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    const prot = entries.reduce((s, e) => s + (e.protein || 0), 0);
+    const water = (wd.water && wd.water[day]) || 0;
+    return { day, activity: dd.activity || '—', core: dd.core, kcal, prot: Math.round(prot), water, rpe: dd.rpe, sleepHrs: dd.sleepHrs, mood: dd.mood };
+  });
+
+  const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
+  const rules = getDietRules();
+  let dietTotal = 0, dietPossible = 0;
+  DAYS.forEach(day => {
+    const diet = (wd.diet && wd.diet[day]) || {};
+    rules.forEach((_, i) => { dietPossible++; if (diet[i]) dietTotal++; });
+  });
+  const dietPct = dietPossible > 0 ? Math.round((dietTotal / dietPossible) * 100) : 0;
+  const totalMin = calcWeeklyWorkoutHours(currentWeek);
+  const hh = Math.floor(totalMin / 60), mm2 = totalMin % 60;
+  const hStr = totalMin > 0 ? `${hh > 0 ? hh + 'h ' : ''}${mm2 > 0 ? mm2 + 'm' : ''}`.trim() : '0h';
+
+  const moodEmoji = ['','😞','😕','😐','🙂','😄'];
+  const days_html = dayRows.map(r => `
+    <tr>
+      <td style="padding:5px 8px;font-weight:500;color:#1a1714;">${r.day}</td>
+      <td style="padding:5px 8px;">${r.activity}${r.core ? ' + Core' : ''}</td>
+      <td style="padding:5px 8px;text-align:right;">${r.kcal > 0 ? r.kcal.toLocaleString() : '—'}</td>
+      <td style="padding:5px 8px;text-align:right;">${r.prot > 0 ? r.prot + 'g' : '—'}</td>
+      <td style="padding:5px 8px;text-align:right;">${r.water > 0 ? (r.water / 1000).toFixed(1) + 'L' : '—'}</td>
+      <td style="padding:5px 8px;text-align:center;">${r.rpe ? r.rpe + '/10' : '—'}</td>
+      <td style="padding:5px 8px;text-align:center;">${r.sleepHrs ? r.sleepHrs + 'h' : '—'}</td>
+      <td style="padding:5px 8px;text-align:center;">${r.mood ? moodEmoji[r.mood] : '—'}</td>
+    </tr>`).join('');
+
+  const printHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>Week ${currentWeek} Summary — ${dateRange}</title>
+<style>
+  body { font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; color: #1a1714; margin: 0; padding: 24px 32px; max-width: 900px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .sub { font-size: 12px; color: #6b6259; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: #f5f2ee; border-radius: 8px; padding: 10px 14px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #a89e93; margin-bottom: 3px; }
+  .stat-val { font-size: 18px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #a89e93; padding: 6px 8px; text-align: left; border-bottom: 2px solid #e0d9d0; font-weight: 500; }
+  td { border-bottom: 1px solid #e0d9d0; font-size: 12px; color: #4a4540; }
+  tr:last-child td { border-bottom: none; }
+  .notes { background: #f5f2ee; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #4a4540; line-height: 1.6; }
+  .section { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #a89e93; margin: 16px 0 8px; font-weight: 500; }
+  @media print { body { padding: 16px; } }
+</style></head><body>
+<h1>Arnav — Fitness Tracker</h1>
+<div class="sub">Week ${currentWeek} of ${TOTAL_WEEKS()} · Phase ${phase} · ${dateRange}</div>
+
+<div class="grid">
+  <div class="stat"><div class="stat-label">Weight</div><div class="stat-val">${wd.weight ? wd.weight + ' lbs' : '—'}</div></div>
+  <div class="stat"><div class="stat-label">Real deficit</div><div class="stat-val">${daysWithData > 0 ? totalDeficit.toLocaleString() + ' kcal' : '—'}</div></div>
+  <div class="stat"><div class="stat-label">Active time</div><div class="stat-val">${hStr}</div></div>
+  <div class="stat"><div class="stat-label">Diet score</div><div class="stat-val">${dietPct}%</div></div>
+  <div class="stat"><div class="stat-label">Runs</div><div class="stat-val">${runs}</div></div>
+  <div class="stat"><div class="stat-label">Weights sessions</div><div class="stat-val">${weights}</div></div>
+  <div class="stat"><div class="stat-label">Core days</div><div class="stat-val">${core}</div></div>
+  <div class="stat"><div class="stat-label">Target</div><div class="stat-val">${getTargetForWeek(currentWeek).toLocaleString()} kcal</div></div>
+</div>
+
+<div class="section">Daily log</div>
+<table>
+  <thead><tr><th>Day</th><th>Activity</th><th style="text-align:right">Kcal</th><th style="text-align:right">Protein</th><th style="text-align:right">Water</th><th style="text-align:center">RPE</th><th style="text-align:center">Sleep</th><th style="text-align:center">Mood</th></tr></thead>
+  <tbody>${days_html}</tbody>
+</table>
+
+${wd.weekNotes ? `<div class="section">Weekly notes</div><div class="notes">${wd.weekNotes}</div>` : ''}
+
+<div style="margin-top:24px;font-size:10px;color:#a89e93;border-top:1px solid #e0d9d0;padding-top:10px;">
+  Generated ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} · Arnav's Fitness Tracker
+</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(printHtml);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// SHARE PROGRESS FEATURE
+// ═══════════════════════════════════════════════════════════════
+let _shareCardDataUrl = null;
+
+function showShareModal() {
+  const modal = document.getElementById('shareModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  setTimeout(() => renderShareCard(), 50);
+  // Show native share if supported
+  const btn = document.getElementById('shareNativeBtn');
+  if (btn && navigator.share) btn.style.display = 'block';
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('shareModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderShareCard() {
+  const canvas = document.getElementById('shareCard');
+  if (!canvas) return;
+
+  // Collect data
+  const sw = START_WEIGHT();
+  let latestWt = null;
+  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+    const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
+  }
+  const totalLost = latestWt ? (sw - latestWt).toFixed(1) : null;
+  const { current: streak } = calcStreak();
+  const goal1 = GOAL1();
+  const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - goal1)) * 100)) : 0;
+
+  // Weight history for mini chart
+  const wPoints = [];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const d = peekWeekData(w);
+    if (d && d.weight) wPoints.push({ w, wt: d.weight });
+  }
+
+  // Canvas setup — 2x for retina
+  const CW = 380, CH = 240;
+  canvas.width  = CW * 2;
+  canvas.height = CH * 2;
+  canvas.style.width  = CW + 'px';
+  canvas.style.height = CH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  // Polyfill roundRect for Safari < 15.4
+  if (!ctx.roundRect) {
+    ctx.roundRect = function(x, y, w, h, r) {
+      this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.quadraticCurveTo(x+w,y,x+w,y+r);
+      this.lineTo(x+w,y+h-r); this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      this.lineTo(x+r,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r);
+      this.lineTo(x,y+r); this.quadraticCurveTo(x,y,x+r,y); this.closePath();
+    };
+  }
+  ctx.fillStyle = '#1a1714';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, CW, CH, 16);
+  ctx.fill();
+
+  // Subtle texture — horizontal rule
+  ctx.strokeStyle = '#2a2420';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 80); ctx.lineTo(CW, 80); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 160); ctx.lineTo(CW, 160); ctx.stroke();
+
+  // Header
+  ctx.fillStyle = '#f5f2ee';
+  ctx.font = 'bold 15px DM Sans, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Arnav — Fitness progress', 20, 16);
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 36);
+
+  // Goal pill
+  const ph = getPhase(currentWeek);
+  ctx.fillStyle = '#c4501a';
+  ctx.beginPath(); ctx.roundRect(CW - 80, 14, 64, 20, 6); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px DM Sans, system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Phase ${ph}`, CW - 48, 19);
+
+  // Stats row 1
+  const stats1 = [
+    { label: 'Start weight', val: sw + ' lbs' },
+    { label: 'Now', val: latestWt ? latestWt + ' lbs' : '—' },
+    { label: 'Lost', val: totalLost ? totalLost + ' lbs' : '—' },
+    { label: 'Streak', val: streak + ' days' },
+  ];
+  const cellW = CW / 4;
+  stats1.forEach((s, i) => {
+    const x = i * cellW + cellW / 2;
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(s.label.toUpperCase(), x, 90);
+    ctx.fillStyle = '#f5f2ee';
+    ctx.font = 'bold 16px DM Sans, system-ui';
+    ctx.textBaseline = 'top';
+    ctx.fillText(s.val, x, 106);
+  });
+
+  // Progress bar toward Goal 1
+  const barX = 20, barY = 142, barW = CW - 40, barH = 8;
+  ctx.fillStyle = '#2a2420';
+  ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 4); ctx.fill();
+  if (pct > 0) {
+    ctx.fillStyle = '#c4501a';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW * pct / 100, barH, 4); ctx.fill();
+  }
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`Goal 1 progress: ${pct}% (target ${goal1} lbs)`, barX, barY + 12);
+
+  // Mini weight chart
+  if (wPoints.length >= 2) {
+    const chartX = 20, chartY = 170, chartW = CW - 40, chartH = 46;
+    const minW = Math.min(...wPoints.map(p => p.wt)) - 1;
+    const maxW = Math.max(sw, ...wPoints.map(p => p.wt)) + 1;
+    const xS = i => chartX + (i / (TOTAL_WEEKS() - 1)) * chartW;
+    const yS = w => chartY + chartH - ((w - minW) / (maxW - minW)) * chartH;
+
+    // Goal line
+    ctx.strokeStyle = '#3a3430';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(chartX, yS(goal1));
+    ctx.lineTo(chartX + chartW, yS(goal1));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Weight line
+    ctx.beginPath();
+    wPoints.forEach((p, pi) => {
+      const x = xS(p.w - 1), y = yS(p.wt);
+      pi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#c4501a';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Last dot
+    const last = wPoints[wPoints.length - 1];
+    ctx.beginPath();
+    ctx.arc(xS(last.w - 1), yS(last.wt), 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#c4501a';
+    ctx.fill();
+
+    // Labels
+    ctx.fillStyle = '#6b5e55';
+    ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Weight trend', chartX, chartY - 2);
+    ctx.fillStyle = '#3a3430';
+    ctx.textAlign = 'right';
+    ctx.fillText('— Goal 1', chartX + chartW, yS(goal1) - 2);
+  }
+
+  // Watermark
+  ctx.fillStyle = '#3a3430';
+  ctx.font = '8px DM Mono, monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('fitness tracker', CW - 12, CH - 8);
+
+  _shareCardDataUrl = canvas.toDataURL('image/png');
+}
+
+function downloadShareCard() {
+  if (!_shareCardDataUrl) return;
+  const a = document.createElement('a');
+  a.href = _shareCardDataUrl;
+  a.download = `progress-week${currentWeek}.png`;
+  a.click();
+}
+
+function shareToWhatsApp() {
+  const sw = START_WEIGHT();
+  let latestWt = null;
+  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+    const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
+  }
+  const lost = latestWt ? (sw - latestWt).toFixed(1) : '?';
+  const { current: streak } = calcStreak();
+  const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - GOAL1())) * 100)) : 0;
+  const msg = encodeURIComponent(
+    `💪 Fitness update — Week ${currentWeek} of ${TOTAL_WEEKS()}
+
+` +
+    `📉 Lost: ${lost} lbs total
+` +
+    `🎯 Goal 1 progress: ${pct}%
+` +
+    `🔥 Workout streak: ${streak} days
+
+` +
+    `Tracking with my personal fitness tracker.`
+  );
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+async function shareNative() {
+  if (!navigator.share || !_shareCardDataUrl) return;
+  try {
+    const res = await fetch(_shareCardDataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `progress-week${currentWeek}.png`, { type: 'image/png' });
+    await navigator.share({ title: 'My fitness progress', files: [file] });
+  } catch (e) {
+    console.log('Share cancelled or not supported');
+  }
+}
+
+// Close modal on backdrop click
+document.addEventListener('click', e => {
+  const modal = document.getElementById('shareModal');
+  if (modal && e.target === modal) closeShareModal();
+});
+
 // ─── INIT ──────────────────────────────────────────────────
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
@@ -6208,5 +6809,25 @@ async function init() {
 
 init();
 </script>
+
+<!-- SHARE PROGRESS MODAL -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:16px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;color:var(--text);">Share progress</div>
+      <button onclick="closeShareModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);padding:4px;">✕</button>
+    </div>
+    <canvas id="shareCard" style="width:100%;border-radius:10px;border:1px solid var(--border);display:block;margin-bottom:16px;"></canvas>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="downloadShareCard()" style="flex:1;padding:10px;border-radius:9px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;">⬇ Download image</button>
+      <button onclick="shareToWhatsApp()" style="flex:1;padding:10px;border-radius:9px;border:none;background:#25D366;color:white;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;">WhatsApp</button>
+    </div>
+    <div style="margin-top:8px;">
+      <button onclick="shareNative()" id="shareNativeBtn" style="display:none;width:100%;padding:10px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:4px;">Share via…</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center;">Download the image then share via any app — or use WhatsApp to open a message draft directly.</div>
+  </div>
+</div>
+
 </body>
 </html>
