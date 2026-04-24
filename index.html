@@ -4331,6 +4331,7 @@ function renderMealTemplateRow() {
   }).join('');
 }
 
+// ─── MEAL TEMPLATE LOGGING — add to log, meal picker ───────
 function _doAddMealTemplate(idx, targetMeal) {
   const templates = getMealTemplates();
   const t = templates[idx];
@@ -4680,6 +4681,7 @@ function tplConfirmManual(templateIdx, tempId) {
 
 // ── Common save ───────────────────────────────────────────────
 // ─── TEMPLATE ITEM EDIT ──────────────────────────────────────
+// ─── TEMPLATE ITEM EDIT — inline edit, portions, save ──────
 function editTemplateItem(templateIdx, itemIdx) {
   const templates = getMealTemplates();
   const item = templates[templateIdx] && templates[templateIdx].items[itemIdx];
@@ -5054,11 +5056,12 @@ function renderMealsTabTemplates() {
 
         const macroSpan = document.createElement('span');
         macroSpan.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text3);';
-        let ms = `${item.kcal} kcal · ${item.protein||0}g prot`;
-        if (item.carbs != null) ms += ` · ${item.carbs}g carbs`;
-        if (item.fats  != null) ms += ` · ${item.fats}g fat`;
-        if (item.sugar != null) ms += ` · ${item.sugar}g sugar`;
-        macroSpan.textContent = ms;
+        const ms_kcal  = `<span style="color:var(--accent);font-weight:500;">${item.kcal} kcal</span>`;
+        const ms_prot  = `<span style="color:#2563eb;">${item.protein||0}g protein</span>`;
+        const ms_carbs = item.carbs != null ? ` · <span style="color:#d97706;">${item.carbs}g carbs</span>` : '';
+        const ms_fats  = item.fats  != null ? ` · <span style="color:#7c3aed;">${item.fats}g fat</span>`   : '';
+        const ms_sugar = item.sugar != null ? ` · <span style="color:#e11d48;">${item.sugar}g sugar</span>` : '';
+        macroSpan.innerHTML = ms_kcal + ' · ' + ms_prot + ms_carbs + ms_fats + ms_sugar;
 
         const editBtn = document.createElement('button');
         editBtn.textContent = '✎';
@@ -7291,7 +7294,7 @@ ${wd.weekNotes ? ('<div class="section">Weekly notes</div><div class="notes">' +
   win.document.close();
   setTimeout(() => win.print(), 500);
 }
-// ─── Mobile: resize listener ─────────────────────────────────
+// ─── MOBILE RESIZE — responsive week comparison table ──────────
 window.addEventListener('resize', () => {
   const el = document.getElementById('weekComparisonView');
   if (!el) return;
@@ -7373,6 +7376,7 @@ document.addEventListener('click', e => {
 });
 
 // ─── PWA INSTALL PROMPT ──────────────────────────────────────
+// ─── PWA INSTALL — home screen prompt, iOS/Android ─────────
 let _pwaInstallPrompt = null;
 const PWA_BANNER_KEY = 'ftPwaBannerDismissed';
 
@@ -7418,6 +7422,7 @@ function hidePwaBanner() {
   if (b) b.style.display = 'none';
 }
 
+// ─── EXPORT DROPDOWN — toggle menu, close on outside click ─
 function toggleExportMenu() {
   const menu = document.getElementById('exportDropdownMenu');
   if (menu) menu.classList.toggle('open');
