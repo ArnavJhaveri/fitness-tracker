@@ -1344,13 +1344,10 @@
     <div id="calendarLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid var(--green);"></div>Run</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Weights</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid #c4b5fd;"></div>Sport</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid #fca5a5;"></div>Other</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid #fca5a5;"></div>Other</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;"></div>Sport</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid var(--red);"></div>Skipped</div>
     </div>
     <div id="calendarGrid"></div>
@@ -4133,42 +4130,271 @@ function addItemToTemplate(templateIdx) {
   if (document.getElementById(rowId)) return;
   const container = document.getElementById(`tplItems_${templateIdx}`);
   if (!container) return;
-  const tempId = 'tpl_' + Date.now();
+
   const div = document.createElement('div');
   div.id = rowId;
-  div.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);';
+  div.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid var(--border);';
+
+  // ── Mode selector ─────────────────────────────────────────────
+  const btnStyle = (active) =>
+    `padding:6px 14px;border-radius:7px;border:1px solid var(--border2);font-family:var(--sans);font-size:12px;cursor:pointer;` +
+    (active ? 'background:var(--accent);color:white;border-color:var(--accent);' : 'background:none;color:var(--text2);');
+
   div.innerHTML = `
-    <input type="text" id="${tempId}_name" placeholder="Item name..." style="flex:1;min-width:130px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
-      onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
-    <input type="number" id="${tempId}_kcal"  placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:62px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
-    <input type="number" id="${tempId}_prot"  placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
-    <input type="number" id="${tempId}_carbs" placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
-    <input type="number" id="${tempId}_fats"  placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
-    <input type="number" id="${tempId}_sugar" placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')confirmTemplateItem(${templateIdx},'${tempId}');">
-    <button onclick="confirmTemplateItem(${templateIdx},'${tempId}')" style="padding:6px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
-    <button onclick="document.getElementById('${rowId}').remove()" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
-    <div style="width:100%;font-size:10px;color:var(--text3);margin-top:2px;">carbs, fats, sugar optional · Esc to cancel</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <button id="tplMode_search_${templateIdx}"  onclick="tplSetMode(${templateIdx},'search')"  style="${btnStyle(true)}">🔍 Search database</button>
+      <button id="tplMode_preset_${templateIdx}"  onclick="tplSetMode(${templateIdx},'preset')"  style="${btnStyle(false)}">⚡ Quick-add preset</button>
+      <button id="tplMode_manual_${templateIdx}"  onclick="tplSetMode(${templateIdx},'manual')"  style="${btnStyle(false)}">✏️ Enter manually</button>
+      <button onclick="document.getElementById('${rowId}').remove()" style="margin-left:auto;padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+    <div id="tplModeContent_${templateIdx}"></div>
   `;
   container.appendChild(div);
-  document.getElementById(tempId + '_name')?.focus();
+  tplSetMode(templateIdx, 'search');
+}
+
+function tplSetMode(templateIdx, mode) {
+  // Update button styles
+  ['search','preset','manual'].forEach(m => {
+    const btn = document.getElementById(`tplMode_${m}_${templateIdx}`);
+    if (!btn) return;
+    const active = m === mode;
+    btn.style.background = active ? 'var(--accent)' : 'none';
+    btn.style.color = active ? 'white' : 'var(--text2)';
+    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+  });
+
+  const content = document.getElementById(`tplModeContent_${templateIdx}`);
+  if (!content) return;
+
+  if (mode === 'search') {
+    content.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input type="text" id="tplSearch_${templateIdx}" placeholder="Search food database — e.g. paneer, eggs, banana…"
+          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
+          onkeydown="if(event.key==='Enter')tplDoSearch(${templateIdx})"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <button onclick="tplDoSearch(${templateIdx})" style="padding:7px 14px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Search</button>
+      </div>
+      <div id="tplSearchStatus_${templateIdx}" style="font-size:11px;color:var(--text3);min-height:16px;"></div>
+      <div id="tplSearchResults_${templateIdx}" style="display:none;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px;max-height:220px;overflow-y:auto;"></div>
+      <div id="tplServingPicker_${templateIdx}" style="display:none;margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;">
+        <div id="tplServingFoodName_${templateIdx}" style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:6px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label style="font-size:12px;color:var(--text2);">Serving size:</label>
+          <input type="number" id="tplServingG_${templateIdx}" value="100" min="1" max="2000" step="1"
+            class="cal-num-input" style="width:72px;" oninput="tplRecalcServing(${templateIdx})">
+          <span style="font-size:12px;color:var(--text3);">g</span>
+          <div id="tplServingMacros_${templateIdx}" style="font-size:11px;color:var(--text3);"></div>
+        </div>
+        <button onclick="tplConfirmServing(${templateIdx})" style="margin-top:8px;padding:6px 16px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add to template</button>
+      </div>
+    `;
+    document.getElementById(`tplSearch_${templateIdx}`)?.focus();
+
+  } else if (mode === 'preset') {
+    const presets = getQuickPresets();
+    if (presets.length === 0) {
+      content.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0;">No quick-add presets yet — create some in the Meals tab first.</div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;">
+        ${presets.map((p, i) => `
+          <div onclick="tplAddPreset(${templateIdx},${i})"
+            style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);"
+            onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:12px;font-weight:500;color:var(--text);">${p.label}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">${p.kcal} kcal · ${p.protein || 0}g protein</div>
+          </div>`).join('')}
+      </div>
+    `;
+
+  } else if (mode === 'manual') {
+    const tempId = 'tplm_' + Date.now();
+    content.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+        <input type="text" id="${tempId}_name" placeholder="Item name" style="flex:1;min-width:140px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <input type="number" id="${tempId}_kcal"  placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:62px;">
+        <input type="number" id="${tempId}_prot"  placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:65px;">
+        <input type="number" id="${tempId}_carbs" placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:65px;">
+        <input type="number" id="${tempId}_fats"  placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:60px;">
+        <input type="number" id="${tempId}_sugar" placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:65px;">
+        <button onclick="tplConfirmManual(${templateIdx},'${tempId}')" style="padding:6px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Add</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">Carbs, fats, sugar optional</div>
+    `;
+    document.getElementById(`${tempId}_name`)?.focus();
+  }
+}
+
+// ── Template item — API search ────────────────────────────────
+let _tplSelectedFood = {};  // keyed by templateIdx
+
+async function tplDoSearch(templateIdx) {
+  const input = document.getElementById(`tplSearch_${templateIdx}`);
+  const status = document.getElementById(`tplSearchStatus_${templateIdx}`);
+  const results = document.getElementById(`tplSearchResults_${templateIdx}`);
+  const picker  = document.getElementById(`tplServingPicker_${templateIdx}`);
+  if (!input || !status) return;
+  const query = input.value.trim();
+  if (!query) return;
+
+  if (window.location.protocol === 'file:') {
+    status.textContent = 'Food search only works on the live site (GitHub Pages).';
+    return;
+  }
+
+  status.textContent = 'Searching…';
+  if (results) results.style.display = 'none';
+  if (picker)  picker.style.display  = 'none';
+
+  try {
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=PJygmDRllSrraLskIaJ9pT0lQyFnBJzu7euenKgO&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!resp.ok) { status.textContent = `Search failed (${resp.status}).`; return; }
+    const data = await resp.json();
+    const foods = (data.foods || []).filter(f => f.description && f.foodNutrients?.length > 0);
+    if (foods.length === 0) { status.textContent = 'No results — try different keywords or enter manually.'; return; }
+
+    const getNut = (nutrients, ids) => {
+      for (const id of ids) {
+        const f = nutrients.find(x => String(x.nutrientNumber) === String(id) || x.nutrientId === id);
+        if (f && f.value != null) return f.value;
+      }
+      return 0;
+    };
+
+    const parsed = foods.map(f => ({
+      name:     cleanFoodName(f.description) + (f.brandOwner ? ` (${f.brandOwner})` : ''),
+      kcal100:  getNut(f.foodNutrients, [1008, 2047, 2048]),
+      prot100:  getNut(f.foodNutrients, [1003]),
+      carb100:  getNut(f.foodNutrients, [1005]),
+      fat100:   getNut(f.foodNutrients, [1004]),
+      sugar100: getNut(f.foodNutrients, [1063]),
+      servingG: f.servingSize || 100,
+    }));
+
+    status.textContent = `${parsed.length} result${parsed.length > 1 ? 's' : ''} — tap to select`;
+    results.innerHTML = parsed.map((f, i) => `
+      <div onclick="tplSelectFood(${templateIdx},${i})" data-tpl-foods='${JSON.stringify(parsed).replace(/'/g,"&#39;")}'
+        style="padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="font-size:12px;font-weight:500;color:var(--text);">${f.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px;">per 100g — ${Math.round(f.kcal100)} kcal · ${Math.round(f.prot100*10)/10}g protein · ${Math.round(f.carb100*10)/10}g carbs</div>
+      </div>`).join('');
+
+    // Store results on the element for retrieval
+    results.dataset.foods = JSON.stringify(parsed);
+    results.style.display = 'block';
+
+  } catch(err) {
+    status.textContent = err.name === 'AbortError' ? 'Search timed out — try again.' : 'Search failed — check connection.';
+  }
+}
+
+function tplSelectFood(templateIdx, idx) {
+  const results = document.getElementById(`tplSearchResults_${templateIdx}`);
+  const picker  = document.getElementById(`tplServingPicker_${templateIdx}`);
+  const nameEl  = document.getElementById(`tplServingFoodName_${templateIdx}`);
+  const gEl     = document.getElementById(`tplServingG_${templateIdx}`);
+  if (!results || !picker) return;
+
+  const foods = JSON.parse(results.dataset.foods || '[]');
+  const food  = foods[idx];
+  if (!food) return;
+  _tplSelectedFood[templateIdx] = food;
+
+  if (nameEl) nameEl.textContent = food.name;
+  if (gEl) gEl.value = food.servingG || 100;
+  results.style.display = 'none';
+  picker.style.display  = 'block';
+  tplRecalcServing(templateIdx);
+}
+
+function tplRecalcServing(templateIdx) {
+  const food = _tplSelectedFood[templateIdx];
+  if (!food) return;
+  const g = parseFloat(document.getElementById(`tplServingG_${templateIdx}`)?.value) || 100;
+  const scale = g / 100;
+  const r = v => Math.round(v * scale * 10) / 10;
+  const macrosEl = document.getElementById(`tplServingMacros_${templateIdx}`);
+  if (macrosEl) macrosEl.textContent =
+    `${Math.round(food.kcal100 * scale)} kcal · ${r(food.prot100)}g protein · ${r(food.carb100)}g carbs · ${r(food.fat100)}g fat`;
+}
+
+function tplConfirmServing(templateIdx) {
+  const food = _tplSelectedFood[templateIdx];
+  if (!food) return;
+  const g = parseFloat(document.getElementById(`tplServingG_${templateIdx}`)?.value) || 100;
+  const scale = g / 100;
+  const r = v => Math.round(v * scale * 10) / 10;
+  const entry = {
+    name:    `${food.name} (${g}g)`,
+    kcal:    Math.round(food.kcal100 * scale),
+    protein: r(food.prot100),
+    carbs:   r(food.carb100),
+    fats:    r(food.fat100),
+    sugar:   r(food.sugar100),
+    _per100:  { kcal: food.kcal100, protein: food.prot100, carbs: food.carb100, fats: food.fat100, sugar: food.sugar100 },
+    _baseName: food.name,
+    _servingG: g,
+  };
+  tplSaveItem(templateIdx, entry);
+}
+
+// ── Template item — preset pick ───────────────────────────────
+function tplAddPreset(templateIdx, presetIdx) {
+  const p = getQuickPresets()[presetIdx];
+  if (!p) return;
+  tplSaveItem(templateIdx, {
+    name:    p.label,
+    kcal:    p.kcal    || 0,
+    protein: p.protein || 0,
+    carbs:   p.carbs,
+    fats:    p.fats,
+    sugar:   p.sugar,
+    _per1:    { kcal: p.kcal, protein: p.protein, carbs: p.carbs, fats: p.fats, sugar: p.sugar },
+    _baseName: p.label,
+    _portions: 1,
+  });
+}
+
+// ── Template item — manual entry ──────────────────────────────
+function tplConfirmManual(templateIdx, tempId) {
+  const nameEl = document.getElementById(`${tempId}_name`);
+  if (!nameEl || !nameEl.value.trim()) { nameEl?.focus(); return; }
+  const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
+  tplSaveItem(templateIdx, {
+    name:    nameEl.value.trim(),
+    kcal:    get(`${tempId}_kcal`)  || 0,
+    protein: get(`${tempId}_prot`)  || 0,
+    carbs:   get(`${tempId}_carbs`),
+    fats:    get(`${tempId}_fats`),
+    sugar:   get(`${tempId}_sugar`),
+  });
+}
+
+// ── Common save ───────────────────────────────────────────────
+function tplSaveItem(templateIdx, entry) {
+  const templates = getMealTemplates();
+  if (!templates[templateIdx]) return;
+  templates[templateIdx].items.push(entry);
+  saveMealTemplates(templates);
+  // Remove the add row and re-render
+  const rowId = `tplItemRow_${templateIdx}`;
+  document.getElementById(rowId)?.remove();
+  renderMealTemplateRow();
+  renderMealsTab();
 }
 
 function confirmTemplateItem(templateIdx, tempId) {
-  const nameEl = document.getElementById(tempId + '_name');
-  if (!nameEl || !nameEl.value.trim()) return;
-  const get = id => { const el = document.getElementById(id); return el && el.value !== '' ? parseFloat(el.value) : undefined; };
-  const templates = getMealTemplates();
-  templates[templateIdx].items.push({
-    name:    nameEl.value.trim(),
-    kcal:    get(tempId + '_kcal')  || 0,
-    protein: get(tempId + '_prot')  || 0,
-    carbs:   get(tempId + '_carbs'),
-    fats:    get(tempId + '_fats'),
-    sugar:   get(tempId + '_sugar'),
-  });
-  saveMealTemplates(templates);
-  renderMealTemplateRow();
-  renderMealsTab();
+  // Legacy — kept for compatibility, redirects to manual flow
+  tplConfirmManual(templateIdx, tempId);
 }
 
 function removeTemplateItem(templateIdx, itemIdx) {
@@ -6584,16 +6810,42 @@ function renderShareCard() {
   const canvas = document.getElementById('shareCard');
   if (!canvas) return;
 
-  // Collect data
+  // ── Collect all data ─────────────────────────────────────────
   const sw = START_WEIGHT();
   let latestWt = null;
   for (let w = TOTAL_WEEKS(); w >= 1; w--) {
     const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
   }
-  const totalLost = latestWt ? (sw - latestWt).toFixed(1) : null;
+  const totalLost  = latestWt ? +(sw - latestWt).toFixed(1) : null;
   const { current: streak } = calcStreak();
   const goal1 = GOAL1();
-  const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - goal1)) * 100)) : 0;
+  const pct   = (latestWt && sw !== goal1) ? Math.min(100, Math.max(0, Math.round(((sw - latestWt) / (sw - goal1)) * 100))) : 0;
+  const ph    = getPhase(currentWeek);
+
+  // This week's stats
+  const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
+  const totalMin = calcWeeklyWorkoutHours(currentWeek);
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  const activeStr = totalMin > 0 ? (hh > 0 ? hh + 'h ' : '') + (mm > 0 ? mm + 'm' : '') : '—';
+
+  // Avg sleep this week
+  const wd = peekWeekData(currentWeek) || {};
+  let sleepTotal = 0, sleepDays = 0;
+  DAYS.forEach(day => {
+    const dd = (wd.days && wd.days[day]) || {};
+    if (dd.sleepHrs) { sleepTotal += dd.sleepHrs; sleepDays++; }
+  });
+  const avgSleep = sleepDays > 0 ? (sleepTotal / sleepDays).toFixed(1) : null;
+
+  // Avg kcal this week
+  let kcalTotal = 0, kcalDays = 0;
+  DAYS.forEach(day => {
+    const cal = wd.calories && wd.calories[day];
+    if (!cal) return;
+    const eaten = MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal || 0), 0);
+    if (eaten > 0) { kcalTotal += eaten; kcalDays++; }
+  });
+  const avgKcal = kcalDays > 0 ? Math.round(kcalTotal / kcalDays) : null;
 
   // Weight history for mini chart
   const wPoints = [];
@@ -6602,8 +6854,8 @@ function renderShareCard() {
     if (d && d.weight) wPoints.push({ w, wt: d.weight });
   }
 
-  // Canvas setup — 2x for retina
-  const CW = 380, CH = 240;
+  // ── Canvas setup — 2× retina ─────────────────────────────────
+  const CW = 380, CH = 300;
   canvas.width  = CW * 2;
   canvas.height = CH * 2;
   canvas.style.width  = CW + 'px';
@@ -6611,8 +6863,7 @@ function renderShareCard() {
   const ctx = canvas.getContext('2d');
   ctx.scale(2, 2);
 
-  // Background
-  // Polyfill roundRect for Safari < 15.4
+  // roundRect polyfill
   if (!ctx.roundRect) {
     ctx.roundRect = function(x, y, w, h, r) {
       this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -6621,123 +6872,142 @@ function renderShareCard() {
       this.lineTo(x,y+r); this.quadraticCurveTo(x,y,x+r,y); this.closePath();
     };
   }
+
+  // Background
   ctx.fillStyle = '#1a1714';
-  ctx.beginPath();
-  ctx.roundRect(0, 0, CW, CH, 16);
-  ctx.fill();
+  ctx.beginPath(); ctx.roundRect(0, 0, CW, CH, 16); ctx.fill();
 
-  // Subtle texture — horizontal rule
-  ctx.strokeStyle = '#2a2420';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, 80); ctx.lineTo(CW, 80); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, 160); ctx.lineTo(CW, 160); ctx.stroke();
+  // Dividers
+  const divY1 = 58, divY2 = 130, divY3 = 202;
+  ctx.strokeStyle = '#2d2724'; ctx.lineWidth = 1;
+  [divY1, divY2, divY3].forEach(y => {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+  });
 
-  // Header
+  // ── HEADER ───────────────────────────────────────────────────
   ctx.fillStyle = '#f5f2ee';
-  ctx.font = 'bold 15px DM Sans, system-ui, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText('Arnav — Fitness progress', 20, 16);
-  ctx.fillStyle = '#a89e93';
+  ctx.font = 'bold 14px DM Sans, system-ui, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('Arnav — Fitness progress', 20, 14);
+  ctx.fillStyle = '#6b5e55';
   ctx.font = '10px DM Mono, monospace';
-  ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 36);
+  ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 34);
 
-  // Goal pill
-  const ph = getPhase(currentWeek);
+  // Phase pill
   ctx.fillStyle = '#c4501a';
-  ctx.beginPath(); ctx.roundRect(CW - 80, 14, 64, 20, 6); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(CW - 74, 13, 58, 22, 7); ctx.fill();
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 10px DM Sans, system-ui';
   ctx.textAlign = 'center';
-  ctx.fillText(`Phase ${ph}`, CW - 48, 19);
+  ctx.fillText(`Phase ${ph}`, CW - 45, 18);
 
-  // Stats row 1
-  const stats1 = [
-    { label: 'Start weight', val: sw + ' lbs' },
-    { label: 'Now', val: latestWt ? latestWt + ' lbs' : '—' },
-    { label: 'Lost', val: totalLost ? totalLost + ' lbs' : '—' },
-    { label: 'Streak', val: streak + ' days' },
+  // ── ROW 1: Weight stats ───────────────────────────────────────
+  const row1stats = [
+    { label: 'START',   val: sw + ' lbs',                     color: '#f5f2ee' },
+    { label: 'NOW',     val: latestWt ? latestWt + ' lbs' : '—', color: '#f5f2ee' },
+    { label: 'LOST',    val: totalLost != null ? (totalLost > 0 ? '↓ ' : '') + Math.abs(totalLost) + ' lbs' : '—',
+                        color: totalLost > 0 ? '#7bc9a8' : '#f5f2ee' },
+    { label: 'STREAK',  val: streak + ' d',                   color: streak >= 3 ? '#f7a94b' : '#f5f2ee' },
   ];
-  const cellW = CW / 4;
-  stats1.forEach((s, i) => {
-    const x = i * cellW + cellW / 2;
-    ctx.fillStyle = '#a89e93';
-    ctx.font = '9px DM Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(s.label.toUpperCase(), x, 90);
-    ctx.fillStyle = '#f5f2ee';
-    ctx.font = 'bold 16px DM Sans, system-ui';
-    ctx.textBaseline = 'top';
-    ctx.fillText(s.val, x, 106);
+  const cW4 = CW / 4;
+  row1stats.forEach((s, i) => {
+    const x = i * cW4 + cW4 / 2;
+    ctx.fillStyle = '#6b5e55'; ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(s.label, x, divY1 + 10);
+    ctx.fillStyle = s.color; ctx.font = 'bold 15px DM Sans, system-ui';
+    ctx.fillText(s.val, x, divY1 + 24);
   });
 
-  // Progress bar toward Goal 1
-  const barX = 20, barY = 142, barW = CW - 40, barH = 8;
-  ctx.fillStyle = '#2a2420';
-  ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 4); ctx.fill();
-  if (pct > 0) {
-    ctx.fillStyle = '#c4501a';
-    ctx.beginPath(); ctx.roundRect(barX, barY, barW * pct / 100, barH, 4); ctx.fill();
-  }
-  ctx.fillStyle = '#a89e93';
-  ctx.font = '9px DM Mono, monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`Goal 1 progress: ${pct}% (target ${goal1} lbs)`, barX, barY + 12);
+  // ── ROW 2: This week's stats ──────────────────────────────────
+  const defStr = daysWithData > 0 ? (totalDeficit >= 0 ? '+' : '') + totalDeficit.toLocaleString() + ' kcal' : '—';
+  const defColor = daysWithData > 0 ? (totalDeficit > 0 ? '#7bc9a8' : '#e07070') : '#6b5e55';
+  const row2stats = [
+    { label: 'ACTIVE',    val: activeStr,                                  color: '#f5f2ee' },
+    { label: 'WK DEFICIT',val: defStr,                                     color: defColor  },
+    { label: 'AVG KCAL',  val: avgKcal ? avgKcal.toLocaleString() : '—',   color: '#f5f2ee' },
+    { label: 'AVG SLEEP', val: avgSleep ? avgSleep + 'h' : '—',            color: avgSleep >= 7 ? '#7bc9a8' : avgSleep ? '#f7a94b' : '#6b5e55' },
+  ];
+  row2stats.forEach((s, i) => {
+    const x = i * cW4 + cW4 / 2;
+    ctx.fillStyle = '#6b5e55'; ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(s.label, x, divY2 + 10);
+    ctx.fillStyle = s.color; ctx.font = 'bold 15px DM Sans, system-ui';
+    ctx.fillText(s.val, x, divY2 + 24);
+  });
 
-  // Mini weight chart
+  // ── ROW 3: Progress bar + goal ────────────────────────────────
+  const barX = 20, barY = divY3 + 14, barW = CW - 40, barH = 10;
+  ctx.fillStyle = '#2d2724';
+  ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 5); ctx.fill();
+  if (pct > 0) {
+    // Gradient fill
+    const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+    grad.addColorStop(0, '#c4501a');
+    grad.addColorStop(1, '#f7a94b');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW * pct / 100, barH, 5); ctx.fill();
+  }
+  ctx.fillStyle = '#6b5e55'; ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText(`Goal 1: ${pct}% complete`, barX, barY + 16);
+  ctx.textAlign = 'right';
+  ctx.fillText(`target ${goal1} lbs`, barX + barW, barY + 16);
+
+  // ── ROW 4: Mini weight chart OR placeholder ───────────────────
+  const chartY = divY3 + 42, chartH = CH - chartY - 16;
   if (wPoints.length >= 2) {
-    const chartX = 20, chartY = 170, chartW = CW - 40, chartH = 46;
-    const minW = Math.min(...wPoints.map(p => p.wt)) - 1;
+    const chartX = 20, chartW = CW - 40;
+    const minW = Math.min(...wPoints.map(p => p.wt), goal1) - 1;
     const maxW = Math.max(sw, ...wPoints.map(p => p.wt)) + 1;
-    const xS = i => chartX + (i / (TOTAL_WEEKS() - 1)) * chartW;
+    const xS = w => chartX + ((w - 1) / (TOTAL_WEEKS() - 1)) * chartW;
     const yS = w => chartY + chartH - ((w - minW) / (maxW - minW)) * chartH;
 
-    // Goal line
-    ctx.strokeStyle = '#3a3430';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(chartX, yS(goal1));
-    ctx.lineTo(chartX + chartW, yS(goal1));
-    ctx.stroke();
+    // Goal dashed line
+    ctx.strokeStyle = '#3a3430'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(chartX, yS(goal1)); ctx.lineTo(chartX + chartW, yS(goal1)); ctx.stroke();
     ctx.setLineDash([]);
+
+    // Area fill under weight line
+    ctx.beginPath();
+    wPoints.forEach((p, i) => { i===0 ? ctx.moveTo(xS(p.w), yS(p.wt)) : ctx.lineTo(xS(p.w), yS(p.wt)); });
+    ctx.lineTo(xS(wPoints[wPoints.length-1].w), chartY + chartH);
+    ctx.lineTo(xS(wPoints[0].w), chartY + chartH);
+    ctx.closePath();
+    const areaGrad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+    areaGrad.addColorStop(0, 'rgba(196,80,26,0.25)');
+    areaGrad.addColorStop(1, 'rgba(196,80,26,0)');
+    ctx.fillStyle = areaGrad; ctx.fill();
 
     // Weight line
     ctx.beginPath();
-    wPoints.forEach((p, pi) => {
-      const x = xS(p.w - 1), y = yS(p.wt);
-      pi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#c4501a';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    wPoints.forEach((p, i) => { i===0 ? ctx.moveTo(xS(p.w), yS(p.wt)) : ctx.lineTo(xS(p.w), yS(p.wt)); });
+    ctx.strokeStyle = '#c4501a'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
 
     // Last dot
-    const last = wPoints[wPoints.length - 1];
-    ctx.beginPath();
-    ctx.arc(xS(last.w - 1), yS(last.wt), 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#c4501a';
-    ctx.fill();
+    const last = wPoints[wPoints.length-1];
+    ctx.beginPath(); ctx.arc(xS(last.w), yS(last.wt), 3.5, 0, Math.PI*2);
+    ctx.fillStyle = '#c4501a'; ctx.fill();
+    ctx.beginPath(); ctx.arc(xS(last.w), yS(last.wt), 3.5, 0, Math.PI*2);
+    ctx.strokeStyle = '#f5f2ee'; ctx.lineWidth = 1.5; ctx.stroke();
 
     // Labels
-    ctx.fillStyle = '#6b5e55';
-    ctx.font = '8px DM Mono, monospace';
+    ctx.fillStyle = '#4a3e38'; ctx.font = '8px DM Mono, monospace';
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText('Weight trend', chartX, chartY - 2);
+    ctx.fillText('weight trend ──', chartX, chartY - 2);
+  } else {
+    // Placeholder when no weight logged yet
     ctx.fillStyle = '#3a3430';
-    ctx.textAlign = 'right';
-    ctx.fillText('— Goal 1', chartX + chartW, yS(goal1) - 2);
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('log your weekly weight to see trend chart', CW / 2, chartY + chartH / 2);
   }
 
   // Watermark
-  ctx.fillStyle = '#3a3430';
-  ctx.font = '8px DM Mono, monospace';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('fitness tracker', CW - 12, CH - 8);
+  ctx.fillStyle = '#2d2724'; ctx.font = '8px DM Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillText('fitness tracker', CW - 12, CH - 6);
 
   _shareCardDataUrl = canvas.toDataURL('image/png');
 }
@@ -6759,15 +7029,24 @@ function shareToWhatsApp() {
   const lost = latestWt ? (sw - latestWt).toFixed(1) : '?';
   const { current: streak } = calcStreak();
   const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - GOAL1())) * 100)) : 0;
+  const totalMin2 = calcWeeklyWorkoutHours(currentWeek);
+  const hh2 = Math.floor(totalMin2/60), mm2 = totalMin2%60;
+  const activeStr2 = totalMin2 > 0 ? (hh2>0?hh2+'h ':'')+(mm2>0?mm2+'m':'') : '0h';
+  const { totalDeficit: def2, daysWithData: dwd2 } = calcWeeklyDeficit(currentWeek);
+  const defStr2 = dwd2 > 0 ? (def2>=0?'+':'')+def2.toLocaleString()+' kcal' : '—';
   const msg = encodeURIComponent(
     `💪 Fitness update — Week ${currentWeek} of ${TOTAL_WEEKS()}
 
 ` +
-    `📉 Lost: ${lost} lbs total
+    `📉 Total lost: ${lost} lbs
 ` +
     `🎯 Goal 1 progress: ${pct}%
 ` +
-    `🔥 Workout streak: ${streak} days
+    `🔥 Streak: ${streak} days
+` +
+    `⏱ Active this week: ${activeStr2}
+` +
+    `⚡ Week deficit: ${defStr2}
 
 ` +
     `Tracking with my personal fitness tracker.`
