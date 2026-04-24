@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1714">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fitness Tracker">
+  <link rel="manifest" href="manifest.json">
 <title>Arnav — Fitness Tracker</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -272,7 +278,7 @@
   .badge-rest { background: var(--surface2); color: var(--text3); }
   .badge-walk { background: var(--amber-bg); color: var(--amber); }
   .badge-sport { background: var(--purple-bg); color: var(--purple); }
-  .badge-other { background: var(--red-bg); color: var(--red); }
+  .badge-other { background: #ffe4e6; color: #e11d48; }
   .badge-core { background: var(--amber-bg); color: var(--amber); }
   .badge-empty { background: var(--surface2); color: var(--text3); }
 
@@ -449,6 +455,7 @@
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 14px;
   }
+  @media (max-width: 640px) { .summary-card { grid-template-columns: repeat(2, 1fr); } }
   .sum-stat {}
   .sum-label {
     font-family: var(--mono);
@@ -643,10 +650,10 @@
     background: var(--accent);
     color: white;
     border: none;
-    padding: 10px 22px;
+    padding: 8px 16px;
     border-radius: 8px;
     font-family: var(--sans);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: opacity 0.15s;
@@ -719,6 +726,36 @@
 
   /* WORKOUT SPLITS */
   .wo-tabs { display: flex; gap: 2px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0; scrollbar-width: none; }
+  /* Export dropdown */
+  .export-dropdown { position:relative; display:inline-block; }
+  .export-dropdown-menu {
+    display:none; position:absolute; bottom:calc(100% + 6px); left:0;
+    background:var(--bg); border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.12); min-width:180px; z-index:999;
+    overflow:hidden;
+  }
+  .export-dropdown-menu.open { display:block; }
+  .export-dropdown-menu button {
+    display:flex; align-items:center; gap:8px; width:100%; padding:10px 14px;
+    border:none; background:none; font-family:var(--sans); font-size:13px;
+    color:var(--text2); cursor:pointer; text-align:left;
+  }
+  .export-dropdown-menu button:hover { background:var(--surface2); }
+  .export-dropdown-menu button + button { border-top:1px solid var(--border); }
+  /* Action button row */
+  .action-row-btn {
+    padding:8px 14px; border-radius:8px; border:1px solid var(--border2);
+    background:var(--surface); color:var(--text2); cursor:pointer;
+    font-family:var(--sans); font-size:12px; display:flex; align-items:center;
+    gap:5px; white-space:nowrap; position:relative;
+  }
+  .action-row-btn:hover { border-color:var(--text3); }
+  .action-row-btn[title]:hover::after {
+    content:attr(title); position:absolute; bottom:calc(100% + 6px); left:50%;
+    transform:translateX(-50%); background:#1a1714; color:#f5f2ee;
+    font-size:11px; padding:4px 8px; border-radius:6px; white-space:nowrap;
+    pointer-events:none; z-index:1000;
+  }
   .wo-tab { font-size: 11px; font-weight: 500; padding: 6px 9px; border: none; background: none; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   .wo-tab.active { color: var(--text); border-bottom-color: var(--accent); }
   .wo-panel { display: none; }
@@ -832,14 +869,15 @@
   .cal-sport { background: var(--purple-bg); border-color: #c4b5fd; }
   .cal-sport .cal-day-num { color: var(--purple); }
   .cal-sport .cal-day-tag { color: var(--purple); }
+  .cal-other { background: #ffe4e6; border-color: #fda4af; }
+  .cal-other .cal-day-num { color: #e11d48; }
+  .cal-other .cal-day-tag { color: #e11d48; }
   .cal-other { background: var(--red-bg); border-color: #fca5a5; }
   .cal-other .cal-day-num { color: var(--red); }
   .cal-other .cal-day-tag { color: var(--red); }
-  .cal-other { background: var(--red-bg); border-color: #fca5a5; }
-  .cal-other .cal-day-num { color: var(--red); }
-  .cal-other .cal-day-tag { color: var(--red); }
-  .cal-skipped { background: var(--red-bg); border-color: #F7C1C1; }
-  .cal-skipped .cal-day-num { color: var(--red); }
+  .cal-skipped { background: #fef2f2; border-color: #ef4444; border-width: 2px; }
+  .cal-skipped .cal-day-num { color: #b91c1c; font-weight: 700; }
+  .cal-skipped .cal-day-tag  { color: #b91c1c; }
   .cal-today { border-color: var(--accent) !important; border-width: 2px !important; }
   .cal-today .cal-day-num { color: var(--accent); font-weight: 600; }
   .cal-future { background: var(--surface); border-color: var(--border); opacity: 0.35; cursor: default; }
@@ -864,9 +902,198 @@
   .meal-header-lunch     { background:#dbeafe;color:#1e40af; }
   .meal-header-dinner    { background:#ede9fe;color:#5b21b6; }
   .meal-header-snacks    { background:#d1fae5;color:#065f46; }
+  /* PWA install banner — hidden by default, shown via JS on mobile only */
+  #pwaInstallBanner {
+    display: none; /* JS will show it only on mobile */
+    background: #f5f2ee;
+    border-bottom: 1px solid #e0d9d0;
+    padding: 10px 16px;
+  }
+  @media (min-width: 641px) {
+    #pwaInstallBanner { display: none !important; }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     MOBILE RESPONSIVE — max-width: 640px
+     All desktop styles are untouched above this block.
+  ═══════════════════════════════════════════════════ */
+  @media (max-width: 640px) {
+
+    /* ── Safe area for notched phones ─────────────── */
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    .header {
+      padding: 14px 16px 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .header-right {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+    .header-name { font-size: 18px; }
+    .header-title { font-size: 11px; }
+    .week-nav { gap: 6px; }
+    .week-btn { padding: 6px 10px; font-size: 12px; }
+
+    /* ── Tab bar — scrollable, no wrap ────────────── */
+    .tabs {
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0;
+      flex-wrap: nowrap;
+      margin-bottom: 16px;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      font-size: 12px;
+      padding: 10px 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-height: 44px; /* Apple minimum tap target */
+    }
+
+    /* ── Main content padding ──────────────────────── */
+    .tab-panel { padding: 0 2px; }
+
+    /* ── Progress banner ──────────────────────────── */
+    .progress-banner {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px 14px;
+    }
+
+    /* ── Day cards grid ────────────────────────────── */
+    .days-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    /* ── Day detail panel ──────────────────────────── */
+    .detail-grid { grid-template-columns: 1fr; }
+
+    /* ── Summary card ──────────────────────────────── */
+    .sum-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .sum-stat { padding: 8px 10px; }
+    .sum-val { font-size: 16px; }
+
+    /* ── Calorie totals ────────────────────────────── */
+    .calorie-totals { grid-template-columns: repeat(2, 1fr); }
+
+    /* ── Calorie entry — macro inputs wrap ─────────── */
+    .cal-entry-row {
+      flex-wrap: wrap;
+    }
+    .cal-num-input {
+      width: 60px !important;
+    }
+
+    /* ── History card tables → card layout ─────────── */
+    #weekComparisonView table { display: none; }
+    #weekComparisonView .mob-week-cards { display: block; }
+
+    /* ── Workout tab tabs ──────────────────────────── */
+    .wo-tabs {
+      gap: 0;
+    }
+    .action-btn-row {
+      grid-template-columns: auto auto 1fr !important;
+      gap: 6px !important;
+    }
+    .action-btn-row > span:first-of-type { display: none; }
+    .wo-tab {
+      padding: 8px 8px;
+      font-size: 10px;
+      min-height: 44px;
+      flex-shrink: 0;
+    }
+
+    /* ── Settings inputs ───────────────────────────── */
+    .settings-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* ── Share modal ───────────────────────────────── */
+    #shareModal > div {
+      max-width: 100% !important;
+      width: 95% !important;
+      padding: 16px !important;
+    }
+    #shareCard {
+      width: 100% !important;
+    }
+
+    /* ── Calendar grid cells ───────────────────────── */
+    .cal-cell {
+      min-height: 52px;
+      font-size: 11px;
+    }
+    .cal-day-num { font-size: 13px; }
+    .cal-day-tag { font-size: 9px; }
+
+    /* ── Global day selector ───────────────────────── */
+    .global-day-btn {
+      padding: 6px 8px;
+      font-size: 11px;
+      min-height: 36px;
+    }
+
+    /* ── Form buttons — bigger tap targets ─────────── */
+    button {
+      min-height: 36px;
+    }
+
+    /* ── Meal section headers ──────────────────────── */
+    .meal-section-header {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* ── Water slider ──────────────────────────────── */
+    input[type="range"] {
+      height: 28px;
+    }
+  }
+
+  /* Slightly wider breakpoint for tablets */
+  @media (max-width: 480px) {
+    .days-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .progress-banner {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .header-name { font-size: 16px; }
+  }
+
 </style>
 </head>
 <body>
+
+<!-- PWA Install Banner — mobile only, hidden on desktop via CSS -->
+<div id="pwaInstallBanner" style="display:none;">
+  <div id="pwaInstallContent" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:18px;">📲</span>
+    <div style="flex:1;min-width:180px;">
+      <div id="pwaInstallTitle" style="font-size:13px;font-weight:600;color:#1a1714;">Add to home screen</div>
+      <div id="pwaInstallMsg" style="font-size:12px;color:#6b5e55;margin-top:1px;">Install this app for quick access — works offline too.</div>
+    </div>
+    <button id="pwaInstallBtn" style="display:none;padding:8px 16px;border-radius:8px;border:none;background:#c4501a;color:white;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;">Install</button>
+    <button onclick="dismissPwaBanner()" style="padding:6px 10px;border-radius:8px;border:1px solid #d4c8be;background:none;color:#6b5e55;font-family:var(--sans);font-size:12px;cursor:pointer;">✕</button>
+  </div>
+</div>
 
 <div id="lockScreen">
   <div class="lock-card">
@@ -937,7 +1164,7 @@
     <button class="tab-btn" onclick="showTab('meals')">Meals</button>
     <button class="tab-btn" onclick="showTab('diet')">Diet</button>
     <button class="tab-btn" onclick="showTab('workouts')">Workouts</button>
-    <button class="tab-btn" onclick="showTab('plan-ref')">Plan reference</button>
+    <button class="tab-btn" onclick="showTab('plan-ref')">Plan</button>
     <button class="tab-btn" onclick="showTab('settings')">Settings</button>
   </div>
 
@@ -1244,31 +1471,42 @@
       <textarea id="weekNotesInput" placeholder="How did this week go? Travel, illness, social events, anything that affected training or diet..." oninput="debounceWeekNotes(this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:72px;line-height:1.5;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
     </div>
 
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:32px; flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <!-- Save week -->
       <button class="save-btn" onclick="saveWeek()">Save week</button>
-      <span class="save-msg" id="saveMsg">Saved ✓</span>
-      <button onclick="copyWeekSummary()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">⎘</span> Copy summary
+
+      <!-- Copy summary -->
+      <button class="action-row-btn" onclick="copyWeekSummary()" title="Copy a text summary of this week to clipboard">
+        <span>⎘</span> Copy summary
       </button>
-      <span class="save-msg" id="copyMsg" style="color:var(--green);">Copied ✓</span>
-      <div style="flex:1;"></div>
-      <button onclick="exportData()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">↓</span> Export backup
+      <span class="save-msg" id="copyMsg" style="color:var(--green);display:none;">Copied ✓</span>
+
+      <!-- Share progress -->
+      <button class="action-row-btn" onclick="showShareModal()" title="Generate a shareable progress card">
+        <span>↗</span> Share progress
       </button>
-      <button onclick="exportCSV()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">↓</span> Export CSV
+
+      <!-- Export dropdown -->
+      <div class="export-dropdown" id="exportDropdown">
+        <button class="action-row-btn" onclick="toggleExportMenu()" title="Export week PDF, CSV, or full backup">
+          <span>↓</span> Export <span style="font-size:10px;margin-left:2px;">▾</span>
+        </button>
+        <div class="export-dropdown-menu" id="exportDropdownMenu">
+          <button onclick="exportWeekPDF();closeExportMenu()"><span>⎙</span> Export week PDF</button>
+          <button onclick="exportCSV();closeExportMenu()"><span>↓</span> Export CSV</button>
+          <button onclick="exportData();closeExportMenu()"><span>↓</span> Export backup</button>
+        </div>
+      </div>
+
+      <!-- Import -->
+      <button class="action-row-btn" onclick="document.getElementById('importFile').click()" title="Import a backup JSON file to restore your data">
+        <span>↑</span> Import
       </button>
-      <button onclick="exportWeekPDF()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">⎙</span> Export week PDF
-      </button>
-      <button onclick="showShareModal()" style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">↗</span> Share progress
-      </button>
-      <label style="font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;">
-        <span style="font-size:14px;">↑</span> Import backup
-        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
-      </label>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
       <span class="save-msg" id="importMsg" style="color:var(--green);">Imported ✓</span>
+    </div>
+    <div style="height:20px;margin-bottom:16px;">
+      <span class="save-msg" id="saveMsg" style="font-size:12px;">Saved ✓</span>
     </div>
 
   </div>
@@ -1346,9 +1584,9 @@
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px solid var(--blue);"></div>Weights</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #fbbf24;"></div>Walk</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple-bg);border:1px solid #c4b5fd;"></div>Sport</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid #fca5a5;"></div>Other</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#ffe4e6;border:1px solid #fda4af;"></div>Other</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>Rest</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:var(--red-bg);border:1px solid var(--red);"></div>Skipped</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);"><div style="width:12px;height:12px;border-radius:3px;background:#fef2f2;border:2px solid #ef4444;"></div>Skipped</div>
     </div>
     <div id="calendarGrid"></div>
   </div>
@@ -3759,7 +3997,7 @@ function showTab(id) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   const btn = [...document.querySelectorAll('.tab-btn')].find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'"));
-  if (btn) btn.classList.add('active');
+  if (btn) { btn.classList.add('active'); btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); }
   if (id === 'history') renderHistory();
   if (id === 'calendar') renderCalendar();
   if (id === 'meals') renderMealsTab();
@@ -3978,6 +4216,8 @@ function autoPersist() {
 }
 
 function copyWeekSummary() {
+  const msg = document.getElementById('copyMsg');
+  if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2500); }
   const ws = getWeekStartDate(currentWeek);
   const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
   const dateRange = ws ? `${formatDate(ws)} – ${formatDate(we)}` : `Week ${currentWeek}`;
@@ -6556,7 +6796,41 @@ function renderWeekComparison() {
   });
 
   html += '</tbody></table></div>';
-  el.innerHTML = html;
+
+  // Mobile card view (shown via CSS on small screens, table hidden)
+  let mobileHtml = '<div class="mob-week-cards" style="display:none;">';
+  weeks.forEach((wk, i) => {
+    const prev = i > 0 ? weeks[i - 1] : null;
+    const wtLost = prev && wk.weight && prev.weight ? (prev.weight - wk.weight).toFixed(1) : null;
+    const hh2 = Math.floor(wk.totalMin / 60), mm2 = wk.totalMin % 60;
+    const hStr2 = wk.totalMin > 0 ? (hh2>0?hh2+'h ':'')+(mm2>0?mm2+'m':'') : '—';
+    const isNow = wk.w === currentWeek;
+    const defColor2 = wk.daysWithData > 0 ? (wk.totalDeficit > 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)';
+    mobileHtml += `<div style="background:var(--surface);border:1px solid ${isNow?'var(--accent)':'var(--border)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;">Wk ${wk.w} <span style="font-size:11px;color:var(--text3);">${wk.ws ? formatDate(wk.ws,{day:'numeric',month:'short'}) : ''}</span></div>
+        ${isNow ? '<span style="font-size:9px;background:var(--accent);color:white;border-radius:4px;padding:2px 6px;">now</span>' : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Weight</div><div style="font-size:13px;font-weight:500;">${wk.weight||'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Lost</div><div style="font-size:13px;font-weight:500;color:${wtLost>0?'var(--green)':'var(--text3)'};">${wtLost!=null?(wtLost>0?'↓ ':wtLost<0?'↑ ':'')+Math.abs(wtLost)+' lbs':'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Deficit</div><div style="font-size:13px;font-weight:500;color:${defColor2};">${wk.daysWithData>0?(wk.totalDeficit>=0?'+':'')+wk.totalDeficit.toLocaleString():'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Active</div><div style="font-size:13px;font-weight:500;">${hStr2}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Avg kcal</div><div style="font-size:13px;font-weight:500;">${wk.avgKcal||'—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Protein</div><div style="font-size:13px;font-weight:500;color:${wk.avgProt>=getSetting('proteinTarget')*0.9?'var(--green)':'var(--amber)'};">${wk.avgProt?wk.avgProt+'g':'—'}</div></div>
+      </div>
+    </div>`;
+  });
+  mobileHtml += '</div>';
+
+  el.innerHTML = html + mobileHtml;
+
+  // Show correct view based on screen width
+  const isMobile = window.innerWidth <= 640;
+  const tbl = el.querySelector('div[style*="overflow-x"]');
+  const cards = el.querySelector('.mob-week-cards');
+  if (tbl) tbl.style.display = isMobile ? 'none' : 'block';
+  if (cards) cards.style.display = isMobile ? 'block' : 'none';
 }
 
 
@@ -6765,7 +7039,7 @@ function exportWeekPDF() {
   <tbody>${days_html}</tbody>
 </table>
 
-${wd.weekNotes ? `<div class="section">Weekly notes</div><div class="notes">${wd.weekNotes}</div>` : ''}
+${wd.weekNotes ? ('<div class="section">Weekly notes</div><div class="notes">' + wd.weekNotes + '</div>') : ''}
 
 <div style="margin-top:24px;font-size:10px;color:#a89e93;border-top:1px solid #e0d9d0;padding-top:10px;">
   Generated ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} · Arnav's Fitness Tracker
@@ -6777,7 +7051,16 @@ ${wd.weekNotes ? `<div class="section">Weekly notes</div><div class="notes">${wd
   win.document.close();
   setTimeout(() => win.print(), 500);
 }
-
+// ─── Mobile: resize listener ─────────────────────────────────
+window.addEventListener('resize', () => {
+  const el = document.getElementById('weekComparisonView');
+  if (!el) return;
+  const isMob = window.innerWidth <= 640;
+  const tbl   = el.querySelector('div[style*="overflow-x"]');
+  const cards = el.querySelector('.mob-week-cards');
+  if (tbl)   tbl.style.display   = isMob ? 'none'  : 'block';
+  if (cards) cards.style.display = isMob ? 'block' : 'none';
+});
 
 
 // ─── SHARE PROGRESS — canvas card, WhatsApp, download ──────
@@ -6788,7 +7071,6 @@ function showShareModal() {
   if (!modal) return;
   modal.style.display = 'flex';
   setTimeout(() => renderShareCard(), 50);
-  // Show native share if supported
   const btn = document.getElementById('shareNativeBtn');
   if (btn && navigator.share) btn.style.display = 'block';
 }
@@ -6798,277 +7080,6 @@ function closeShareModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function renderShareCard() {
-  const canvas = document.getElementById('shareCard');
-  if (!canvas) return;
-
-  // ── Collect data ─────────────────────────────────────────────
-  const sw   = START_WEIGHT();
-  const goal1 = GOAL1();
-  const ph   = getPhase(currentWeek);
-  let latestWt = null;
-  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
-    const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
-  }
-  const totalLost = latestWt ? +(sw - latestWt).toFixed(1) : null;
-  const { current: streak } = calcStreak();
-  const pct = (latestWt && sw !== goal1)
-    ? Math.min(100, Math.max(0, Math.round(((sw - latestWt) / (sw - goal1)) * 100))) : 0;
-
-  // This week
-  const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
-  const totalMin = calcWeeklyWorkoutHours(currentWeek);
-  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
-  const activeStr = totalMin > 0 ? (hh > 0 ? hh + 'h ' : '') + (mm > 0 ? mm + 'm' : '') : '—';
-
-  // Avg sleep
-  const wd = peekWeekData(currentWeek) || {};
-  let sleepTotal = 0, sleepDays = 0;
-  DAYS.forEach(day => { const d = (wd.days && wd.days[day]) || {}; if (d.sleepHrs) { sleepTotal += d.sleepHrs; sleepDays++; } });
-  const avgSleep = sleepDays > 0 ? (sleepTotal / sleepDays).toFixed(1) : null;
-
-  // Per-day kcal + activity for the activity/calorie chart
-  const target = getTargetForWeek(currentWeek);
-  const dayData = DAYS.map(day => {
-    const dd = (wd.days && wd.days[day]) || {};
-    const act = (dd.activity || '').toLowerCase();
-    const cal = wd.calories && wd.calories[day];
-    const kcal = cal ? MEALS.flatMap(m => cal[m] || []).reduce((s, e) => s + (e.kcal||0), 0) : 0;
-    let color = '#2d2724'; // rest/none
-    if (act.includes('run') || act.includes('tempo'))   color = '#5aad8a';
-    else if (act.includes('weight'))                     color = '#5b8dd9';
-    else if (act.includes('walk'))                       color = '#f7a94b';
-    else if (act === 'sport')                            color = '#a78bfa';
-    else if (act === 'other')                            color = '#f87171';
-    return { day, kcal, color, hasActivity: !!dd.activity };
-  });
-
-  // Weight history for trend chart
-  const wPoints = [];
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
-    const d = peekWeekData(w); if (d && d.weight) wPoints.push({ w, wt: d.weight });
-  }
-  const hasWeightTrend = wPoints.length >= 2;
-
-  // ── Canvas setup ─────────────────────────────────────────────
-  const CW = 380, CH = hasWeightTrend ? 340 : 300;
-  canvas.width  = CW * 2; canvas.height = CH * 2;
-  canvas.style.width = CW + 'px'; canvas.style.height = CH + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
-
-  if (!ctx.roundRect) {
-    ctx.roundRect = function(x,y,w,h,r){
-      this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
-      this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-      this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
-      this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
-    };
-  }
-
-  // Background + dividers
-  ctx.fillStyle = '#1a1714';
-  ctx.beginPath(); ctx.roundRect(0,0,CW,CH,16); ctx.fill();
-  const divY1 = 58, divY2 = 130, divY3 = 202;
-  ctx.strokeStyle = '#2d2724'; ctx.lineWidth = 1;
-  [divY1, divY2, divY3].forEach(y => {
-    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(CW,y); ctx.stroke();
-  });
-
-  // ── HEADER ───────────────────────────────────────────────────
-  ctx.fillStyle = '#f5f2ee';
-  ctx.font = 'bold 14px DM Sans, system-ui, sans-serif';
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText('Arnav — Fitness progress', 20, 14);
-  ctx.fillStyle = '#6b5e55'; ctx.font = '10px DM Mono, monospace';
-  ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 34);
-  ctx.fillStyle = '#c4501a';
-  ctx.beginPath(); ctx.roundRect(CW-74,13,58,22,7); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px DM Sans, system-ui';
-  ctx.textAlign = 'center';
-  ctx.fillText(`Phase ${ph}`, CW-45, 18);
-
-  // ── ROW 1: Weight stats ───────────────────────────────────────
-  const row1 = [
-    { label:'START',  val: sw + ' lbs',  color:'#f5f2ee' },
-    { label:'NOW',    val: latestWt ? latestWt+' lbs' : '—', color:'#f5f2ee' },
-    { label:'LOST',   val: totalLost != null ? (totalLost>0?'↓ ':'')+Math.abs(totalLost)+' lbs':'—', color: totalLost>0?'#7bc9a8':'#f5f2ee' },
-    { label:'STREAK', val: streak+' d',  color: streak>=3?'#f7a94b':'#f5f2ee' },
-  ];
-  const cW4 = CW/4;
-  row1.forEach((s,i) => {
-    const x = i*cW4 + cW4/2;
-    ctx.fillStyle='#6b5e55'; ctx.font='8px DM Mono, monospace';
-    ctx.textAlign='center'; ctx.textBaseline='top';
-    ctx.fillText(s.label, x, divY1+10);
-    ctx.fillStyle=s.color; ctx.font='bold 15px DM Sans, system-ui';
-    ctx.fillText(s.val, x, divY1+25);
-  });
-
-  // ── ROW 2: Week stats ─────────────────────────────────────────
-  const defStr = daysWithData>0 ? (totalDeficit>=0?'+':'')+totalDeficit.toLocaleString()+' kcal' : '—';
-  const defColor = daysWithData>0 ? (totalDeficit>0?'#7bc9a8':'#e07070') : '#6b5e55';
-  const row2 = [
-    { label:'ACTIVE',     val: activeStr,                                       color:'#f5f2ee'  },
-    { label:'WK DEFICIT', val: defStr,                                          color: defColor  },
-    { label:'AVG KCAL',   val: daysWithData>0 ? Math.round(dayData.filter(d=>d.kcal>0).reduce((s,d)=>s+d.kcal,0)/Math.max(1,dayData.filter(d=>d.kcal>0).length)).toLocaleString() : '—', color:'#f5f2ee' },
-    { label:'AVG SLEEP',  val: avgSleep ? avgSleep+'h' : '—',                  color: avgSleep>=7?'#7bc9a8':avgSleep?'#f7a94b':'#6b5e55' },
-  ];
-  row2.forEach((s,i) => {
-    const x = i*cW4 + cW4/2;
-    ctx.fillStyle='#6b5e55'; ctx.font='8px DM Mono, monospace';
-    ctx.textAlign='center'; ctx.textBaseline='top';
-    ctx.fillText(s.label, x, divY2+10);
-    ctx.fillStyle=s.color; ctx.font='bold 15px DM Sans, system-ui';
-    ctx.fillText(s.val, x, divY2+25);
-  });
-
-  // ── ROW 3: Progress bar ───────────────────────────────────────
-  const barX=20, barY=divY3+14, barW=CW-40, barH=10;
-  ctx.fillStyle='#2d2724';
-  ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,5); ctx.fill();
-  if (pct>0) {
-    const g = ctx.createLinearGradient(barX,0,barX+barW,0);
-    g.addColorStop(0,'#c4501a'); g.addColorStop(1,'#f7a94b');
-    ctx.fillStyle=g;
-    ctx.beginPath(); ctx.roundRect(barX,barY,barW*pct/100,barH,5); ctx.fill();
-  }
-  ctx.fillStyle='#6b5e55'; ctx.font='9px DM Mono, monospace';
-  ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText(`Goal 1: ${pct}% complete`, barX, barY+16);
-  ctx.textAlign='right';
-  ctx.fillText(`target ${goal1} lbs`, barX+barW, barY+16);
-
-  // ── ROW 4: This week activity + calorie bars ──────────────────
-  const chartTop = divY3+42;
-  const actH  = hasWeightTrend ? 56 : 80;   // activity bars
-  const calH  = hasWeightTrend ? 28 : 40;   // calorie bars
-  const gap   = 6;
-  const padX  = 20;
-  const barArea = CW - padX*2;
-  const barGroupW = barArea / 7;
-  const barW7 = barGroupW * 0.55;
-  const maxKcal = Math.max(target*1.1, ...dayData.map(d=>d.kcal), 1);
-
-  // Section label
-  ctx.fillStyle='#4a3e38'; ctx.font='8px DM Mono, monospace';
-  ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('this week ─────────────────────', padX, chartTop);
-
-  // Activity bars
-  dayData.forEach((d,i) => {
-    const x = padX + i*barGroupW + (barGroupW-barW7)/2;
-    const barTop = chartTop+12;
-    // Background slot
-    ctx.fillStyle='#252120';
-    ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
-    // Coloured fill if activity logged
-    if (d.hasActivity) {
-      ctx.fillStyle = d.color;
-      ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
-      // Subtle shine
-      const shine = ctx.createLinearGradient(x, barTop, x, barTop+actH);
-      shine.addColorStop(0,'rgba(255,255,255,0.12)'); shine.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.fillStyle=shine;
-      ctx.beginPath(); ctx.roundRect(x, barTop, barW7, actH, 3); ctx.fill();
-    }
-    // Day label
-    ctx.fillStyle = d.hasActivity ? '#f5f2ee' : '#3a3430';
-    ctx.font='bold 8px DM Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='top';
-    ctx.fillText(d.day[0], x + barW7/2, barTop + actH/2 - 5);
-    if (d.hasActivity) {
-      // Activity abbreviation
-      const act = (wd.days && wd.days[d.day]?.activity) || '';
-      const abbr = act.includes('Weight') ? 'W' : act.includes('Run')||act.includes('Tempo') ? 'R'
-                 : act.includes('Walk') ? 'WK' : act.includes('Sport') ? 'SP'
-                 : act === 'Other' ? 'OT' : act === 'Rest' ? '—' : '●';
-      ctx.font='7px DM Mono, monospace';
-      ctx.fillText(abbr, x + barW7/2, barTop + actH/2 + 3);
-    }
-  });
-
-  // Calorie bars (below activity bars)
-  const calTop = chartTop + 12 + actH + gap;
-  const loggedDays = dayData.filter(d=>d.kcal>0);
-  if (loggedDays.length > 0) {
-    dayData.forEach((d,i) => {
-      const x = padX + i*barGroupW + (barGroupW-barW7)/2;
-      // Background
-      ctx.fillStyle='#252120';
-      ctx.beginPath(); ctx.roundRect(x, calTop, barW7, calH, 2); ctx.fill();
-      if (d.kcal>0) {
-        const fillH = Math.max(2, (d.kcal / maxKcal) * calH);
-        const overTarget = d.kcal > target;
-        ctx.fillStyle = overTarget ? '#e07070' : '#5aad8a';
-        ctx.beginPath(); ctx.roundRect(x, calTop+calH-fillH, barW7, fillH, 2); ctx.fill();
-      }
-    });
-    // Target dashed line
-    const targetY = calTop + calH - (target / maxKcal) * calH;
-    ctx.strokeStyle='#c4501a'; ctx.lineWidth=0.8; ctx.setLineDash([2,2]);
-    ctx.beginPath(); ctx.moveTo(padX, targetY); ctx.lineTo(CW-padX, targetY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='#c4501a'; ctx.font='7px DM Mono, monospace';
-    ctx.textAlign='right'; ctx.textBaseline='bottom';
-    ctx.fillText('target', CW-padX, targetY-1);
-    // Calorie label
-    ctx.fillStyle='#4a3e38'; ctx.textAlign='left'; ctx.textBaseline='bottom';
-    ctx.fillText('kcal', padX, calTop-1);
-  }
-
-  // ── ROW 5: Weight trend (only if 2+ weeks of data) ───────────
-  if (hasWeightTrend) {
-    const wtTop  = calTop + calH + gap + 4;
-    const wtH    = CH - wtTop - 18;
-    const wtW    = CW - padX*2;
-
-    ctx.strokeStyle='#2d2724'; ctx.lineWidth=1; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(0,wtTop-4); ctx.lineTo(CW,wtTop-4); ctx.stroke();
-
-    ctx.fillStyle='#4a3e38'; ctx.font='8px DM Mono, monospace';
-    ctx.textAlign='left'; ctx.textBaseline='top';
-    ctx.fillText('weight trend ───────────────────', padX, wtTop);
-
-    const minW = Math.min(...wPoints.map(p=>p.wt), goal1)-1;
-    const maxW = Math.max(sw,...wPoints.map(p=>p.wt))+1;
-    const xS = w => padX + ((w-1)/(TOTAL_WEEKS()-1))*wtW;
-    const yS = v => wtTop+12 + wtH - ((v-minW)/(maxW-minW))*wtH;
-
-    // Goal line
-    ctx.strokeStyle='#3a3430'; ctx.lineWidth=0.8; ctx.setLineDash([2,3]);
-    ctx.beginPath(); ctx.moveTo(padX,yS(goal1)); ctx.lineTo(padX+wtW,yS(goal1)); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Area fill
-    ctx.beginPath();
-    wPoints.forEach((p,i)=>{ i===0?ctx.moveTo(xS(p.w),yS(p.wt)):ctx.lineTo(xS(p.w),yS(p.wt)); });
-    ctx.lineTo(xS(wPoints[wPoints.length-1].w), wtTop+12+wtH);
-    ctx.lineTo(xS(wPoints[0].w), wtTop+12+wtH);
-    ctx.closePath();
-    const ag = ctx.createLinearGradient(0,wtTop,0,wtTop+wtH);
-    ag.addColorStop(0,'rgba(196,80,26,0.3)'); ag.addColorStop(1,'rgba(196,80,26,0)');
-    ctx.fillStyle=ag; ctx.fill();
-
-    // Line
-    ctx.beginPath();
-    wPoints.forEach((p,i)=>{ i===0?ctx.moveTo(xS(p.w),yS(p.wt)):ctx.lineTo(xS(p.w),yS(p.wt)); });
-    ctx.strokeStyle='#c4501a'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
-
-    // Last dot
-    const last=wPoints[wPoints.length-1];
-    ctx.beginPath(); ctx.arc(xS(last.w),yS(last.wt),3.5,0,Math.PI*2);
-    ctx.fillStyle='#c4501a'; ctx.fill();
-    ctx.beginPath(); ctx.arc(xS(last.w),yS(last.wt),3.5,0,Math.PI*2);
-    ctx.strokeStyle='#f5f2ee'; ctx.lineWidth=1.5; ctx.stroke();
-  }
-
-  // Watermark
-  ctx.fillStyle='#2d2724'; ctx.font='8px DM Mono, monospace';
-  ctx.textAlign='right'; ctx.textBaseline='bottom';
-  ctx.fillText('fitness tracker', CW-12, CH-6);
-
-  _shareCardDataUrl = canvas.toDataURL('image/png');
-}
 function downloadShareCard() {
   if (!_shareCardDataUrl) return;
   const a = document.createElement('a');
@@ -7092,20 +7103,12 @@ function shareToWhatsApp() {
   const { totalDeficit: def2, daysWithData: dwd2 } = calcWeeklyDeficit(currentWeek);
   const defStr2 = dwd2 > 0 ? (def2>=0?'+':'')+def2.toLocaleString()+' kcal' : '—';
   const msg = encodeURIComponent(
-    `💪 Fitness update — Week ${currentWeek} of ${TOTAL_WEEKS()}
-
-` +
-    `📉 Total lost: ${lost} lbs
-` +
-    `🎯 Goal 1 progress: ${pct}%
-` +
-    `🔥 Streak: ${streak} days
-` +
-    `⏱ Active this week: ${activeStr2}
-` +
-    `⚡ Week deficit: ${defStr2}
-
-` +
+    `💪 Fitness update — Week ${currentWeek} of ${TOTAL_WEEKS()}\n\n` +
+    `📉 Total lost: ${lost} lbs\n` +
+    `🎯 Goal 1 progress: ${pct}%\n` +
+    `🔥 Streak: ${streak} days\n` +
+    `⏱ Active this week: ${activeStr2}\n` +
+    `⚡ Week deficit: ${defStr2}\n\n` +
     `Tracking with my personal fitness tracker.`
   );
   window.open(`https://wa.me/?text=${msg}`, '_blank');
@@ -7123,13 +7126,86 @@ async function shareNative() {
   }
 }
 
-// Close modal on backdrop click
+// Close share modal on backdrop click
 document.addEventListener('click', e => {
   const modal = document.getElementById('shareModal');
   if (modal && e.target === modal) closeShareModal();
 });
 
-// ─── INIT — app bootstrap, load data, start ────────────────
+// ─── PWA INSTALL PROMPT ──────────────────────────────────────
+let _pwaInstallPrompt = null;
+const PWA_BANNER_KEY = 'ftPwaBannerDismissed';
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  showPwaBanner('android');
+});
+
+window.addEventListener('appinstalled', () => {
+  hidePwaBanner();
+  localStorage.setItem(PWA_BANNER_KEY, 'installed');
+});
+
+function showPwaBanner(mode) {
+  if (window.innerWidth > 640) return;
+  if (localStorage.getItem(PWA_BANNER_KEY)) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (window.navigator.standalone === true) return;
+  const banner = document.getElementById('pwaInstallBanner');
+  if (!banner) return;
+  banner.style.display = 'block';
+  if (mode === 'android') {
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.onclick = async () => {
+        if (!_pwaInstallPrompt) return;
+        _pwaInstallPrompt.prompt();
+        const { outcome } = await _pwaInstallPrompt.userChoice;
+        if (outcome === 'accepted') hidePwaBanner();
+        _pwaInstallPrompt = null;
+      };
+    }
+  } else if (mode === 'ios') {
+    const msg = document.getElementById('pwaInstallMsg');
+    if (msg) msg.innerHTML = 'Tap <strong>Share</strong> &#8599; then <strong>"Add to Home Screen"</strong>.';
+  }
+}
+
+function hidePwaBanner() {
+  const b = document.getElementById('pwaInstallBanner');
+  if (b) b.style.display = 'none';
+}
+
+function toggleExportMenu() {
+  const menu = document.getElementById('exportDropdownMenu');
+  if (menu) menu.classList.toggle('open');
+}
+function closeExportMenu() {
+  const menu = document.getElementById('exportDropdownMenu');
+  if (menu) menu.classList.remove('open');
+}
+// Close export menu when clicking outside
+document.addEventListener('click', e => {
+  const dd = document.getElementById('exportDropdown');
+  if (dd && !dd.contains(e.target)) closeExportMenu();
+});
+
+function dismissPwaBanner() {
+  hidePwaBanner();
+  localStorage.setItem(PWA_BANNER_KEY, 'dismissed');
+}
+
+// iOS Safari check (no beforeinstallprompt event)
+(function() {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isIos && isSafari && window.navigator.standalone !== true) {
+    setTimeout(() => showPwaBanner('ios'), 1500);
+  }
+})();
+
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
   if (local) { allData = JSON.parse(local); checkStartDateSetup(); render(); }
