@@ -3025,7 +3025,14 @@ function renderDays() {
     const dayCal = weekData && weekData.calories && weekData.calories[day];
     const dayEntries = dayCal ? MEALS.flatMap(m => dayCal[m] || []).concat(dayCal.entries || []) : [];
     const dayKcal = dayEntries.reduce((s, e) => s + (e.kcal || 0), 0);
-    if (dayKcal > 0) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal eaten</span></div>`;
+    const dayActsCard = getActivities(dd);
+    const dayBurnedCard = dd.customBurn !== undefined
+      ? dd.customBurn
+      : (dayActsCard.length > 0 ? dayActsCard.reduce((s,a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type]||0)), 0) : (EXERCISE_BURN[dd.activity||'']||0));
+    if (dayKcal > 0) {
+      const netCard = dayKcal - dayBurnedCard;
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal${dayBurnedCard > 0 ? ' · net ' + Math.round(netCard).toLocaleString() : ''}</span></div>`;
+    }
     if (dd.rpe) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--purple,#7c3aed);"></div><span>RPE ${dd.rpe}/10</span></div>`;
     if (dd.sleepHrs) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--blue);"></div><span>${dd.sleepHrs}h sleep</span></div>`;
     if (dd.mood) {
@@ -3490,8 +3497,10 @@ function renderWorkoutLogPanel(day) {
               <button onclick="removeExercise('${day}',${ei})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+              ${(ex.sets || []).length > 0 ? '<div style="display:flex;gap:3px;padding:2px 8px 2px;"><span style="font-size:9px;color:var(--text3);width:16px;">#</span><span style="font-size:9px;color:var(--text3);width:54px;text-align:center;">reps</span><span style="font-size:9px;color:var(--text3);margin-left:8px;text-align:center;">kg</span></div>' : ''}
               ${(ex.sets || []).map((s, si) => `
                 <div style="display:flex;align-items:center;gap:3px;background:var(--surface2);border-radius:6px;padding:4px 8px;">
+                  <span style="font-size:10px;color:var(--text3);width:16px;font-family:var(--mono);text-align:center;">${si+1}</span>
                   <input type="number" value="${s.reps}" min="0" max="100" placeholder="reps"
                     style="width:42px;border:none;background:transparent;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;text-align:center;"
                     oninput="updateSet('${day}',${ei},${si},'reps',this.value)">
@@ -5909,11 +5918,26 @@ function editCalEntry(meal, idx) {
       <select id="edit_meal_${meal}_${idx}" class="cal-day-select" style="font-size:12px;padding:5px 8px;">
         ${mealOptions}
       </select>
-      <input type="number" id="edit_kcal_${meal}_${idx}"  value="${e.kcal   ||''}" placeholder="kcal"      class="cal-num-input" min="0" max="5000" style="width:68px;">
-      <input type="number" id="edit_prot_${meal}_${idx}"  value="${e.protein||''}" placeholder="protein g" class="cal-num-input" min="0" max="500"  style="width:80px;">
-      <input type="number" id="edit_carbs_${meal}_${idx}" value="${e.carbs !=null?e.carbs:''}" placeholder="carbs g"  class="cal-num-input" min="0" max="500" style="width:72px;">
-      <input type="number" id="edit_fats_${meal}_${idx}"  value="${e.fats  !=null?e.fats :''}" placeholder="fats g"   class="cal-num-input" min="0" max="500" style="width:68px;">
-      <input type="number" id="edit_sugar_${meal}_${idx}" value="${e.sugar !=null?e.sugar:''}" placeholder="sugar g"  class="cal-num-input" min="0" max="500" style="width:72px;">
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:9px;color:var(--accent);font-weight:600;letter-spacing:0.04em;">KCAL</span>
+        <input type="number" id="edit_kcal_${meal}_${idx}" value="${e.kcal||''}" class="cal-num-input" min="0" max="5000" style="width:68px;">
+      </label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:9px;color:#2563eb;font-weight:600;letter-spacing:0.04em;">PROTEIN</span>
+        <input type="number" id="edit_prot_${meal}_${idx}" value="${e.protein||''}" class="cal-num-input" min="0" max="500" style="width:68px;">
+      </label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:9px;color:#d97706;font-weight:600;letter-spacing:0.04em;">CARBS</span>
+        <input type="number" id="edit_carbs_${meal}_${idx}" value="${e.carbs!=null?e.carbs:''}" class="cal-num-input" min="0" max="500" style="width:68px;">
+      </label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:9px;color:#7c3aed;font-weight:600;letter-spacing:0.04em;">FAT</span>
+        <input type="number" id="edit_fats_${meal}_${idx}" value="${e.fats!=null?e.fats:''}" class="cal-num-input" min="0" max="500" style="width:68px;">
+      </label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:9px;color:#e11d48;font-weight:600;letter-spacing:0.04em;">SUGAR</span>
+        <input type="number" id="edit_sugar_${meal}_${idx}" value="${e.sugar!=null?e.sugar:''}" class="cal-num-input" min="0" max="500" style="width:68px;">
+      </label>
       <button onclick="saveCalEntry('${meal}',${idx})" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
       <button onclick="renderCalEntries()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
     </div>
@@ -6065,7 +6089,7 @@ function updateCalTotals() {
   const dayActsAll = getActivities(dayActData);
   const burned = dayActData.customBurn !== undefined
     ? dayActData.customBurn
-    : (dayActsAll.length > 0 ? dayActsAll.reduce((s,a) => s + (EXERCISE_BURN[a.type]||0), 0) : (EXERCISE_BURN[dayActData.activity||'']||0));
+    : (dayActsAll.length > 0 ? dayActsAll.reduce((s,a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type]||0)), 0) : (EXERCISE_BURN[dayActData.activity||'']||0));
 
   const net = consumed - burned;
   const target = getTargetForWeek(currentWeek);
@@ -6596,7 +6620,7 @@ function renderProgressiveOverload() {
       return `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;">
         <span style="color:var(--text3);font-family:var(--mono);font-size:11px;">Wk ${s.week}</span>
         <span style="color:var(--text2);flex:1;padding:0 12px;">${setsStr}</span>
-        <span style="color:var(--text);font-family:var(--mono);font-size:11px;">${s.maxWeight > 0 ? s.maxWeight + 'kg max' : ''}</span>
+        <span style="color:var(--text);font-family:var(--mono);font-size:11px;">${(() => { const weights = s.sets.map(st => parseFloat(st.weight)||0).filter(w=>w>0); if (!weights.length) return '—'; const mn = Math.min(...weights), mx = Math.max(...weights); return mn === mx ? mx + 'kg' : mn + '–' + mx + 'kg'; })() || ''}</span>
       </div>`;
     }).join('');
 
