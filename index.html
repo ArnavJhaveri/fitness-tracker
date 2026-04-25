@@ -3029,9 +3029,13 @@ function renderDays() {
     const dayBurnedCard = dd.customBurn !== undefined
       ? dd.customBurn
       : (dayActsCard.length > 0 ? dayActsCard.reduce((s,a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type]||0)), 0) : (EXERCISE_BURN[dd.activity||'']||0));
+    // Show burned kcal regardless of whether food is logged
+    if (dayBurnedCard > 0) {
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--green);"></div><span>${Math.round(dayBurnedCard).toLocaleString()} kcal burned</span></div>`;
+    }
     if (dayKcal > 0) {
       const netCard = dayKcal - dayBurnedCard;
-      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal} kcal${dayBurnedCard > 0 ? ' · net ' + Math.round(netCard).toLocaleString() : ''}</span></div>`;
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal.toLocaleString()} kcal eaten${dayBurnedCard > 0 ? ' · net ' + Math.round(netCard).toLocaleString() : ''}</span></div>`;
     }
     if (dd.rpe) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--purple,#7c3aed);"></div><span>RPE ${dd.rpe}/10</span></div>`;
     if (dd.sleepHrs) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--blue);"></div><span>${dd.sleepHrs}h sleep</span></div>`;
