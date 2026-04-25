@@ -3002,7 +3002,7 @@ function renderDays() {
     }
 
     const planned = plan[i];
-    const activity = dd.activity || planned;
+    const activity = getPrimaryActivity(dd) || planned;
     const card = document.createElement('div');
     card.className = 'day-card' + (selectedDay === day ? ' selected' : '');
     card.onclick = () => selectDay(day);
@@ -3823,7 +3823,10 @@ function renderSummary() {
     if (consumed > 0) {
       totalFoodDays++;
       const dd2 = (wd.days && wd.days[day]) || {};
-      const burn2 = dd2.customBurn !== undefined ? dd2.customBurn : (EXERCISE_BURN[dd2.activity || ''] || 0);
+      const dd2Acts = getActivities(dd2);
+      const burn2 = dd2.customBurn !== undefined ? dd2.customBurn
+        : (dd2Acts.length > 0 ? dd2Acts.reduce((s,a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type]||0)), 0)
+        : (EXERCISE_BURN[dd2.activity||'']||0));
       if (Math.abs((consumed - burn2) - calTarget) <= 150) onTargetDays++;
       totalProtein += entries.reduce((s, e) => s + (e.protein || 0), 0);
       proteinDays++;
@@ -4352,6 +4355,9 @@ function copyWeekSummary() {
 function saveWeek() {
   const wv = parseFloat(document.getElementById('weekWeight').value);
   if (wv) getWeekData(currentWeek).weight = wv;
+  // Explicitly save weekly notes from textarea
+  const notesEl = document.getElementById('weekNotes');
+  if (notesEl) getWeekData(currentWeek).weekNotes = notesEl.value;
   autoPersist();
   const msg = document.getElementById('saveMsg');
   // Centre the message under the Save week button
@@ -5715,8 +5721,10 @@ function switchCalDay(day) {
   const picker = document.getElementById('foodServingPicker');
   if (picker) picker.remove();
   renderCalorie();
+  renderDays();           // keep day card highlight in sync with selected day
   const slider = document.getElementById('waterSlider');
   if (slider) slider.value = getWaterMl();
+  updateCalTotals();      // ensure burn/net reflects the new day
 }
 
 function renderCalorie() {
@@ -6865,6 +6873,8 @@ function importData(event) {
       renderHistory();
       const msg = document.getElementById('importMsg');
       if (msg) { msg.classList.add('show'); setTimeout(() => msg.classList.remove('show'), 3000); }
+      // Reset the file input so the same file can be re-imported if needed
+      event.target.value = '';
     } catch {
       alert('Could not read file. Make sure it is a valid fitness tracker backup (.json).');
     }
@@ -7417,6 +7427,159 @@ window.addEventListener('resize', () => {
 
 // ─── SHARE PROGRESS — canvas card, WhatsApp, download ──────
 let _shareCardDataUrl = null;
+
+function renderShareCard() {
+  const canvas = document.getElementById('shareCard');
+  if (!canvas) return;
+
+  // Collect data
+  const sw = START_WEIGHT();
+  let latestWt = null;
+  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+    const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
+  }
+  const totalLost = latestWt ? (sw - latestWt).toFixed(1) : null;
+  const { current: streak } = calcStreak();
+  const goal1 = GOAL1();
+  const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - goal1)) * 100)) : 0;
+
+  // Weight history for mini chart
+  const wPoints = [];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const d = peekWeekData(w);
+    if (d && d.weight) wPoints.push({ w, wt: d.weight });
+  }
+
+  // Canvas setup — 2x for retina
+  const CW = 380, CH = 240;
+  canvas.width  = CW * 2;
+  canvas.height = CH * 2;
+  canvas.style.width  = CW + 'px';
+  canvas.style.height = CH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#1a1714';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, CW, CH, 16);
+  ctx.fill();
+
+  // Subtle horizontal dividers
+  ctx.strokeStyle = '#2a2420';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 80); ctx.lineTo(CW, 80); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 160); ctx.lineTo(CW, 160); ctx.stroke();
+
+  // Header
+  ctx.fillStyle = '#f5f2ee';
+  ctx.font = 'bold 15px DM Sans, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Arnav — Fitness progress', 20, 16);
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 36);
+
+  // Phase pill
+  const ph = getPhase(currentWeek);
+  ctx.fillStyle = '#c4501a';
+  ctx.beginPath(); ctx.roundRect(CW - 80, 14, 64, 20, 6); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px DM Sans, system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Phase ${ph}`, CW - 48, 19);
+
+  // Stats row
+  const stats1 = [
+    { label: 'Start weight', val: sw + ' lbs' },
+    { label: 'Now', val: latestWt ? latestWt + ' lbs' : '—' },
+    { label: 'Lost', val: totalLost ? totalLost + ' lbs' : '—' },
+    { label: 'Streak', val: streak + ' days' },
+  ];
+  const cellW = CW / 4;
+  stats1.forEach((s, i) => {
+    const x = i * cellW + cellW / 2;
+    ctx.fillStyle = '#a89e93';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(s.label.toUpperCase(), x, 90);
+    ctx.fillStyle = '#f5f2ee';
+    ctx.font = 'bold 16px DM Sans, system-ui';
+    ctx.textBaseline = 'top';
+    ctx.fillText(s.val, x, 106);
+  });
+
+  // Progress bar toward Goal 1
+  const barX = 20, barY = 142, barW = CW - 40, barH = 8;
+  ctx.fillStyle = '#2a2420';
+  ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 4); ctx.fill();
+  if (pct > 0) {
+    ctx.fillStyle = '#c4501a';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW * pct / 100, barH, 4); ctx.fill();
+  }
+  ctx.fillStyle = '#a89e93';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`Goal 1 progress: ${pct}% (target ${goal1} lbs)`, barX, barY + 12);
+
+  // Mini weight chart
+  if (wPoints.length >= 2) {
+    const chartX = 20, chartY = 170, chartW = CW - 40, chartH = 46;
+    const minW = Math.min(...wPoints.map(p => p.wt)) - 1;
+    const maxW = Math.max(sw, ...wPoints.map(p => p.wt)) + 1;
+    const xS = i => chartX + (i / (TOTAL_WEEKS() - 1)) * chartW;
+    const yS = w => chartY + chartH - ((w - minW) / (maxW - minW)) * chartH;
+
+    // Goal line
+    ctx.strokeStyle = '#3a3430';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(chartX, yS(goal1));
+    ctx.lineTo(chartX + chartW, yS(goal1));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Weight line
+    ctx.beginPath();
+    wPoints.forEach((p, pi) => {
+      const x = xS(p.w - 1), y = yS(p.wt);
+      pi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#c4501a';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Last dot
+    const last = wPoints[wPoints.length - 1];
+    ctx.beginPath();
+    ctx.arc(xS(last.w - 1), yS(last.wt), 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#c4501a';
+    ctx.fill();
+
+    // Labels
+    ctx.fillStyle = '#6b5e55';
+    ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Weight trend', chartX, chartY - 2);
+    ctx.fillStyle = '#3a3430';
+    ctx.textAlign = 'right';
+    ctx.fillText('— Goal 1', chartX + chartW, yS(goal1) - 2);
+  }
+
+  // Watermark
+  ctx.fillStyle = '#3a3430';
+  ctx.font = '8px DM Mono, monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('fitness tracker', CW - 12, CH - 8);
+
+  _shareCardDataUrl = canvas.toDataURL('image/png');
+}
 
 function showShareModal() {
   const modal = document.getElementById('shareModal');
