@@ -3497,6 +3497,17 @@ function renderDays() {
     }
     if (dd.rpe) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--purple,#7c3aed);"></div><span>RPE ${dd.rpe}/10</span></div>`;
     if (dd.sleepHrs) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--blue);"></div><span>${dd.sleepHrs}h sleep</span></div>`;
+    // Water intake on day card — show if any water logged
+    const weekDataForWater = peekWeekData(currentWeek);
+    const dayWaterMl = weekDataForWater && weekDataForWater.water && weekDataForWater.water[day]
+      ? weekDataForWater.water[day] : 0;
+    const waterTargetForCard = WATER_TARGET_ML(day);
+    if (dayWaterMl > 0) {
+      const waterL    = (dayWaterMl / 1000).toFixed(1);
+      const waterPct  = Math.min(100, Math.round((dayWaterMl / waterTargetForCard) * 100));
+      const waterCol  = waterPct >= 100 ? 'var(--green)' : waterPct >= 60 ? '#2563eb' : 'var(--text3)';
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:#2563eb;"></div><span style="color:${waterCol};">💧 ${waterL}L${waterPct >= 100 ? ' ✓' : ' / ' + (waterTargetForCard/1000).toFixed(1) + 'L'}</span></div>`;
+    }
     if (dd.mood) {
       const moodEmoji = ['','😞','😕','😐','🙂','😄'][dd.mood];
       checksHtml += `<div class="check-item"><span>${moodEmoji}</span></div>`;
@@ -4273,7 +4284,7 @@ function renderWorkoutLogPanel(day) {
               <input type="text" value="${ex.exercise.replace(/"/g,'&quot;')}" placeholder="Exercise name"
                 style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
                 onchange="updateExerciseName('${day}',${ei},this.value)">
-              <button onclick="showExerciseDemo('${ex.exercise}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid var(--border2);" title="Watch form tutorial">▶ Demo</button>
+              <button onclick="showExerciseDemo(this.closest('[data-ei]').querySelector('input[type=text]').value || '${ex.exercise}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid var(--border2);" title="Watch form tutorial">▶ Demo</button>
             <button onclick="removeExercise('${day}',${ei})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
@@ -4688,124 +4699,190 @@ function saveAllSettings() {
 // Users can: view all plans, switch active plan, create a new plan.
 // No data is ever deleted when switching plans.
 
+// ─── PLANS SECTION — tabbed per-plan settings UI ─────────────────────────────
+// Each plan has its own tab. The active plan is highlighted.
+// Clicking a plan tab shows full settings for that plan.
+// "Goals & plan" section below still shows the active plan's quick-edit fields.
+
+let _selectedPlanTabId = null; // which plan tab is open in the UI
+
 function renderPlansSection() {
   const container = document.getElementById('plansSection');
   if (!container) return;
 
   migrateToPlanSystem();
-  const plans       = getPlans();
+  const plans        = getPlans();
   const activePlanId = allData._activePlanId;
 
-  // Plan cards
-  const planCards = plans.map(plan => {
-    const isActive    = plan.id === activePlanId;
-    const startGlobal = getPlanStartGlobalWeek(plan);
-    const startLabel  = plan.startDate
-      ? new Date(plan.startDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})
-      : 'No start date';
-    const totalW  = (plan.settings && plan.settings.totalWeeks)  || DEFAULTS.totalWeeks;
-    const endDate = plan.startDate ? (() => {
-      const d = new Date(plan.startDate);
-      d.setDate(d.getDate() + totalW * 7);
-      return d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
-    })() : '—';
+  // Default selected tab = active plan
+  if (!_selectedPlanTabId || !plans.find(p => p.id === _selectedPlanTabId)) {
+    _selectedPlanTabId = activePlanId;
+  }
 
-    return `
-      <div style="border:${isActive ? '2px solid var(--accent)' : '1px solid var(--border)'};
-                  border-radius:10px;padding:12px 14px;margin-bottom:8px;
-                  background:${isActive ? 'rgba(196,80,26,0.05)' : 'var(--surface)'};">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);">
-              ${escapeHtml(plan.name)}
-              ${isActive ? '<span style="font-size:10px;color:var(--accent);margin-left:6px;font-weight:500;">● ACTIVE</span>' : ''}
-            </div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono);">
-              ${startLabel} → ${endDate} · ${totalW} weeks
-            </div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);">
-              Goal: ${(plan.settings && plan.settings.startWeight) || '—'} → ${(plan.settings && plan.settings.goal1) || '—'} lbs
-              · ${(plan.settings && plan.settings.dailyTarget1) || '—'} kcal/day
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            ${!isActive ? `<button onclick="setActivePlan('${plan.id}')"
-              style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">
-              Set active
-            </button>` : ''}
-          </div>
-        </div>
-      </div>`;
+  // ── Plan tab bar ────────────────────────────────────────────────────────────
+  const tabBar = plans.map(plan => {
+    const isSelected = plan.id === _selectedPlanTabId;
+    const isActive   = plan.id === activePlanId;
+    return `<button onclick="selectPlanTab('${plan.id}')"
+      style="padding:6px 14px;border-radius:8px 8px 0 0;border:1px solid var(--border);
+             border-bottom:${isSelected ? '1px solid var(--bg)' : '1px solid var(--border)'};
+             background:${isSelected ? 'var(--bg)' : 'var(--surface)'};
+             color:${isActive ? 'var(--accent)' : 'var(--text2)'};
+             font-family:var(--sans);font-size:12px;font-weight:${isSelected?'600':'400'};
+             cursor:pointer;margin-right:4px;position:relative;bottom:-1px;">
+      ${escapeHtml(plan.name)}${isActive ? ' ●' : ''}
+    </button>`;
   }).join('');
 
-  // "New plan" form (collapsed by default)
-  const newPlanForm = `
-    <div id="newPlanFormWrap" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-top:6px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">New plan</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <label style="font-size:12px;color:var(--text2);">Plan name
-          <input id="newPlanName" type="text" placeholder="e.g. Maintenance 2026" value="Plan ${plans.length + 1}"
-            style="display:block;margin-top:3px;width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Start date
-          <input id="newPlanStartDate" type="date"
-            style="display:block;margin-top:3px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Total weeks
-          <input id="newPlanTotalWeeks" type="number" min="1" max="260" value="28"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Phase 1 weeks
-          <input id="newPlanPhase1Weeks" type="number" min="1" max="260" value="15"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Start weight (lbs)
-          <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Goal 1 (lbs)
-          <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Daily calorie target (kcal)
-          <input id="newPlanDailyTarget" type="number" min="500" max="5000"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
-        <label style="font-size:12px;color:var(--text2);">Maintenance calories (kcal)
-          <input id="newPlanMaintenance" type="number" min="500" max="8000"
-            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
-        </label>
+  // ── Selected plan content ────────────────────────────────────────────────────
+  const plan = plans.find(p => p.id === _selectedPlanTabId) || plans[0];
+  const isActivePlan = plan && plan.id === activePlanId;
+  const ps = plan ? (plan.settings || {}) : {};
+  const getPS = (key) => ps[key] != null ? ps[key] : DEFAULTS[key];
+
+  // Calculate derived values for display
+  const startLabel = plan && plan.startDate
+    ? new Date(plan.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+    : 'Not set';
+  const totalW = getPS('totalWeeks');
+  const p1w    = getPS('phase1Weeks');
+  const p2w    = Math.max(0, totalW - p1w);
+  const endDate = plan && plan.startDate ? (() => {
+    const d = new Date(plan.startDate);
+    d.setDate(d.getDate() + totalW * 7);
+    return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  })() : '—';
+
+  const planContent = plan ? `
+    <!-- Plan status bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div>
+        <span style="font-size:13px;font-weight:600;color:var(--text);">${escapeHtml(plan.name)}</span>
+        ${isActivePlan ? '<span style="font-size:10px;color:var(--accent);margin-left:8px;font-weight:600;">● ACTIVE</span>' : ''}
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono);">
+          ${startLabel} → ${endDate} · ${totalW} weeks
+        </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button onclick="saveNewPlan()"
-          style="padding:7px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">
-          Create plan
-        </button>
-        <button onclick="document.getElementById('newPlanFormWrap').style.display='none'"
-          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
-          Cancel
-        </button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${!isActivePlan ? `<button onclick="setActivePlan('${plan.id}')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Set as active</button>` : ''}
+        <button onclick="renamePlanPrompt('${plan.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Rename</button>
       </div>
-    </div>`;
+    </div>
+
+    <!-- Start date -->
+    <div style="margin-bottom:16px;">
+      <div class="set-label">Plan start date</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+        <input type="date" id="planStartDate_${plan.id}" value="${plan.startDate || ''}"
+          style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-family:var(--sans);font-size:13px;color:var(--text);">
+        <button onclick="savePlanStartDate('${plan.id}')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save date</button>
+      </div>
+    </div>
+
+    <!-- Plan structure -->
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Plan structure</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;">
+        <div><label class="set-label">Total weeks</label>
+          <input type="number" id="ps_totalWeeks_${plan.id}" value="${getPS('totalWeeks')}" min="1" max="260" step="1" class="set-input" oninput="updatePlanSettingLive('${plan.id}')"></div>
+        <div><label class="set-label">Phase 1 weeks</label>
+          <input type="number" id="ps_phase1Weeks_${plan.id}" value="${getPS('phase1Weeks')}" min="1" max="260" step="1" class="set-input" oninput="updatePlanSettingLive('${plan.id}')"></div>
+        <div><label class="set-label">Start weight (lbs)</label>
+          <input type="number" id="ps_startWeight_${plan.id}" value="${getPS('startWeight')}" min="50" max="500" step="0.5" class="set-input"></div>
+        <div><label class="set-label">Goal 1 — end of Phase 1 (lbs)</label>
+          <input type="number" id="ps_goal1_${plan.id}" value="${getPS('goal1')}" min="50" max="500" step="0.5" class="set-input"></div>
+        <div><label class="set-label">Goal 2 — final goal (lbs)</label>
+          <input type="number" id="ps_goal2_${plan.id}" value="${getPS('goal2')}" min="50" max="500" step="0.5" class="set-input"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">
+        Phase 1: ${p1w} wk · Phase 2: ${p2w} wk · Ends: ${endDate}
+      </div>
+    </div>
+
+    <!-- Calories & nutrition -->
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Calories &amp; nutrition</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+        <div><label class="set-label">Maintenance kcal/day</label>
+          <input type="number" id="ps_maintenance_${plan.id}" value="${getPS('maintenance')}" min="500" max="8000" step="50" class="set-input"></div>
+        <div><label class="set-label">Phase 1 daily target (kcal)</label>
+          <input type="number" id="ps_dailyTarget1_${plan.id}" value="${getPS('dailyTarget1')}" min="500" max="5000" step="50" class="set-input"></div>
+        <div><label class="set-label">Phase 2 daily target (kcal)</label>
+          <input type="number" id="ps_dailyTarget2_${plan.id}" value="${getPS('dailyTarget2')}" min="500" max="5000" step="50" class="set-input"></div>
+        <div><label class="set-label">Protein target (g/day)</label>
+          <input type="number" id="ps_proteinTarget_${plan.id}" value="${getPS('proteinTarget')}" min="0" max="500" class="set-input"></div>
+        <div><label class="set-label">Carb target (g/day)</label>
+          <input type="number" id="ps_carbTarget_${plan.id}" value="${getPS('carbTarget')}" min="0" max="1000" class="set-input"></div>
+        <div><label class="set-label">Fat target (g/day)</label>
+          <input type="number" id="ps_fatTarget_${plan.id}" value="${getPS('fatTarget')}" min="0" max="500" class="set-input"></div>
+        <div><label class="set-label">Sugar target (g/day)</label>
+          <input type="number" id="ps_sugarTarget_${plan.id}" value="${getPS('sugarTarget')}" min="0" max="500" class="set-input"></div>
+      </div>
+    </div>
+
+    <!-- Activity & water -->
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Activity &amp; hydration</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+        <div><label class="set-label">Water target (L/day)</label>
+          <input type="number" id="ps_waterTargetL_${plan.id}" value="${getPS('waterTargetL')}" min="0.5" max="10" step="0.1" class="set-input"></div>
+        <div><label class="set-label">Weekly workout hours goal</label>
+          <input type="number" id="ps_weeklyHoursGoal_${plan.id}" value="${getPS('weeklyHoursGoal')}" min="0" max="40" step="0.5" class="set-input"></div>
+      </div>
+    </div>
+
+    <!-- Save button -->
+    <button onclick="savePlanSettings('${plan.id}')"
+      style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
+      Save ${escapeHtml(plan.name)} settings
+    </button>
+  ` : '<div style="color:var(--text3);font-size:13px;">No plan selected.</div>';
 
   container.innerHTML = `
-    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">
-      All logged data (food, activities, sleep, workouts) is shared across plans.
-      Switching the active plan only changes which goals and phase structure are used for tracking.
+    <div style="display:flex;align-items:flex-end;margin-bottom:0;border-bottom:1px solid var(--border);padding-bottom:0;">
+      ${tabBar}
+      <button onclick="showNewPlanForm()" title="Add a new plan"
+        style="padding:6px 12px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:1px solid var(--border);
+               background:var(--surface);color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;margin-right:0;position:relative;bottom:-1px;">
+        + New plan
+      </button>
     </div>
-    ${planCards}
-    <button onclick="document.getElementById('newPlanFormWrap').style.display='block';this.style.display='none';"
-      style="width:100%;padding:8px;border:1px dashed var(--border2);border-radius:8px;background:none;color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:4px;">
-      + Start a new plan
-    </button>
-    ${newPlanForm}
+    <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:14px;background:var(--bg);">
+      ${planContent}
+    </div>
+    <!-- New plan form (hidden by default) -->
+    <div id="newPlanFormWrap" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Create new plan</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;">
+        <div style="grid-column:1/-1;"><label class="set-label">Plan name</label>
+          <input id="newPlanName" type="text" value="Plan ${plans.length + 1}" class="set-input" style="width:100%;box-sizing:border-box;"></div>
+        <div><label class="set-label">Start date</label>
+          <input id="newPlanStartDate" type="date" class="set-input"></div>
+        <div><label class="set-label">Total weeks</label>
+          <input id="newPlanTotalWeeks" type="number" value="28" min="1" max="260" class="set-input"></div>
+        <div><label class="set-label">Phase 1 weeks</label>
+          <input id="newPlanPhase1Weeks" type="number" value="15" min="1" max="260" class="set-input"></div>
+        <div><label class="set-label">Start weight (lbs)</label>
+          <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5" class="set-input" placeholder="${getPS('goal1') || ''}"></div>
+        <div><label class="set-label">Goal 1 (lbs)</label>
+          <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5" class="set-input"></div>
+        <div><label class="set-label">Daily calorie target</label>
+          <input id="newPlanDailyTarget" type="number" min="500" max="5000" step="50" class="set-input" placeholder="${getPS('dailyTarget1') || ''}"></div>
+        <div><label class="set-label">Maintenance calories</label>
+          <input id="newPlanMaintenance" type="number" min="500" max="8000" step="50" class="set-input" placeholder="${getPS('maintenance') || ''}"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveNewPlan()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Create plan</button>
+        <button onclick="document.getElementById('newPlanFormWrap').style.display='none'" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
   `;
 
-  // Pre-fill start date with day after current plan ends
+  // Pre-fill new plan start date = day after last plan ends
   const lastPlan = plans[plans.length - 1];
-  if (lastPlan && lastPlan.startDate && lastPlan.settings) {
+  if (lastPlan && lastPlan.startDate) {
     const endD = new Date(lastPlan.startDate);
-    endD.setDate(endD.getDate() + (lastPlan.settings.totalWeeks || 28) * 7);
+    endD.setDate(endD.getDate() + ((lastPlan.settings && lastPlan.settings.totalWeeks) || 28) * 7);
     const sdInput = document.getElementById('newPlanStartDate');
     if (sdInput) sdInput.value = endD.toISOString().slice(0,10);
   } else {
@@ -4813,6 +4890,103 @@ function renderPlansSection() {
     if (sdInput) sdInput.value = new Date().toISOString().slice(0,10);
   }
 }
+
+function selectPlanTab(planId) {
+  _selectedPlanTabId = planId;
+  renderPlansSection();
+}
+
+function showNewPlanForm() {
+  const wrap = document.getElementById('newPlanFormWrap');
+  if (wrap) wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
+function renamePlanPrompt(planId) {
+  const plan = getPlans().find(p => p.id === planId);
+  if (!plan) return;
+  const newName = prompt('Rename plan:', plan.name);
+  if (newName && newName.trim()) {
+    plan.name = newName.trim();
+    autoPersist();
+    renderPlansSection();
+  }
+}
+
+function savePlanStartDate(planId) {
+  const plan = getPlans().find(p => p.id === planId);
+  if (!plan) return;
+  const inp = document.getElementById('planStartDate_' + planId);
+  if (!inp || !inp.value) return;
+  const isFirst = plan.id === getFirstPlan()?.id;
+  if (isFirst) {
+    // Changing first plan start date remaps the entire calendar
+    if (allData._startDate && allData._startDate !== inp.value) {
+      if (!confirm('Changing Plan 1 start date re-maps your calendar. All logged data stays intact but appears on different calendar weeks. Continue?')) return;
+    }
+    allData._startDate = inp.value;
+  }
+  plan.startDate = inp.value;
+  if (plan.id === allData._activePlanId) currentWeek = getCurrentWeekFromDate();
+  autoPersist();
+  renderPlansSection();
+  render();
+}
+
+function savePlanSettings(planId) {
+  const plan = getPlans().find(p => p.id === planId);
+  if (!plan) return;
+  if (!plan.settings) plan.settings = {};
+
+  const fields = [
+    'totalWeeks','phase1Weeks','startWeight','goal1','goal2',
+    'maintenance','dailyTarget1','dailyTarget2',
+    'proteinTarget','carbTarget','fatTarget','sugarTarget',
+    'waterTargetL','weeklyHoursGoal',
+  ];
+  fields.forEach(key => {
+    const el = document.getElementById('ps_' + key + '_' + planId);
+    if (el && el.value !== '') {
+      const val = parseFloat(el.value);
+      if (!isNaN(val)) plan.settings[key] = val;
+    }
+  });
+
+  // If this is the active plan, sync allData._settings for legacy compat
+  if (planId === allData._activePlanId) {
+    allData._settings = { ...plan.settings };
+  }
+  autoPersist();
+  renderPlansSection();
+  if (planId === allData._activePlanId) {
+    renderProgress();
+    updateSettingsCalcs();
+    renderDays();
+  }
+  // Show save confirmation
+  const btn = document.querySelector('[onclick="savePlanSettings(\'' + planId + '\')"]');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = 'Saved ✓';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = 'var(--accent)'; }, 2000);
+  }
+}
+
+function updatePlanSettingLive(planId) {
+  // Live preview of phase weeks when fields change
+  const totalEl = document.getElementById('ps_totalWeeks_' + planId);
+  const p1El    = document.getElementById('ps_phase1Weeks_' + planId);
+  // Just re-render the section to update the derived display
+  // (lightweight: only if this is the currently selected tab)
+  if (planId === _selectedPlanTabId) {
+    const plan = getPlans().find(p => p.id === planId);
+    if (plan && totalEl) plan.settings = { ...(plan.settings||{}), totalWeeks: parseInt(totalEl.value)||28 };
+    if (plan && p1El)    plan.settings.phase1Weeks = parseInt(p1El.value)||15;
+    renderPlansSection();
+  }
+}
+
+
 
 function saveNewPlan() {
   const name        = document.getElementById('newPlanName')?.value.trim() || ('Plan ' + (getPlans().length + 1));
@@ -5781,11 +5955,26 @@ function editTemplateItem(templateIdx, itemIdx) {
   div.innerHTML = portionSection + `
     <input type="text" id="tplEdit_${templateIdx}_${itemIdx}_name" value="${item.name.replace(/"/g,'&quot;')}"
       style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;">
-    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_kcal"  value="${item.kcal || ''}"    placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:62px;">
-    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_prot"  value="${item.protein || ''}" placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:62px;">
-    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_carbs" value="${item.carbs ?? ''}"   placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:62px;">
-    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_fats"  value="${item.fats ?? ''}"    placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:58px;">
-    <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_sugar" value="${item.sugar ?? ''}"   placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:62px;">
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:var(--accent);font-weight:600;letter-spacing:0.04em;">KCAL</span>
+      <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_kcal"  value="${item.kcal || ''}"    class="cal-num-input" min="0" max="5000" style="width:60px;">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#2563eb;font-weight:600;letter-spacing:0.04em;">PROTEIN</span>
+      <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_prot"  value="${item.protein || ''}" class="cal-num-input" min="0" max="500"  style="width:60px;">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#d97706;font-weight:600;letter-spacing:0.04em;">CARBS</span>
+      <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_carbs" value="${item.carbs ?? ''}"   class="cal-num-input" min="0" max="500"  style="width:60px;">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#7c3aed;font-weight:600;letter-spacing:0.04em;">FAT</span>
+      <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_fats"  value="${item.fats ?? ''}"    class="cal-num-input" min="0" max="500"  style="width:60px;">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#e11d48;font-weight:600;letter-spacing:0.04em;">SUGAR</span>
+      <input type="number" id="tplEdit_${templateIdx}_${itemIdx}_sugar" value="${item.sugar ?? ''}"   class="cal-num-input" min="0" max="500"  style="width:60px;">
+    </label>
     <button onclick="saveTplItemEdit(${templateIdx},${itemIdx})" style="padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
     <button onclick="document.getElementById('tplEditRow_${templateIdx}_${itemIdx}').remove()" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
   `;
