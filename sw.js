@@ -2,7 +2,7 @@
 // Handles background push notifications and offline caching.
 // Registered from initReminders() in the main app.
 
-const CACHE_NAME = 'fitness-tracker-v1';
+const CACHE_NAME = 'fitness-tracker-v2'; // bumped to invalidate cached broken build
 
 // ── Install: cache the app shell ─────────────────────────────────────────────
 self.addEventListener('install', event => {
