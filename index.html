@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fitness Tracker">
   <link rel="manifest" href="manifest.json">
+  <link rel="serviceworker" href="sw.js">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
 <title>Arnav — Fitness Tracker</title>
@@ -1229,6 +1230,11 @@
         <div class="prog-val" id="weeklyDeficit">— <span>kcal</span></div>
         <div class="prog-sub" id="weeklyDeficitSub">Mon–Sun total</div>
       </div>
+      <div class="prog-stat" style="grid-column: 1 / -1;">
+        <div class="prog-label">Weight trend <span id="weightSparklineRange" style="font-weight:400;"></span></div>
+        <canvas id="weightSparkline" height="40" style="width:100%;display:block;margin-top:6px;"></canvas>
+        <div class="prog-sub" id="weightSparklineSub" style="margin-top:4px;"></div>
+      </div>
     </div>
 
     <!-- START DATE SETUP -->
@@ -1321,13 +1327,61 @@
         <div class="cal-stat"><div class="cal-stat-label">Net intake</div><div class="cal-stat-val" id="calNet">0 <small>kcal</small></div></div>
         <div class="cal-stat"><div class="cal-stat-label">Daily target</div><div class="cal-stat-val" id="calTarget">1,850 <small>kcal</small></div></div>
       </div>
-      <div class="cal-bar-wrap">
-        <div class="cal-bar-labels"><span>0</span><span id="calBarMid">925</span><span id="calBarTarget">Target: 1,850</span></div>
-        <div class="cal-bar-bg"><div class="cal-bar-fill" id="calBarFill" style="width:0%;background:var(--green);"></div></div>
+      <!-- FEATURE: 3-segment calorie budget bar — eaten / burned / remaining -->
+      <div class="cal-bar-wrap" style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#d97706;"></span>Eaten
+            </span>
+            <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#16a34a;"></span>Burned
+            </span>
+            <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--border2);"></span>Remaining
+            </span>
+          </div>
+          <span id="calBudgetLabel" style="font-size:10px;color:var(--text3);font-family:var(--mono);"></span>
+        </div>
+        <div class="cal-bar-bg" style="height:14px;border-radius:7px;overflow:hidden;display:flex;">
+          <div id="calBarEaten"  style="height:100%;background:#d97706;transition:width 0.3s;width:0%;min-width:0;"></div>
+          <div id="calBarBurned" style="height:100%;background:#16a34a;transition:width 0.3s;width:0%;min-width:0;"></div>
+          <div id="calBarRem"    style="height:100%;background:var(--surface2);transition:width 0.3s;flex:1;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <span style="font-size:10px;color:var(--text3);">0</span>
+          <span id="calBarTarget" style="font-size:10px;color:var(--text3);">Target: 1,850</span>
+        </div>
+        <!-- Legacy hidden fill for backward compat with any remaining references -->
+        <div id="calBarFill" style="display:none;"></div>
+        <div id="calBarMid"  style="display:none;"></div>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Search food database</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Search food database</div>
+          <button onclick="toggleNLEntry()" id="nlEntryToggle"
+            style="font-size:10px;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;"
+            title="Type a meal description like '2 eggs and toast with butter'">✏ Describe meal</button>
+        </div>
+      </div>
+      <!-- FEATURE: Natural language food entry -->
+      <div id="nlEntryPanel" style="display:none;background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+          Describe what you ate — e.g. <em>"200g chicken breast with rice and salad"</em> or <em>"2 scrambled eggs and toast"</em>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="nlFoodInput" placeholder="e.g. 2 eggs, 100g oats with milk and banana…"
+            style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')parseNLFood()">
+          <button onclick="parseNLFood()"
+            style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">
+            Parse
+          </button>
+        </div>
+        <div id="nlParseStatus" style="font-size:12px;color:var(--text3);margin-top:6px;display:none;"></div>
+        <div id="nlParseResults" style="margin-top:8px;"></div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
@@ -1338,9 +1392,15 @@
           <button id="mealBtn_snacks" onclick="setActiveMeal('snacks')" class="meal-tab-btn">Snacks</button>
         </div>
         <div style="display:flex;gap:6px;">
-          <input type="text" id="foodSearchInput" placeholder="Search for a food — e.g. banana, dal, paneer, greek yoghurt..." style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')searchFood()">
+          <input type="text" id="foodSearchInput" placeholder="Search for a food — e.g. banana, dal, paneer, greek yoghurt..." style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;" onfocus="showFoodSuggestions(this.value)" onblur="setTimeout(()=>hideFoodSuggestions(),200)" oninput="showFoodSuggestions(this.value)" onkeydown="if(event.key==='Enter')searchFood();if(event.key==='Escape')hideFoodSuggestions()">
+          <button onclick="openBarcodeScanner()" title="Scan barcode of packaged food"
+            style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-size:14px;flex-shrink:0;">
+            📷
+          </button>
           <button onclick="searchFood()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;">Search</button>
         </div>
+        <!-- FEATURE: Food search history suggestions dropdown -->
+        <div id="foodSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:101;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);"></div>
         <div id="foodSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:100;max-height:280px;overflow-y:auto;margin-top:4px;box-shadow:0 4px 16px rgba(0,0,0,0.08);"></div>
       </div>
       <div id="foodSearchStatus" style="font-size:12px;color:var(--text3);margin-bottom:8px;min-height:16px;"></div>
@@ -1371,7 +1431,13 @@
             <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;"><input type="checkbox" id="trackSugar" onchange="saveMacroPrefs()" style="accent-color:var(--accent);"> Sugar</label>
           </div>
         </div>
-        <div id="macroStats"></div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div id="macroStats" style="flex:1;"></div>
+          <div style="flex-shrink:0;text-align:center;">
+            <canvas id="macroPieChart" width="80" height="80" style="display:block;"></canvas>
+            <div id="macroPieLegend" style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.6;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- WATER TRACKER -->
@@ -1485,7 +1551,10 @@
       <button class="save-btn" onclick="saveWeek()">Save week</button>
 
       <!-- Copy summary -->
-      <button class="action-row-btn" onclick="copyWeekSummary()" title="Copy a text summary of this week to clipboard">
+      <button class="action-row-btn" onclick="copyLastWeekPlan()" title="Copy all activities, notes and workout data from last week into this week as a starting template">
+        <span>⟳</span> Copy last week
+      </button>
+      <button class="action-row-btn" onclick="copyWeekSummary()"  title="Copy a text summary of this week to clipboard">
         <span>⎘</span> Copy summary
       </button>
       <span class="save-msg" id="copyMsg" style="color:var(--green);display:none;">Copied ✓</span>
@@ -1582,6 +1651,36 @@
     <div class="section-title" style="margin-top:8px;">Weekly activity log</div>
     <div class="history-card" id="activityHistory">
       <div style="font-size:13px; color:var(--text3); padding: 8px 0;">Activity history will appear here after saving weeks.</div>
+    </div>
+
+    <!-- FEATURE: Planned vs Actual compliance chart -->
+    <div class="section-title" style="margin-top:8px;">Plan compliance</div>
+    <div class="history-card" id="complianceCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:12px;color:var(--text3);">Planned workouts completed per week</div>
+        <div style="display:flex;gap:10px;font-size:11px;color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#16a34a;display:inline-block;"></span>Done</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#fca5a5;display:inline-block;"></span>Skipped</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--surface2);display:inline-block;"></span>Rest</span>
+        </div>
+      </div>
+      <div id="complianceChart" style="overflow-x:auto;"></div>
+      <div id="complianceEmpty" style="font-size:13px;color:var(--text3);padding:8px 0;display:none;">Log at least one week to see compliance data.</div>
+    </div>
+
+    <!-- FEATURE: RPE / Mood / Sleep trends chart -->
+    <div class="section-title" style="margin-top:8px;">Wellbeing trends</div>
+    <div class="history-card" id="wellbeingTrendsCard">
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;align-items:center;font-size:11px;color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#7c3aed;border-radius:2px;display:inline-block;"></span>RPE</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#f59e0b;border-radius:2px;display:inline-block;"></span>Mood</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:#2563eb;border-radius:2px;display:inline-block;"></span>Sleep (h)</span>
+        </div>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto;">Last 8 weeks</span>
+      </div>
+      <canvas id="wellbeingChart" height="80" style="width:100%;display:block;"></canvas>
+      <div id="wellbeingChartEmpty" style="font-size:13px;color:var(--text3);padding:8px 0;display:none;">Log RPE, mood and sleep hours to see trends here.</div>
     </div>
   </div>
 
@@ -2315,6 +2414,32 @@ async function changePassword() {
 
 // ─── STATE — app globals, defaults, settings ───────────────
 // Default values — overridden by user settings stored in allData._settings
+// ─── API RATE LIMITING — throttle external fetch calls to prevent abuse ───────
+// Simple token-bucket per endpoint: max N calls per 60s window.
+const _apiCallLog = {};
+function checkRateLimit(endpoint, maxPerMinute = 20) {
+  const now  = Date.now();
+  if (!_apiCallLog[endpoint]) _apiCallLog[endpoint] = [];
+  // Remove entries older than 60s
+  _apiCallLog[endpoint] = _apiCallLog[endpoint].filter(t => now - t < 60000);
+  if (_apiCallLog[endpoint].length >= maxPerMinute) return false;
+  _apiCallLog[endpoint].push(now);
+  return true;
+}
+
+// Throttled fetch wrapper — rejects with error if rate limit hit
+async function rateLimitedFetch(endpoint, url, options, maxPerMinute = 20) {
+  if (!checkRateLimit(endpoint, maxPerMinute)) {
+    throw new Error(`Rate limit reached for ${endpoint}. Please wait a moment.`);
+  }
+  return fetch(url, options);
+}
+
+
+// ─── API KEYS — move to server-side env vars when deploying multi-user ──────
+const USDA_API_KEY = 'PJygmDRllSrraLskIaJ9pT0lQyFnBJzu7euenKgO'; // USDA FoodData Central
+const OFF_API_URL  = 'https://world.openfoodfacts.org/api/v2/product/'; // Open Food Facts
+
 const DEFAULTS = { startWeight: 168, goal1: 155.5, goal2: 143, dailyTarget1: 1750, dailyTarget2: 1750, waterTargetL: 2.5, proteinTarget: 120, carbTarget: 175, fatTarget: 55, sugarTarget: 35, totalWeeks: 35, phase1Weeks: 18, maintenance: 2100, weeklyHoursGoal: 4 };
 
 function getSetting(key) {
@@ -2332,7 +2457,21 @@ const GOAL1           = () => getSetting('goal1');
 const GOAL2           = () => getSetting('goal2');
 const DAILY_TARGET    = () => getSetting('dailyTarget1');
 const DAILY_TARGET2   = () => getSetting('dailyTarget2');
-const WATER_TARGET_ML = () => Math.round(getSetting('waterTargetL') * 1000);
+const WATER_TARGET_ML = (day) => {
+  // ── Adaptive water target: +500ml on workout days ──────────────────────────
+  const baseL   = getSetting('waterTargetL');
+  const baseMl  = Math.round(baseL * 1000);
+  const checkDay = day || calDay;
+  if (!checkDay) return baseMl;
+  const dd = getDayData ? getDayData(currentWeek, checkDay) : null;
+  if (!dd) return baseMl;
+  const acts = (typeof getActivities === 'function') ? getActivities(dd) : [];
+  const primary = (typeof getPrimaryActivity === 'function') ? getPrimaryActivity(dd) : (dd.activity || '');
+  const isWorkout = acts.length > 0
+    ? acts.some(a => a.type && !a.type.toLowerCase().includes('rest'))
+    : (primary && !primary.toLowerCase().includes('rest'));
+  return isWorkout ? baseMl + 500 : baseMl;
+};
 const TOTAL_WEEKS     = () => getSetting('totalWeeks');
 const PHASE1_WEEKS    = () => getSetting('phase1Weeks');
 
@@ -2546,6 +2685,18 @@ function getDayData(w, d) {
   return dd;
 }
 
+// ─── HTML ESCAPE UTILITY — prevent XSS when inserting user strings into innerHTML ─
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+
 // Get the activities array (always returns array, never null)
 function getActivities(dd) {
   return dd.activities || [];
@@ -2705,6 +2856,130 @@ function changeWeek(dir) {
   render();
 }
 
+// ─── WEIGHT SPARKLINE — mini trend chart in progress banner ─────────────────
+function renderWeightSparkline() {
+  const canvas = document.getElementById('weightSparkline');
+  if (!canvas) return;
+
+  // Collect all weight entries across all weeks
+  const points = [];
+  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    const wd = peekWeekData(w);
+    if (wd && wd.weight) {
+      const ws = getWeekStartDate(w);
+      points.push({ w, weight: wd.weight, date: ws });
+    }
+  }
+
+  const rangeEl = document.getElementById('weightSparklineRange');
+  const subEl   = document.getElementById('weightSparklineSub');
+
+  if (points.length < 2) {
+    canvas.style.display = 'none';
+    if (rangeEl) rangeEl.textContent = '';
+    if (subEl)   subEl.textContent = points.length === 1 ? 'Log more weekly weights to see trend' : 'No weight data yet';
+    return;
+  }
+  canvas.style.display = 'block';
+
+  // Show date range label
+  const first = points[0], last = points[points.length - 1];
+  if (rangeEl && first.date && last.date) {
+    rangeEl.textContent = `· ${formatDate(first.date, {day:'numeric',month:'short'})} – ${formatDate(last.date, {day:'numeric',month:'short'})}`;
+  }
+
+  // Canvas setup — 2x resolution for retina
+  const DPR = window.devicePixelRatio || 2;
+  const W   = canvas.offsetWidth || canvas.parentElement.offsetWidth || 600;
+  const H   = 40;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  // Value range
+  const weights  = points.map(p => p.weight);
+  const goal1    = GOAL1();
+  const startWt  = START_WEIGHT();
+  const minVal   = Math.min(...weights, goal1) - 1;
+  const maxVal   = Math.max(...weights, startWt) + 1;
+  const PAD_L = 4, PAD_R = 4, PAD_T = 4, PAD_B = 4;
+  const chartW   = W - PAD_L - PAD_R;
+  const chartH   = H - PAD_T - PAD_B;
+
+  const xOf = i  => PAD_L + (i / (points.length - 1)) * chartW;
+  const yOf = v  => PAD_T + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
+
+  // CSS variables aren't available in canvas — use hardcoded theme colours
+  const isDark  = document.body.classList.contains('dark') || 
+                  window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const lineCol = '#c4501a';   // accent
+  const goalCol = 'rgba(159,225,203,0.5)'; // green-bg tint
+  const dotCol  = '#c4501a';
+  const gridCol = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textCol = isDark ? '#a89e93' : '#a89e93';
+
+  // Goal line
+  ctx.save();
+  ctx.strokeStyle = goalCol;
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(PAD_L, yOf(goal1));
+  ctx.lineTo(PAD_L + chartW, yOf(goal1));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Area fill under line
+  ctx.save();
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    i === 0 ? ctx.moveTo(xOf(i), yOf(p.weight)) : ctx.lineTo(xOf(i), yOf(p.weight));
+  });
+  ctx.lineTo(xOf(points.length - 1), H);
+  ctx.lineTo(xOf(0), H);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(196,80,26,0.08)';
+  ctx.fill();
+  ctx.restore();
+
+  // Weight line
+  ctx.save();
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    i === 0 ? ctx.moveTo(xOf(i), yOf(p.weight)) : ctx.lineTo(xOf(i), yOf(p.weight));
+  });
+  ctx.strokeStyle = lineCol;
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = 'round';
+  ctx.lineCap     = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // Data dots
+  points.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(xOf(i), yOf(p.weight), i === points.length - 1 ? 4 : 2.5, 0, Math.PI * 2);
+    ctx.fillStyle   = dotCol;
+    ctx.strokeStyle = '#f5f2ee';
+    ctx.lineWidth   = 1.5;
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // Sub-label: total lost + rate
+  if (subEl) {
+    const totalLost = (first.weight - last.weight).toFixed(1);
+    const weeksSpan = last.w - first.w || 1;
+    const rate      = Math.abs(totalLost / weeksSpan).toFixed(2);
+    const sign      = totalLost > 0 ? '↓' : totalLost < 0 ? '↑' : '→';
+    subEl.textContent = `${sign} ${Math.abs(totalLost)} lbs over ${weeksSpan} wk${weeksSpan > 1 ? 's' : ''} · ~${rate} lbs/wk`;
+  }
+}
+
+
 // ─── RENDER — main render loop, progress, weight ───────────
 function render() {
   const ws = getWeekStartDate(currentWeek);
@@ -2787,15 +3062,16 @@ function calcWeeklyDeficit(weekNum) {
     const consumed = entries.reduce((s, e) => s + (e.kcal || 0), 0);
 
     const dd = (wd && wd.days && wd.days[day]) || {};
-    const act = dd.activity || '';
+    const defActs = getActivities(dd);
     const burned = dd.customBurn !== undefined
       ? dd.customBurn
-      : (EXERCISE_BURN[act] || 0);
+      : (defActs.length > 0
+          ? defActs.reduce((s,a) => s + (a.burn !== undefined ? a.burn : (EXERCISE_BURN[a.type]||0)), 0)
+          : (EXERCISE_BURN[dd.activity||''] || 0));
+    const hasActivity = defActs.length > 0 || !!dd.activity;
 
-    if (consumed > 0 || burned > 0 || act) {
-      // Real deficit = maintenance − (consumed − exercise burn)
-      // Exercise burn is already subtracted from net since it represents
-      // calories burned above baseline maintenance
+    if (consumed > 0 || burned > 0 || hasActivity) {
+      // deficit = maintenance − net, where net = consumed − exercise burn
       const net = consumed - burned;
       totalDeficit += (maintenance - net);
       daysWithData++;
@@ -2859,6 +3135,8 @@ function renderProgress() {
       if (defSub) defSub.textContent = `surplus vs maintenance · ${daysWithData}d`;
     }
   }
+
+  renderWeightSparkline();
 }
 
 let weightNoteTimer = null;
@@ -3317,6 +3595,7 @@ function clearWorkout(day) {
   autoPersist();
   renderDays();
   renderSummary();
+  renderProgress();  // update streak + deficit banner
   if (day === calDay) updateCalTotals();
   // Re-render the detail panel so it reflects cleared state
   if (selectedDay === day) renderDayDetail(day);
@@ -3340,6 +3619,7 @@ function clearSection(day, section) {
     invalidateStreakCache();
     renderDays();          // update day card badge/tag to planned activity
     renderSummary();
+    renderProgress();      // update streak + deficit banner
     if (day === calDay) updateCalTotals();
   } else if (section === 'checklist') {
     dd.core = false;
@@ -3425,6 +3705,307 @@ function saveDaySleep(day, val) {
   autoPersist();
 }
 
+// ─── PERSONAL RECORDS — detect & display PRs in workout log ─────────────────
+
+// Check if today's session sets a new max weight or volume PR for any exercise.
+// Returns array of { exercise, type, value, prev } for new PRs.
+function detectPRs(day) {
+  const log = getWorkoutLog(day);
+  if (!log || !log.entries || log.type !== 'weights') return [];
+
+  const prs = [];
+
+  log.entries.forEach(entry => {
+    const name = (entry.name || '').trim();
+    if (!name || !entry.sets || !entry.sets.length) return;
+
+    const sets = entry.sets.filter(s => s.reps > 0 && s.weight > 0);
+    if (!sets.length) return;
+
+    const todayMax = Math.max(...sets.map(s => parseFloat(s.weight) || 0));
+    const todayVol = sets.reduce((s, set) => s + ((parseFloat(set.reps)||0) * (parseFloat(set.weight)||0)), 0);
+
+    // Search all previous weeks for this exercise's best max weight and volume
+    let prevMax = 0, prevVol = 0;
+    for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+      if (w === currentWeek) continue;
+      const wd = peekWeekData(w);
+      if (!wd) continue;
+      DAYS.forEach(d => {
+        const dd = (wd.days && wd.days[d]) || {};
+        const wl = dd.workoutLog;
+        if (!wl || !wl.entries) return;
+        wl.entries.forEach(e => {
+          if ((e.name || '').trim().toLowerCase() !== name.toLowerCase()) return;
+          (e.sets || []).forEach(s => {
+            const w2 = parseFloat(s.weight) || 0;
+            const r2 = parseFloat(s.reps)   || 0;
+            if (w2 > prevMax) prevMax = w2;
+            prevVol += r2 * w2;
+          });
+        });
+      });
+    }
+
+    if (todayMax > prevMax && prevMax > 0) {
+      prs.push({ exercise: name, type: 'weight', value: todayMax, prev: prevMax });
+    }
+    if (todayVol > prevVol && prevVol > 0) {
+      prs.push({ exercise: name, type: 'volume', value: Math.round(todayVol), prev: Math.round(prevVol) });
+    }
+  });
+
+  return prs;
+}
+
+// Show PR banner in the workout log panel
+// ─── PERSONAL RECORDS — detect & display PRs ───────────────
+function renderPRBanner(day) {
+  const prs = detectPRs(day);
+  const bannerId = `prBanner_${day}`;
+  let banner = document.getElementById(bannerId);
+
+  if (!prs.length) {
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  if (!banner) {
+    // Insert before workout log panel
+    const panel = document.getElementById(`workoutLogPanel_${day}`);
+    if (!panel) return;
+    banner = document.createElement('div');
+    banner.id = bannerId;
+    panel.parentNode.insertBefore(banner, panel);
+  }
+
+  banner.style.display = 'block';
+  banner.style.cssText = `display:block;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;margin-bottom:8px;`;
+  banner.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:4px;">🏆 New personal records!</div>
+    ${prs.map(pr => `
+      <div style="font-size:12px;color:#78350f;margin-top:2px;">
+        <strong>${pr.exercise}</strong> —
+        ${pr.type === 'weight'
+          ? `${pr.value} kg max weight <span style="color:#92400e;">(was ${pr.prev} kg)</span>`
+          : `${pr.value.toLocaleString()} kg·reps volume <span style="color:#92400e;">(was ${pr.prev.toLocaleString()})</span>`}
+      </div>`).join('')}
+  `;
+}
+
+// Mark PR days on day cards with a trophy badge
+function getDayPRCount(day) {
+  const log = getWorkoutLog(day);
+  if (!log || log.type !== 'weights') return 0;
+  return detectPRs(day).length;
+}
+
+
+// ─── EXERCISE DEMO — GIF / YouTube lookup per exercise name ─────────────────
+// Maps common exercise names to YouTube short embed URLs (mobile-friendly)
+// Extend this table with any exercise you add to your program
+
+const EXERCISE_DEMOS = {
+  // Running / Cardio
+  'run':              'https://www.youtube.com/embed/kVnyY17VS9Y',
+  'tempo run':        'https://www.youtube.com/embed/kVnyY17VS9Y',
+  'incline walk':     'https://www.youtube.com/embed/tBHM2zZcAlY',
+  'walk':             'https://www.youtube.com/embed/tBHM2zZcAlY',
+
+  // Chest
+  'bench press':      'https://www.youtube.com/embed/rT7DgCr-3pg',
+  'incline bench':    'https://www.youtube.com/embed/IP4oeKh1Sd4',
+  'push up':          'https://www.youtube.com/embed/IODxDxX7oi4',
+  'push ups':         'https://www.youtube.com/embed/IODxDxX7oi4',
+  'chest fly':        'https://www.youtube.com/embed/eozdVDA78K0',
+  'chest press':      'https://www.youtube.com/embed/rT7DgCr-3pg',
+
+  // Back
+  'pull up':          'https://www.youtube.com/embed/eGo4IYlbE5g',
+  'pull ups':         'https://www.youtube.com/embed/eGo4IYlbE5g',
+  'lat pulldown':     'https://www.youtube.com/embed/CAwf7n6Luuc',
+  'row':              'https://www.youtube.com/embed/GZbfZ033f74',
+  'bent over row':    'https://www.youtube.com/embed/6FZHJGzMFEc',
+  'cable row':        'https://www.youtube.com/embed/GZbfZ033f74',
+  'deadlift':         'https://www.youtube.com/embed/op9kVnSso6Q',
+
+  // Shoulders
+  'shoulder press':   'https://www.youtube.com/embed/B-aVuyhvLHU',
+  'overhead press':   'https://www.youtube.com/embed/2yjwXTZQDDI',
+  'lateral raise':    'https://www.youtube.com/embed/3VcKaXpzqRo',
+  'front raise':      'https://www.youtube.com/embed/sOgubItKiK0',
+  'face pull':        'https://www.youtube.com/embed/rep-qVOkqgk',
+
+  // Arms
+  'bicep curl':       'https://www.youtube.com/embed/ykJmrZ5v0Oo',
+  'bicep curls':      'https://www.youtube.com/embed/ykJmrZ5v0Oo',
+  'hammer curl':      'https://www.youtube.com/embed/zC3nLlEvin4',
+  'tricep pushdown':  'https://www.youtube.com/embed/2-LAMcpzODU',
+  'tricep dip':       'https://www.youtube.com/embed/6kALZikXxLc',
+  'skull crusher':    'https://www.youtube.com/embed/d_KZxkY_0cM',
+
+  // Legs
+  'squat':            'https://www.youtube.com/embed/ultWZbUMPL8',
+  'squats':           'https://www.youtube.com/embed/ultWZbUMPL8',
+  'leg press':        'https://www.youtube.com/embed/IZxyjW7MPJQ',
+  'leg curl':         'https://www.youtube.com/embed/ELOCsoDSmrg',
+  'leg extension':    'https://www.youtube.com/embed/YyvSfVjQeL0',
+  'lunge':            'https://www.youtube.com/embed/QOVaHwm-Q6U',
+  'lunges':           'https://www.youtube.com/embed/QOVaHwm-Q6U',
+  'romanian deadlift':'https://www.youtube.com/embed/JCXUYuzwNrM',
+  'rdl':              'https://www.youtube.com/embed/JCXUYuzwNrM',
+  'hip thrust':       'https://www.youtube.com/embed/Zp26q4BY5HE',
+  'calf raise':       'https://www.youtube.com/embed/-M4-G8p1fCI',
+
+  // Core
+  'plank':            'https://www.youtube.com/embed/ASdvN_XEl_c',
+  'crunch':           'https://www.youtube.com/embed/Xyd_fa5zoEU',
+  'sit up':           'https://www.youtube.com/embed/1fbU_MkV7NE',
+  'ab wheel':         'https://www.youtube.com/embed/SKWKQ_qOhc4',
+  'hanging leg raise':'https://www.youtube.com/embed/Pr1ieGZ5atk',
+};
+
+// Look up demo URL, checking if any key is contained in the exercise name
+// ─── EXERCISE DEMO VIDEOS — YouTube lookup per exercise ────
+function getExerciseDemoUrl(exerciseName) {
+  const name = (exerciseName || '').toLowerCase().trim();
+  if (!name) return null;
+  // Exact match first
+  if (EXERCISE_DEMOS[name]) return EXERCISE_DEMOS[name];
+  // Partial match — find best (longest key that matches)
+  let best = null, bestLen = 0;
+  Object.keys(EXERCISE_DEMOS).forEach(key => {
+    if (name.includes(key) && key.length > bestLen) {
+      best = EXERCISE_DEMOS[key]; bestLen = key.length;
+    }
+  });
+  return best;
+}
+
+// Show exercise demo modal with embedded YouTube video
+function showExerciseDemo(exerciseName) {
+  document.getElementById('exerciseDemoModal')?.remove();
+
+  const url = getExerciseDemoUrl(exerciseName);
+  if (!url) {
+    // Fall back to YouTube search
+    const searchUrl = 'https://www.youtube.com/results?search_query=' +
+      encodeURIComponent(exerciseName + ' exercise form tutorial');
+    window.open(searchUrl, '_blank');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'exerciseDemoModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:16px;padding:20px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:600;color:var(--text);">${escapeHtml(exerciseName)}</div>
+        <button onclick="document.getElementById('exerciseDemoModal').remove()"
+          style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;">
+        <iframe src="${url}?autoplay=1&rel=0&modestbranding=1"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;"
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+          allowfullscreen></iframe>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center;">
+        Tutorial from YouTube · tap × to close
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+
+// ─── LAST WEIGHT LOOKUP — prefill sets with weight from last session ──────────
+
+// Search previous weeks for the last logged weight for a given exercise name.
+// Returns { weight, reps, week } or null if never logged.
+// ─── LAST WEIGHT LOOKUP — prefill from previous session ────
+function getLastSessionForExercise(exerciseName) {
+  const name = (exerciseName || '').trim().toLowerCase();
+  if (!name) return null;
+
+  for (let w = currentWeek - 1; w >= 1; w--) {
+    const wd = peekWeekData(w);
+    if (!wd) continue;
+    for (let d = DAYS.length - 1; d >= 0; d--) {
+      const day = DAYS[d];
+      const dd  = (wd.days && wd.days[day]) || {};
+      const wl  = dd.workoutLog;
+      if (!wl || !wl.entries) continue;
+      for (let ei = wl.entries.length - 1; ei >= 0; ei--) {
+        const ex = wl.entries[ei];
+        if ((ex.exercise || '').trim().toLowerCase() !== name) continue;
+        if (!ex.sets || !ex.sets.length) continue;
+        // Found — return max weight from that session
+        const validSets = ex.sets.filter(s => parseFloat(s.weight) > 0);
+        if (!validSets.length) continue;
+        const maxSet = validSets.reduce((best, s) =>
+          parseFloat(s.weight) > parseFloat(best.weight) ? s : best, validSets[0]);
+        return { weight: maxSet.weight, reps: maxSet.reps, week: w, day };
+      }
+    }
+  }
+  return null;
+}
+
+// Apply last session weights to all sets of a given exercise entry
+function prefillExerciseWeights(day, ei) {
+  const log = getWorkoutLog(day);
+  const ex  = log && log.entries && log.entries[ei];
+  if (!ex || !ex.exercise) return;
+
+  const last = getLastSessionForExercise(ex.exercise);
+  if (!last) return;
+
+  // Only prefill sets that have no weight yet
+  ex.sets.forEach(set => {
+    if (!set.weight) set.weight = last.weight;
+    if (!set.reps)   set.reps   = last.reps;
+  });
+  autoPersist();
+  renderWorkoutLogPanel(day);
+}
+
+
+// ─── EXERCISE DRAG-TO-REORDER — reorder exercises within workout log ─────────
+let _exDragFromIdx = null;
+
+function exDragStart(e, day, idx) {
+  _exDragFromIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => { if (e.currentTarget) e.currentTarget.style.opacity = '0.4'; }, 0);
+}
+function exDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.outline = '2px solid var(--accent)';
+}
+function exDragEnd(e) {
+  if (e.currentTarget) { e.currentTarget.style.opacity = ''; e.currentTarget.style.outline = ''; }
+  document.querySelectorAll('[data-ei]').forEach(el => { el.style.outline = ''; el.style.opacity = ''; });
+}
+function exDrop(e, day, toIdx) {
+  e.preventDefault();
+  if (e.currentTarget) e.currentTarget.style.outline = '';
+  const fromIdx = _exDragFromIdx;
+  _exDragFromIdx = null;
+  if (fromIdx === null || fromIdx === toIdx) return;
+  const log = getWorkoutLog(day);
+  if (!log || !log.entries) return;
+  const [moved] = log.entries.splice(fromIdx, 1);
+  log.entries.splice(toIdx, 0, moved);
+  autoPersist();
+  renderWorkoutLogPanel(day);
+}
+
+
 // ─── WORKOUT LOG — sets/reps/kg, cardio, sport logging ─────
 // Structure: dd.workoutLog = { type:'weights'|'cardio'|'other', entries:[] }
 // Weights entry: { exercise, sets:[{reps,weight}] }
@@ -3493,14 +4074,22 @@ function renderWorkoutLogPanel(day) {
     panel.innerHTML = `
       <div style="margin-top:8px;">
         ${log.entries.map((ex, ei) => `
-          <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div draggable="true" data-ei="${ei}"
+            ondragstart="exDragStart(event,'${day}',${ei})"
+            ondragover="exDragOver(event)"
+            ondrop="exDrop(event,'${day}',${ei})"
+            ondragend="exDragEnd(event)"
+            style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;transition:opacity 0.15s;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="color:var(--border2);cursor:grab;font-size:16px;flex-shrink:0;" title="Drag to reorder">⠿</span>
               <input type="text" value="${ex.exercise.replace(/"/g,'&quot;')}" placeholder="Exercise name"
                 style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;"
                 onchange="updateExerciseName('${day}',${ei},this.value)">
-              <button onclick="removeExercise('${day}',${ei})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
+              <button onclick="showExerciseDemo('${ex.exercise}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid var(--border2);" title="Watch form tutorial">▶ Demo</button>
+            <button onclick="removeExercise('${day}',${ei})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+              ${(() => { const last = getLastSessionForExercise(ex.exercise); return last ? `<div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-style:italic;">Last session Wk${last.week}: ${last.weight}kg × ${last.reps} reps</div>` : ''; })()}
               ${(ex.sets || []).length > 0 ? '<div style="display:flex;gap:3px;padding:2px 8px 2px;"><span style="font-size:9px;color:var(--text3);width:16px;">#</span><span style="font-size:9px;color:var(--text3);width:54px;text-align:center;">reps</span><span style="font-size:9px;color:var(--text3);margin-left:8px;text-align:center;">kg</span></div>' : ''}
               ${(ex.sets || []).map((s, si) => `
                 <div style="display:flex;align-items:center;gap:3px;background:var(--surface2);border-radius:6px;padding:4px 8px;">
@@ -3547,6 +4136,8 @@ function renderWorkoutLogPanel(day) {
           oninput="updateSportLog('${day}','notes',this.value)">
       </div>`;
   }
+
+  renderPRBanner(day);
 }
 
 function addExercise(day) {
@@ -3563,8 +4154,12 @@ function removeExercise(day, ei) {
   renderWorkoutLogPanelSummary(day);
 }
 function updateExerciseName(day, ei, val) {
-  getWorkoutLog(day).entries[ei].exercise = val;
+  const log = getWorkoutLog(day);
+  if (!log.entries[ei]) return;
+  log.entries[ei].exercise = val;
   autoPersist();
+  // Prefill sets with last session weight for this exercise
+  prefillExerciseWeights(day, ei);
 }
 function addSet(day, ei) {
   const log = getWorkoutLog(day);
@@ -4370,7 +4965,7 @@ function saveWeek() {
   const wv = parseFloat(document.getElementById('weekWeight').value);
   if (wv) getWeekData(currentWeek).weight = wv;
   // Explicitly save weekly notes from textarea
-  const notesEl = document.getElementById('weekNotes');
+  const notesEl = document.getElementById('weekNotesInput');
   if (notesEl) getWeekData(currentWeek).weekNotes = notesEl.value;
   autoPersist();
   const msg = document.getElementById('saveMsg');
@@ -4430,6 +5025,7 @@ function _doAddMealTemplate(idx, targetMeal) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 // Home tab: silently adds to whichever meal section is active
@@ -4629,7 +5225,7 @@ async function tplDoSearch(templateIdx) {
   if (picker)  picker.style.display  = 'none';
 
   try {
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=PJygmDRllSrraLskIaJ9pT0lQyFnBJzu7euenKgO&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);
     const resp = await fetch(url, { signal: ctrl.signal });
@@ -5039,6 +5635,7 @@ function saveQuickPresetEdit(idx, rowId) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 // ─── MEALS TAB — render templates, presets, recent foods ───
@@ -5329,6 +5926,7 @@ function copyMealFromPrevDay(meal) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 // ─── MACRO PREFERENCES — targets, display, stats bar ───────
@@ -5386,8 +5984,527 @@ function renderMacroStats() {
       </div>
     `).join('');
 
-
+  // Draw donut chart
+  renderMacroPie(protein, carbs, fat);
 }
+
+// ─── MACRO DONUT CHART — protein / carbs / fat visual breakdown ──────────────
+function renderMacroPie(protein, carbs, fat) {
+  const canvas = document.getElementById('macroPieChart');
+  const legend = document.getElementById('macroPieLegend');
+  if (!canvas) return;
+
+  const total = (protein * 4) + (carbs * 4) + (fat * 9); // kcal from each macro
+  if (total <= 0) {
+    canvas.style.opacity = '0.2';
+    if (legend) legend.textContent = 'Log food to see breakdown';
+    return;
+  }
+  canvas.style.opacity = '1';
+
+  const DPR = window.devicePixelRatio || 2;
+  const SIZE = 80;
+  canvas.width = canvas.height = SIZE * DPR;
+  canvas.style.width = canvas.style.height = SIZE + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const cx = SIZE / 2, cy = SIZE / 2, r = SIZE / 2 - 6, innerR = SIZE / 2 - 16;
+
+  // Segments: protein (blue), carbs (amber), fat (purple)
+  const segments = [
+    { label: 'Prot', kcal: protein * 4, color: '#2563eb' },
+    { label: 'Carbs', kcal: carbs  * 4, color: '#d97706' },
+    { label: 'Fat',   kcal: fat    * 9, color: '#7c3aed' },
+  ].filter(s => s.kcal > 0);
+
+  let startAngle = -Math.PI / 2;
+  segments.forEach(seg => {
+    const sweep = (seg.kcal / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    startAngle += sweep;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f5f2ee';
+  ctx.fill();
+
+  // Centre text: total kcal from macros
+  ctx.fillStyle = '#6b5e55';
+  ctx.font = `bold ${Math.round(SIZE * 0.14)}px DM Sans, system-ui`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(Math.round(total), cx, cy - 4);
+  ctx.font = `${Math.round(SIZE * 0.10)}px DM Mono, monospace`;
+  ctx.fillStyle = '#a89e93';
+  ctx.fillText('kcal', cx, cy + 9);
+
+  // Legend
+  if (legend) {
+    legend.innerHTML = segments.map(s =>
+      `<span style="color:${s.color};">■</span> ${s.label} ${Math.round((s.kcal/total)*100)}%`
+    ).join('<br>');
+  }
+}
+
+
+// ─── BARCODE SCANNER — Open Food Facts API via device camera ─────────────────
+// Uses the BarcodeDetector API (Chrome/Android) with a manual entry fallback.
+// Open Food Facts is free, open-source, 3M+ products, no API key needed.
+
+// OFF_API_URL declared at module level above
+
+async // ─── BARCODE SCANNER — Open Food Facts API via camera ──────
+async function openBarcodeScanner() {
+  // BarcodeDetector API is available on Chrome for Android and some desktop browsers
+  if (!('BarcodeDetector' in window)) {
+    // Fallback: prompt for manual barcode entry
+    const barcode = prompt('Barcode scanner not available.\nEnter the barcode number manually:');
+    if (barcode && barcode.trim()) lookupBarcode(barcode.trim());
+    return;
+  }
+
+  // Create camera modal
+  const modal = document.createElement('div');
+  modal.id = 'barcodeScannerModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="color:white;font-size:16px;font-weight:600;margin-bottom:12px;">Point camera at barcode</div>
+    <div style="position:relative;border-radius:12px;overflow:hidden;width:min(92vw,400px);">
+      <video id="barcodeVideo" autoplay playsinline muted style="width:100%;display:block;border-radius:12px;"></video>
+      <div style="position:absolute;inset:0;border:3px solid var(--accent);border-radius:12px;pointer-events:none;"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:2px;background:rgba(196,80,26,0.7);"></div>
+    </div>
+    <div id="barcodeScanStatus" style="color:#a89e93;font-size:13px;margin-top:12px;">Scanning…</div>
+    <button onclick="closeBarcodeScanner()" style="margin-top:16px;padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:14px;cursor:pointer;">Cancel</button>
+  `;
+  document.body.appendChild(modal);
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video  = document.getElementById('barcodeVideo');
+    if (!video) return;
+    video.srcObject = stream;
+    modal._stream = stream;
+
+    const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code'] });
+    let scanning = true;
+
+    const scanFrame = async () => {
+      if (!scanning || !document.getElementById('barcodeScannerModal')) return;
+      try {
+        const barcodes = await detector.detect(video);
+        if (barcodes.length > 0) {
+          scanning = false;
+          const code = barcodes[0].rawValue;
+          const statusEl = document.getElementById('barcodeScanStatus');
+          if (statusEl) statusEl.textContent = `Found: ${code} — looking up…`;
+          closeBarcodeScanner();
+          lookupBarcode(code);
+          return;
+        }
+      } catch(e) { /* frame not ready yet */ }
+      requestAnimationFrame(scanFrame);
+    };
+    requestAnimationFrame(scanFrame);
+
+  } catch(err) {
+    closeBarcodeScanner();
+    const barcode = prompt('Camera access denied.\nEnter the barcode number manually:');
+    if (barcode && barcode.trim()) lookupBarcode(barcode.trim());
+  }
+}
+
+function closeBarcodeScanner() {
+  const modal = document.getElementById('barcodeScannerModal');
+  if (modal) {
+    if (modal._stream) modal._stream.getTracks().forEach(t => t.stop());
+    modal.remove();
+  }
+}
+
+async function lookupBarcode(barcode) {
+  // Validate barcode: must be 8–14 digits (EAN-8, EAN-13, UPC-A/E, ISBN-13)
+  const cleaned = (barcode || '').replace(/[^0-9]/g, '');
+  if (cleaned.length < 8 || cleaned.length > 14) {
+    const statusEl2 = document.getElementById('foodSearchStatus');
+    if (statusEl2) { statusEl2.textContent = 'Invalid barcode — must be 8–14 digits.'; statusEl2.style.display = 'block'; }
+    return;
+  }
+  const statusEl = document.getElementById('foodSearchStatus');
+  if (statusEl) { statusEl.textContent = `Looking up barcode ${cleaned}…`; statusEl.style.display = 'block'; }
+  barcode = cleaned; // use sanitised version
+
+  try {
+    const res  = await rateLimitedFetch('off', `${OFF_API_URL}${barcode}.json?fields=product_name,nutriments,serving_size,serving_quantity`, {}, 10);
+    const data = await res.json();
+
+    if (!data.product || !data.product.product_name) {
+      if (statusEl) statusEl.textContent = 'Product not found in Open Food Facts database.';
+      return;
+    }
+
+    const p   = data.product;
+    const n   = p.nutriments || {};
+    const name = p.product_name;
+
+    // Get per-serving nutrients (prefer serving, fall back to per 100g)
+    const servingG = parseFloat(p.serving_quantity) || 100;
+    const scale    = servingG / 100;
+
+    const kcal   = Math.round((n['energy-kcal_100g'] || 0) * scale);
+    const protein = Math.round((n['proteins_100g']     || 0) * scale * 10) / 10;
+    const carbs   = Math.round((n['carbohydrates_100g']|| 0) * scale * 10) / 10;
+    const fat     = Math.round((n['fat_100g']          || 0) * scale * 10) / 10;
+    const sugar   = Math.round((n['sugars_100g']       || 0) * scale * 10) / 10;
+
+    if (statusEl) statusEl.style.display = 'none';
+
+    // Show serving size picker (same flow as food search)
+    showBarcodeFoodPicker({ name, kcal, protein, carbs, fats: fat, sugar, servingG,
+      per100: { kcal: n['energy-kcal_100g']||0, protein: n['proteins_100g']||0,
+                carbs: n['carbohydrates_100g']||0, fats: n['fat_100g']||0, sugar: n['sugars_100g']||0 } });
+
+  } catch(err) {
+    if (statusEl) statusEl.textContent = 'Network error — check your connection.';
+  }
+}
+
+// Store barcode food data for the picker (avoids inline JSON in onclick)
+let _barcodeFoodData = null;
+
+function showBarcodeFoodPicker(food) {
+  document.getElementById('foodServingPicker')?.remove();
+  _barcodeFoodData = food; // store for addBarcodeFood to reference
+
+  const div = document.createElement('div');
+  div.id = 'foodServingPicker';
+  div.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:8px;';
+
+  const initialMacros = `<span style="color:var(--accent);font-weight:500;">${food.kcal} kcal</span> · ` +
+    `<span style="color:#2563eb;">${food.protein}g prot</span> · ` +
+    `<span style="color:#d97706;">${food.carbs}g carbs</span> · ` +
+    `<span style="color:#7c3aed;">${food.fats}g fat</span>`;
+
+  div.innerHTML = `
+    <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px;">📷 ${escapeHtml(food.name)}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <label style="font-size:12px;color:var(--text2);">Serving size (g):
+        <input type="number" id="barcodeServingG" value="${food.servingG}" min="1" max="2000" step="1"
+          class="cal-num-input" style="width:72px;margin-left:6px;" oninput="updateBarcodeServing()">
+      </label>
+    </div>
+    <div id="barcodeNutrients" style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:var(--mono);">${initialMacros}</div>
+    <div style="display:flex;gap:8px;">
+      <button id="barcodeAddBtn"
+        style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">
+        + Add to ${MEAL_LABELS[activeMeal] || 'log'}
+      </button>
+      <button onclick="document.getElementById('foodServingPicker').remove();_barcodeFoodData=null;"
+        style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">
+        Cancel
+      </button>
+    </div>
+  `;
+
+  const anchor = document.getElementById('foodSuggestions') || document.getElementById('foodSearchResults');
+  if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(div, anchor);
+  else document.querySelector('#this-week')?.appendChild(div);
+
+  // Attach add handler after DOM insertion
+  document.getElementById('barcodeAddBtn').onclick = () => addBarcodeFood();
+}
+
+function updateBarcodeServing() {
+  if (!_barcodeFoodData) return;
+  const per100 = _barcodeFoodData.per100;
+  const g    = parseFloat(document.getElementById('barcodeServingG')?.value) || 100;
+  const s    = g / 100;
+  const el   = document.getElementById('barcodeNutrients');
+  if (!el) return;
+  el.innerHTML =
+    `<span style="color:var(--accent);font-weight:500;">${Math.round((per100.kcal||0)*s)} kcal</span> · ` +
+    `<span style="color:#2563eb;">${Math.round((per100.protein||0)*s*10)/10}g prot</span> · ` +
+    `<span style="color:#d97706;">${Math.round((per100.carbs||0)*s*10)/10}g carbs</span> · ` +
+    `<span style="color:#7c3aed;">${Math.round((per100.fats||0)*s*10)/10}g fat</span>`;
+}
+
+function addBarcodeFood() {
+  if (!_barcodeFoodData) return;
+  const per100 = _barcodeFoodData.per100;
+  const name   = _barcodeFoodData.name;
+  const g   = parseFloat(document.getElementById('barcodeServingG')?.value) || 100;
+  const s   = g / 100;
+  const entry = {
+    name, kcal: Math.round((per100.kcal||0)*s),
+    protein: Math.round((per100.protein||0)*s*10)/10,
+    carbs:   Math.round((per100.carbs||0)*s*10)/10,
+    fats:    Math.round((per100.fats||0)*s*10)/10,
+    sugar:   Math.round((per100.sugar||0)*s*10)/10,
+    _per100: per100, _baseName: name, _servingG: g,
+  };
+  const cd = getCalData(currentWeek, calDay);
+  cd[activeMeal].push(entry);
+  logRecentFood(entry);
+  autoPersist();
+  document.getElementById('foodServingPicker')?.remove();
+  _barcodeFoodData = null;
+  renderCalEntries();
+  updateCalTotals();
+  renderDays();
+  renderProgress();
+}
+
+
+// ─── FOOD SEARCH SUGGESTIONS — recent + frequent foods shown as user types ───
+
+function showFoodSuggestions(query) {
+  const box = document.getElementById('foodSuggestions');
+  if (!box) return;
+
+  const recent = allData._recentFoods || [];
+  if (!recent.length) { box.style.display = 'none'; return; }
+
+  // Filter by query (case-insensitive) — show all recents if query is empty
+  const q = (query || '').toLowerCase().trim();
+  const matches = q.length === 0
+    ? recent.slice(0, 7)
+    : recent.filter(f => f.name.toLowerCase().includes(q)).slice(0, 7);
+
+  if (!matches.length) { box.style.display = 'none'; return; }
+
+  box.style.display = 'block';
+  box.innerHTML = matches.map((f, i) => {
+    const macroStr = [
+      `<span style="color:var(--accent);font-weight:500;">${f.kcal} kcal</span>`,
+      f.protein ? `<span style="color:#2563eb;">${f.protein}g P</span>` : '',
+      f.carbs   ? `<span style="color:#d97706;">${f.carbs}g C</span>`   : '',
+      f.fats    ? `<span style="color:#7c3aed;">${f.fats}g F</span>`    : '',
+    ].filter(Boolean).join(' · ');
+
+    return `<div
+      onmousedown="selectFoodSuggestion(${i})"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background=''">
+      <span style="font-size:13px;color:var(--text);">${f.name}</span>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono);">${macroStr}</span>
+    </div>`;
+  }).join('');
+}
+
+function hideFoodSuggestions() {
+  const box = document.getElementById('foodSuggestions');
+  if (box) box.style.display = 'none';
+}
+
+// ─── FOOD SEARCH SUGGESTIONS — recent foods autocomplete ───
+function selectFoodSuggestion(idx) {
+  const recent = allData._recentFoods || [];
+  const q = (document.getElementById('foodSearchInput')?.value || '').toLowerCase().trim();
+  const matches = q.length === 0
+    ? recent.slice(0, 7)
+    : recent.filter(f => f.name.toLowerCase().includes(q)).slice(0, 7);
+
+  const food = matches[idx];
+  if (!food) return;
+
+  hideFoodSuggestions();
+
+  // Add directly to the active meal — same as quickAdd
+  const cd = getCalData(currentWeek, calDay);
+  const entry = {
+    name:    food.name,
+    kcal:    food.kcal    || 0,
+    protein: food.protein || 0,
+    carbs:   food.carbs,
+    fats:    food.fats,
+    sugar:   food.sugar,
+    _per1:     { kcal: food.kcal, protein: food.protein, carbs: food.carbs, fats: food.fats, sugar: food.sugar },
+    _baseName: food.name,
+    _portions: 1,
+  };
+  cd[activeMeal].push(entry);
+  logRecentFood(entry);
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+  renderDays();
+  renderProgress();
+
+  // Clear search input
+  const inp = document.getElementById('foodSearchInput');
+  if (inp) inp.value = '';
+}
+
+
+// ─── NATURAL LANGUAGE FOOD ENTRY — parse meal descriptions into macros ────────
+// Parses text like "200g chicken breast and rice" by splitting on commas/and,
+// extracting quantities, then looking up each item in the USDA FoodData API.
+
+// NL food entry uses USDA_API_KEY defined at module level
+
+// ─── NATURAL LANGUAGE FOOD ENTRY — parse meal descriptions ─
+function toggleNLEntry() {
+  const panel = document.getElementById('nlEntryPanel');
+  const btn   = document.getElementById('nlEntryToggle');
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (btn) btn.style.background = open ? 'none' : 'var(--surface2)';
+  if (!open) setTimeout(() => document.getElementById('nlFoodInput')?.focus(), 50);
+}
+
+// Parse a natural language meal description into components
+function parseNLTokens(text) {
+  // Split on commas, "and", "&", "+"
+  const parts = text.split(/,|\band\b|&|\+/i).map(s => s.trim()).filter(Boolean);
+  return parts.map(part => {
+    // Extract quantity: "200g", "2 eggs", "1/2 cup", "handful"
+    const gramMatch  = part.match(/^(\d+(?:\.\d+)?)\s*g\s+(.+)/i);
+    const mlMatch    = part.match(/^(\d+(?:\.\d+)?)\s*ml\s+(.+)/i);
+    const countMatch = part.match(/^(\d+(?:\.\d+)?)\s+(.+)/i);
+
+    if (gramMatch)  return { grams: parseFloat(gramMatch[1]),  query: gramMatch[2].trim(),  unit: 'g' };
+    if (mlMatch)    return { grams: parseFloat(mlMatch[1]),    query: mlMatch[2].trim(),    unit: 'ml' };
+    if (countMatch) return { count: parseFloat(countMatch[1]), query: countMatch[2].trim(), unit: 'count' };
+    return { count: 1, query: part, unit: 'count' };
+  });
+}
+
+async function lookupNLToken(token) {
+  const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(token.query)}&pageSize=1&dataType=Foundation,SR%20Legacy`;
+  const res  = await rateLimitedFetch('usda-nl', url, {}, 10);
+  const data = await res.json();
+  if (!data.foods || !data.foods.length) return null;
+
+  const food = data.foods[0];
+  const n    = {};
+  (food.foodNutrients || []).forEach(fn => {
+    const name = (fn.nutrientName || '').toLowerCase();
+    if (name.includes('energy') && name.includes('atwater')) n.kcal    = fn.value;
+    else if (name === 'energy')                               n.kcal    = n.kcal || fn.value;
+    else if (name.includes('protein'))                        n.protein = fn.value;
+    else if (name.includes('carbohydrate'))                   n.carbs   = fn.value;
+    else if (name === 'total lipid (fat)')                    n.fat     = fn.value;
+    else if (name.includes('sugars'))                         n.sugar   = fn.value;
+  });
+
+  // Scale to quantity
+  let scale = 1;
+  if (token.grams || token.unit === 'g' || token.unit === 'ml') {
+    scale = (token.grams || 100) / 100;
+  } else if (token.count) {
+    // Per-item weight: use serving size if available
+    const servingG = food.servingSize || 100;
+    scale = (token.count * servingG) / 100;
+  }
+
+  const r = v => v != null ? Math.round(v * scale * 10) / 10 : undefined;
+  return {
+    name:    (token.count && token.count !== 1 ? token.count + '× ' : '') +
+             (token.grams ? token.grams + 'g ' : '') + food.description,
+    kcal:    Math.round((n.kcal    || 0) * scale),
+    protein: r(n.protein),
+    carbs:   r(n.carbs),
+    fats:    r(n.fat),
+    sugar:   r(n.sugar),
+  };
+}
+
+async function parseNLFood() {
+  const input    = document.getElementById('nlFoodInput');
+  const statusEl = document.getElementById('nlParseStatus');
+  const resultsEl= document.getElementById('nlParseResults');
+  if (!input || !input.value.trim()) return;
+
+  const text   = input.value.trim();
+  const tokens = parseNLTokens(text);
+
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = `Looking up ${tokens.length} item${tokens.length > 1 ? 's' : ''}…`; }
+  if (resultsEl) resultsEl.innerHTML = '';
+
+  const results = [];
+  for (const token of tokens) {
+    try {
+      const r = await lookupNLToken(token);
+      if (r) results.push(r);
+    } catch(e) {
+      console.warn('NL lookup failed for:', token.query, e);
+    }
+  }
+
+  if (statusEl) statusEl.style.display = 'none';
+
+  if (!results.length) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Could not find nutritional data. Try the food search instead.'; }
+    return;
+  }
+
+  // Show results with confirm buttons
+  const totalKcal   = results.reduce((s, r) => s + (r.kcal || 0), 0);
+  const totalProt   = results.reduce((s, r) => s + (r.protein || 0), 0);
+
+  resultsEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">
+      Found ${results.length} item${results.length > 1 ? 's' : ''} — 
+      <strong style="color:var(--accent);">${Math.round(totalKcal)} kcal total</strong>
+      · <strong style="color:#2563eb;">${Math.round(totalProt)}g protein</strong>
+    </div>
+    ${results.map((r, i) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px;gap:8px;">
+        <div>
+          <div style="font-size:12px;color:var(--text);">${r.name}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">
+            <span style="color:var(--accent);">${r.kcal} kcal</span>
+            ${r.protein != null ? ' · <span style="color:#2563eb;">' + r.protein + 'g P</span>' : ''}
+            ${r.carbs   != null ? ' · <span style="color:#d97706;">' + r.carbs   + 'g C</span>' : ''}
+            ${r.fats    != null ? ' · <span style="color:#7c3aed;">' + r.fats    + 'g F</span>' : ''}
+          </div>
+        </div>
+      </div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="addAllNLResults()"
+        style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">
+        + Add all to ${MEAL_LABELS[activeMeal] || 'log'}
+      </button>
+      <button onclick="document.getElementById('nlParseResults').innerHTML='';document.getElementById('nlFoodInput').value='';"
+        style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
+        Clear
+      </button>
+    </div>
+  `;
+  // Store results for addAllNLResults to use
+  window._nlResults = results;
+}
+
+function addAllNLResults() {
+  const results = window._nlResults;
+  if (!results || !results.length) return;
+  const cd = getCalData(currentWeek, calDay);
+  results.forEach(entry => {
+    cd[activeMeal].push({ ...entry });
+    logRecentFood(entry);
+  });
+  window._nlResults = null;
+  autoPersist();
+  document.getElementById('nlParseResults').innerHTML = '';
+  document.getElementById('nlFoodInput').value = '';
+  document.getElementById('nlEntryPanel').style.display = 'none';
+  document.getElementById('nlEntryToggle').style.background = 'none';
+  renderCalEntries();
+  updateCalTotals();
+  renderDays();
+  renderProgress();
+}
+
 
 // ─── FOOD SEARCH — USDA FoodData Central API ───────────────
 
@@ -5416,9 +6533,10 @@ async function searchFood() {
   results.style.display = 'none';
 
   try {
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=PJygmDRllSrraLskIaJ9pT0lQyFnBJzu7euenKgO&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=8&dataType=Foundation,SR%20Legacy,Branded`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
+    if (!checkRateLimit('usda', 15)) throw new Error('Rate limit: please wait before searching again.');
     const resp = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
@@ -5582,6 +6700,7 @@ function confirmFoodAdd() {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 // ─── CALORIE COUNTER — log, edit, delete, totals ───────────
@@ -5689,7 +6808,13 @@ function renderWater() {
   if (slider && parseInt(slider.value) !== totalMl) slider.value = totalMl;
 
   const waterNoteEl = document.getElementById('waterTargetNote');
-  if (waterNoteEl) waterNoteEl.textContent = 'Target: ' + getSetting('waterTargetL') + ' L/day — more on workout days and in Bangkok heat';
+  const waterTargetMl  = WATER_TARGET_ML(calDay);
+  const waterTargetLit = (waterTargetMl / 1000).toFixed(1);
+  const baseL          = getSetting('waterTargetL');
+  const isBoost        = waterTargetMl > baseL * 1000;
+  if (waterNoteEl) waterNoteEl.textContent = isBoost
+    ? `Target: ${waterTargetLit} L today (+0.5L workout boost · base ${baseL} L)`
+    : `Target: ${waterTargetLit} L/day — add ${baseL > 2 ? 'more' : '0.5L'} on workout days`;
   const badge = document.getElementById('waterBadge');
   if (badge) {
     const display = totalL % 1 === 0 ? totalL.toFixed(0) : totalL.toFixed(2).replace(/0+$/, '');
@@ -5867,6 +6992,7 @@ function dragDrop(e, targetMeal, targetIdx) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 function recalcFromPortions(meal, idx, portionsStr) {
@@ -6015,6 +7141,7 @@ function saveCalEntry(meal, idx) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 function quickAdd(name, kcal, protein, carbs, fats, sugar) {
@@ -6041,6 +7168,7 @@ function quickAdd(name, kcal, protein, carbs, fats, sugar) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 function addCustomEntry() {
@@ -6102,6 +7230,7 @@ function deleteCalEntry(meal, idx) {
   renderCalEntries();
   updateCalTotals();
   renderDays();
+  renderProgress();
 }
 
 function updateCalTotals() {
@@ -6129,10 +7258,28 @@ function updateCalTotals() {
   document.getElementById('calBarMid').textContent = fmt(target / 2);
   document.getElementById('calBarTarget').textContent = 'Target: ' + fmt(target);
 
+  // ── 3-segment calorie budget bar ──────────────────────────────
+  const barTotal   = Math.max(target * 1.15, consumed + 20); // bar represents at least target+15%
+  const eatenPct   = Math.min(100, (consumed / barTotal) * 100);
+  const burnedPct  = Math.min(100 - eatenPct, (burned / barTotal) * 100);
+  const remPct     = Math.max(0, 100 - eatenPct - burnedPct);
+  const eatenEl    = document.getElementById('calBarEaten');
+  const burnedEl   = document.getElementById('calBarBurned');
+  const remEl      = document.getElementById('calBarRem');
+  const budgetLbl  = document.getElementById('calBudgetLabel');
+  if (eatenEl)   eatenEl.style.width   = eatenPct.toFixed(1)  + '%';
+  if (burnedEl)  burnedEl.style.width  = burnedPct.toFixed(1) + '%';
+  if (remEl)     remEl.style.flex      = remPct > 0 ? '1' : '0';
+  // Colour eaten bar: green if under target, amber if close, red if over
+  if (eatenEl) eatenEl.style.background = consumed > target * 1.05 ? '#dc2626' : consumed > target * 0.9 ? '#d97706' : '#d97706';
+  if (budgetLbl) {
+    const remaining = Math.max(0, target - net);
+    budgetLbl.textContent = net <= target
+      ? remaining.toLocaleString() + ' kcal left'
+      : (net - target).toLocaleString() + ' kcal over';
+    budgetLbl.style.color = net > target ? 'var(--red)' : 'var(--text3)';
+  }
   const pct = Math.min(120, Math.round((net / target) * 100));
-  const bar = document.getElementById('calBarFill');
-  bar.style.width = Math.min(100, pct) + '%';
-  bar.style.background = pct > 105 ? 'var(--red)' : pct > 90 ? 'var(--amber)' : 'var(--green)';
 
   const badge = document.getElementById('deficitBadge');
   if (net === 0) {
@@ -6324,6 +7471,218 @@ function goToWeekDay(week, day) {
   }, 150);
 }
 
+// ─── PLAN COMPLIANCE — planned vs actual workouts per week ──────────────────
+function renderComplianceChart() {
+  const container = document.getElementById('complianceChart');
+  const emptyEl   = document.getElementById('complianceEmpty');
+  if (!container) return;
+
+  // Collect compliance data for all past weeks
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rows = [];
+
+  for (let w = 1; w <= currentWeek; w++) {
+    const wd  = peekWeekData(w);
+    const plan = getPhase(w) === 1 ? PHASE1_PLAN : PHASE2_PLAN;
+    let done = 0, skipped = 0, rest = 0, future = 0;
+
+    DAYS.forEach((day, d) => {
+      const date = getDayDate(w, d);
+      if (!date) return;
+      date.setHours(0,0,0,0);
+
+      const planned    = (plan[d] || '').toLowerCase();
+      const isRestPlan = planned.includes('rest');
+      const isFuture   = date > today;
+      const dd         = (wd && wd.days && wd.days[day]) || {};
+      const acts       = getActivities(dd);
+      const logged     = acts.length > 0 || !!dd.activity;
+
+      if (isFuture) { future++; return; }
+
+      if (logged) {
+        done++;
+      } else if (isRestPlan) {
+        rest++;
+      } else {
+        skipped++;
+      }
+    });
+
+    // Only show weeks with some past days
+    if (done + skipped + rest > 0) {
+      rows.push({ w, done, skipped, rest, future });
+    }
+  }
+
+  if (!rows.length) {
+    container.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const maxTotal = 7; // days in a week
+  const BAR_H    = 18;
+  const GAP      = 6;
+  const LABEL_W  = 28;
+
+  // Build HTML bar chart
+  let html = `<div style="display:flex;flex-direction:column;gap:${GAP}px;min-width:300px;">`;
+
+  rows.forEach(row => {
+    const total = row.done + row.skipped + row.rest;
+    const donePct    = (row.done    / maxTotal * 100).toFixed(1);
+    const skippedPct = (row.skipped / maxTotal * 100).toFixed(1);
+    const restPct    = (row.rest    / maxTotal * 100).toFixed(1);
+    const compliance = total > 0 ? Math.round((row.done / (row.done + row.skipped)) * 100) : 100;
+    const isCurrent  = row.w === currentWeek;
+
+    html += `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:${LABEL_W}px;font-size:10px;color:${isCurrent ? 'var(--accent)' : 'var(--text3)'};font-family:var(--mono);flex-shrink:0;font-weight:${isCurrent ? '600' : '400'};">Wk${row.w}</div>
+        <div style="flex:1;height:${BAR_H}px;background:var(--surface2);border-radius:4px;overflow:hidden;display:flex;">
+          <div style="width:${donePct}%;background:#16a34a;height:100%;transition:width 0.3s;" title="${row.done} completed"></div>
+          <div style="width:${skippedPct}%;background:#fca5a5;height:100%;transition:width 0.3s;" title="${row.skipped} skipped"></div>
+          <div style="width:${restPct}%;background:var(--border2);height:100%;transition:width 0.3s;opacity:0.5;" title="${row.rest} rest"></div>
+        </div>
+        <div style="width:38px;font-size:10px;color:${compliance >= 80 ? 'var(--green)' : compliance >= 60 ? 'var(--amber)' : 'var(--red)'};font-family:var(--mono);text-align:right;flex-shrink:0;">
+          ${row.skipped + row.done > 0 ? compliance + '%' : '—'}
+        </div>
+      </div>`;
+  });
+
+  // Overall compliance summary
+  const totalDone    = rows.reduce((s, r) => s + r.done,    0);
+  const totalSkipped = rows.reduce((s, r) => s + r.skipped, 0);
+  const overallPct   = totalDone + totalSkipped > 0
+    ? Math.round((totalDone / (totalDone + totalSkipped)) * 100) : 0;
+
+  html += `
+    <div style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:var(--text3);">Overall: <strong style="color:${overallPct >= 80 ? 'var(--green)' : overallPct >= 60 ? 'var(--amber)' : 'var(--red)'}">${overallPct}%</strong> compliance</span>
+      <span style="font-size:11px;color:var(--text3);">${totalDone} done · ${totalSkipped} skipped</span>
+    </div>`;
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+
+// ─── WELLBEING TRENDS — RPE / Mood / Sleep chart in History tab ─────────────
+function renderWellbeingChart() {
+  const canvas  = document.getElementById('wellbeingChart');
+  const emptyEl = document.getElementById('wellbeingChartEmpty');
+  if (!canvas) return;
+
+  // Collect daily RPE, mood, sleep across last 8 weeks
+  const WEEKS_BACK = 8;
+  const points = [];
+  for (let w = Math.max(1, currentWeek - WEEKS_BACK + 1); w <= currentWeek; w++) {
+    const wd = peekWeekData(w);
+    if (!wd) continue;
+    DAYS.forEach((day, d) => {
+      const dd = (wd.days && wd.days[day]) || {};
+      const date = getDayDate(w, d);
+      if (!date) return;
+      const hasData = dd.rpe != null || dd.mood != null || dd.sleepHrs != null;
+      if (hasData) points.push({
+        date, day, week: w,
+        rpe:   dd.rpe      != null ? dd.rpe      : null,
+        mood:  dd.mood      != null ? dd.mood      : null,
+        sleep: dd.sleepHrs  != null ? dd.sleepHrs  : null,
+      });
+    });
+  }
+
+  if (points.length < 2) {
+    canvas.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const DPR = window.devicePixelRatio || 2;
+  const W   = canvas.offsetWidth || 600;
+  const H   = 80;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const PAD = { l: 28, r: 8, t: 8, b: 18 };
+  const cW  = W - PAD.l - PAD.r;
+  const cH  = H - PAD.t - PAD.b;
+
+  const xOf = i => PAD.l + (i / (points.length - 1)) * cW;
+  // RPE and mood are 0–10, sleep is 0–12 — normalise to 0–10 scale for display
+  const yOf = v => PAD.t + cH - (Math.min(v, 10) / 10) * cH;
+
+  // Grid lines at 2, 4, 6, 8, 10
+  ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+  ctx.lineWidth   = 1;
+  [2,4,6,8,10].forEach(v => {
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(PAD.l + cW, y); ctx.stroke();
+    ctx.fillStyle   = '#a89e93';
+    ctx.font        = '8px DM Mono, monospace';
+    ctx.textAlign   = 'right';
+    ctx.textBaseline= 'middle';
+    ctx.fillText(v, PAD.l - 4, y);
+  });
+
+  // Draw a line series, skipping null values
+  function drawSeries(key, col, scaleMax) {
+    const scl = 10 / (scaleMax || 10);
+    const pts  = points.map((p, i) => ({ x: xOf(i), y: p[key] != null ? yOf(p[key] * scl) : null, i }));
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = 1.5;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+
+    let inPath = false;
+    pts.forEach(p => {
+      if (p.y == null) { inPath = false; return; }
+      if (!inPath) { ctx.beginPath(); ctx.moveTo(p.x, p.y); inPath = true; }
+      else ctx.lineTo(p.x, p.y);
+    });
+    if (inPath) ctx.stroke();
+
+    // Dots
+    pts.forEach(p => {
+      if (p.y == null) return;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle   = col;
+      ctx.strokeStyle = '#f5f2ee';
+      ctx.lineWidth   = 1;
+      ctx.fill(); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  drawSeries('sleep', '#2563eb', 12);  // sleep max ~12h, scale to 10
+  drawSeries('mood',  '#f59e0b', 5);   // mood 1–5, scale to 10
+  drawSeries('rpe',   '#7c3aed', 10);  // RPE 1–10
+
+  // X-axis: week labels
+  const seenWeeks = new Set();
+  ctx.fillStyle   = '#a89e93';
+  ctx.font        = '8px DM Mono, monospace';
+  ctx.textAlign   = 'center';
+  ctx.textBaseline= 'top';
+  points.forEach((p, i) => {
+    if (!seenWeeks.has(p.week)) {
+      seenWeeks.add(p.week);
+      ctx.fillText('Wk' + p.week, xOf(i), H - PAD.b + 4);
+    }
+  });
+}
+
+
 // ─── HISTORY — weight table, charts, progressive overload ──
 function renderHistory() {
   const card = document.getElementById('historyCard');
@@ -6504,6 +7863,8 @@ function renderHistory() {
   renderProgressiveOverload();
   // ── Week comparison table ────────────────────────────────
   renderWeekComparison();
+  renderComplianceChart();
+  renderWellbeingChart();
 }
 
 function renderCalChart() {
@@ -6776,30 +8137,100 @@ function updateNotifBtn() {
 }
 
 function scheduleReminders() {
-  // Check daily — fire reminder if today's weight or food not logged by 9pm
-  const checkTime = 21 * 60; // 9pm in minutes
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
   if (localStorage.getItem(NOTIF_KEY) !== 'yes') return;
   if (Notification.permission !== 'granted') return;
 
-  const wd = peekWeekData(getCurrentWeekFromDate());
-  const today = DAYS[now.getDay() === 0 ? 6 : now.getDay() - 1];
-  const hasWeight = wd && wd.weight;
-  const hasFoodToday = wd && wd.calories && wd.calories[today] &&
-    MEALS.some(m => (wd.calories[today][m] || []).length > 0);
+  const now      = new Date();
+  const mins     = now.getHours() * 60 + now.getMinutes();
+  const today    = DAYS[now.getDay() === 0 ? 6 : now.getDay() - 1];
+  const wd       = peekWeekData(getCurrentWeekFromDate());
+  const dayData  = (wd && wd.days && wd.days[today]) || {};
+  const calToday = wd && wd.calories && wd.calories[today];
+  const entries  = calToday ? MEALS.flatMap(m => calToday[m] || []) : [];
 
-  if (nowMins >= checkTime) {
-    if (!hasWeight) new Notification("Fitness tracker", { body: "Don't forget to log this week's weight! 💪", icon: '/favicon.ico' });
-    else if (!hasFoodToday) new Notification("Fitness tracker", { body: `Log today's food before midnight — stay on track! 🥗` });
+  const totalKcal = entries.reduce((s, e) => s + (e.kcal    || 0), 0);
+  const totalProt = entries.reduce((s, e) => s + (e.protein || 0), 0);
+  const protTarget = getSetting('proteinTarget') || 120;
+  const waterMl  = getWaterMl ? getWaterMl() : 0;
+  const waterTarget = WATER_TARGET_ML(today);
+  const isWorkoutDay = getActivities(dayData).length > 0 || !!dayData.activity;
+
+  // 8am: morning check-in
+  if (mins >= 8*60 && mins < 8*60+35) {
+    if (isWorkoutDay) {
+      sendNotification('Morning workout reminder 💪',
+        `${today}'s plan: ${getActivities(dayData).map(a=>a.type).join(' + ') || dayData.activity || 'workout'}`, 'morning');
+    }
+  }
+
+  // 1pm: protein check
+  if (mins >= 13*60 && mins < 13*60+35) {
+    if (totalProt < protTarget * 0.4) {
+      sendNotification('Protein reminder 🥩',
+        `Only ${Math.round(totalProt)}g logged so far — aim for ${protTarget}g today`, 'protein-lunch');
+    }
+  }
+
+  // 3pm: water check
+  if (mins >= 15*60 && mins < 15*60+35) {
+    if (waterMl < waterTarget * 0.5) {
+      sendNotification('Drink water 💧',
+        `Only ${(waterMl/1000).toFixed(1)}L so far — target ${(waterTarget/1000).toFixed(1)}L today`, 'water');
+    }
+  }
+
+  // 6pm: pre-dinner protein nudge
+  if (mins >= 18*60 && mins < 18*60+35) {
+    const protRemaining = protTarget - totalProt;
+    if (protRemaining > 20) {
+      sendNotification('Protein top-up 🍗',
+        `${Math.round(protRemaining)}g protein still to go today — plan your dinner!`, 'protein-dinner');
+    }
+  }
+
+  // 9pm: daily log check
+  if (mins >= 21*60 && mins < 21*60+35) {
+    if (totalKcal === 0) {
+      sendNotification("Log today's food 🥗",
+        "You haven't logged any food today — take a moment to log your meals", 'food-log');
+    } else if (!wd || !wd.weight) {
+      sendNotification("Log your weight 📊",
+        "Don't forget to log this week's Monday weight!", 'weight-log');
+    }
   }
 }
 
-function initReminders() {
+// ─── NOTIFICATIONS & SERVICE WORKER ─────────────────────────────────────────
+// Registers SW for offline support + scheduled reminders.
+// Notifications are shown via SW postMessage so they work even when minimised.
+
+async function initReminders() {
+  // Register Service Worker for PWA + background notifications
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('./sw.js');
+    } catch(e) {
+      console.log('SW registration failed:', e);
+    }
+  }
+
   if (localStorage.getItem(NOTIF_KEY) === 'yes' && Notification.permission === 'granted') {
     scheduleReminders();
-    // Check every 30 minutes
     setInterval(scheduleReminders, 30 * 60 * 1000);
+  }
+}
+
+// Send a notification via Service Worker (works when app is minimised)
+// ─── NOTIFICATIONS — SW-based scheduled reminders ──────────
+function sendNotification(title, body, tag) {
+  if (Notification.permission !== 'granted') return;
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SHOW_NOTIFICATION', title, body, tag: tag || 'fitness',
+      icon: 'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%231a1714\'/><text y=\'.9em\' font-size=\'80\' x=\'10\'>💪</text></svg>'
+    });
+  } else {
+    new Notification(title, { body, tag: tag || 'fitness' });
   }
 }
 
@@ -7044,7 +8475,7 @@ function checkNudgeWater() {
   // Only show the nudge when viewing today — hide it for any other day
   if (!viewingToday) { hideNudge('nudgeWater'); return; }
 
-  const waterTarget = WATER_TARGET_ML();
+  const waterTarget = WATER_TARGET_ML(calDay);
   const wd = peekWeekData(currentWeek);
   const logged = (wd && wd.water && wd.water[todayName]) || 0;
   if (!waterTarget || logged >= waterTarget * 0.5) { hideNudge('nudgeWater'); return; }
@@ -7617,28 +9048,84 @@ function downloadShareCard() {
   a.click();
 }
 
+// ─── WHATSAPP WEEKLY SUMMARY — full stats message ───────────────────────────
 function shareToWhatsApp() {
-  const sw = START_WEIGHT();
+  const sw      = START_WEIGHT();
+  const goal1   = GOAL1();
+
+  // Latest logged weight
   let latestWt = null;
-  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+  for (let w = currentWeek; w >= 1; w--) {
     const d = peekWeekData(w); if (d && d.weight) { latestWt = d.weight; break; }
   }
-  const lost = latestWt ? (sw - latestWt).toFixed(1) : '?';
-  const { current: streak } = calcStreak();
-  const pct = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - GOAL1())) * 100)) : 0;
-  const totalMin2 = calcWeeklyWorkoutHours(currentWeek);
-  const hh2 = Math.floor(totalMin2/60), mm2 = totalMin2%60;
-  const activeStr2 = totalMin2 > 0 ? (hh2>0?hh2+'h ':'')+(mm2>0?mm2+'m':'') : '0h';
-  const { totalDeficit: def2, daysWithData: dwd2 } = calcWeeklyDeficit(currentWeek);
-  const defStr2 = dwd2 > 0 ? (def2>=0?'+':'')+def2.toLocaleString()+' kcal' : '—';
+
+  const lost     = latestWt ? (sw - latestWt).toFixed(1) : '?';
+  const pct      = latestWt ? Math.min(100, Math.round(((sw - latestWt) / (sw - goal1)) * 100)) : 0;
+  const { current: streak, longest } = calcStreak();
+
+  // This week stats
+  const totalMin = calcWeeklyWorkoutHours(currentWeek);
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  const activeStr = totalMin > 0 ? (hh > 0 ? hh + 'h ' : '') + (mm > 0 ? mm + 'm' : '') : '0h';
+
+  const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
+  const defStr = daysWithData > 0
+    ? (totalDeficit >= 0 ? '+' : '') + totalDeficit.toLocaleString() + ' kcal'
+    : '—';
+
+  // Activity count this week
+  const wd = peekWeekData(currentWeek);
+  let runs = 0, weights = 0, sport = 0;
+  if (wd && wd.days) {
+    DAYS.forEach(day => {
+      const dd = wd.days[day] || {};
+      const acts = getActivities(dd);
+      const list = acts.length > 0 ? acts : (dd.activity ? [{ type: dd.activity }] : []);
+      list.forEach(a => {
+        const t = (a.type || '').toLowerCase();
+        if (t.includes('run') || t.includes('tempo')) runs++;
+        if (t.includes('weight')) weights++;
+        if (t === 'sport') sport++;
+      });
+    });
+  }
+
+  // Avg nutrition this week
+  let totalKcal = 0, totalProt = 0, foodDays = 0;
+  if (wd && wd.calories) {
+    DAYS.forEach(day => {
+      const cal = wd.calories[day];
+      if (!cal) return;
+      const entries = MEALS.flatMap(m => cal[m] || []);
+      const dayKcal = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+      const dayProt = entries.reduce((s, e) => s + (e.protein || 0), 0);
+      if (dayKcal > 0) { totalKcal += dayKcal; totalProt += dayProt; foodDays++; }
+    });
+  }
+  const avgKcal = foodDays > 0 ? Math.round(totalKcal / foodDays) : null;
+  const avgProt = foodDays > 0 ? Math.round(totalProt / foodDays) : null;
+
+  const workoutLine = [
+    runs    > 0 ? `🏃 ${runs} run${runs > 1 ? 's' : ''}` : '',
+    weights > 0 ? `🏋️ ${weights} weights` : '',
+    sport   > 0 ? `🎾 ${sport} sport` : '',
+  ].filter(Boolean).join(' · ') || 'No sessions logged';
+
   const msg = encodeURIComponent(
-    `💪 Fitness update — Week ${currentWeek} of ${TOTAL_WEEKS()}\n\n` +
-    `📉 Total lost: ${lost} lbs\n` +
-    `🎯 Goal 1 progress: ${pct}%\n` +
-    `🔥 Streak: ${streak} days\n` +
-    `⏱ Active this week: ${activeStr2}\n` +
-    `⚡ Week deficit: ${defStr2}\n\n` +
-    `Tracking with my personal fitness tracker.`
+    `💪 Fitness update — Week ${currentWeek}/${TOTAL_WEEKS()}\n` +
+    `${'─'.repeat(32)}\n\n` +
+    `📊 *PROGRESS*\n` +
+    `  Weight: ${latestWt ? latestWt + ' lbs' : '—'} (${lost > 0 ? '↓' + lost : '→'} lbs from start)\n` +
+    `  Goal 1: ${pct}% complete (target ${goal1} lbs)\n\n` +
+    `🗓 *THIS WEEK*\n` +
+    `  ${workoutLine}\n` +
+    `  Active: ${activeStr}\n` +
+    `  Deficit: ${defStr}\n` +
+    (avgKcal ? `  Avg intake: ${avgKcal.toLocaleString()} kcal/day\n` : '') +
+    (avgProt  ? `  Avg protein: ${avgProt}g/day\n` : '') + `\n` +
+    `🔥 *STREAKS*\n` +
+    `  Current: ${streak} days · Longest: ${longest} days\n\n` +
+    `Tracked with personal fitness app 🎯`
   );
   window.open(`https://wa.me/?text=${msg}`, '_blank');
 }
@@ -7812,6 +9299,7 @@ function actDrop(e, day, toIdx) {
   // Update day card badge/tag
   renderDays();
   renderSummary();
+  renderProgress();  // update streak + deficit banner
   renderWorkoutLogPanel(day);
 }
 
@@ -7835,6 +9323,7 @@ function addDayActivity(day) {
   if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
   renderDays();
   renderSummary();
+  renderProgress();  // update streak + deficit banner
   updateCalTotals();
   // Re-render workout panel for the new primary activity
   renderWorkoutLogPanel(day);
@@ -7853,6 +9342,7 @@ function removeDayActivity(day, idx) {
   // Always re-render day cards so the badge/tag updates immediately
   renderDays();
   renderSummary();
+  renderProgress();
   updateCalTotals();
   // Re-render workout panel — primary activity may have changed
   renderWorkoutLogPanel(day);
@@ -7921,16 +9411,114 @@ function saveEditDayActivity(day, idx) {
   if (listEl) listEl.innerHTML = renderActivityListHTML(day, dd);
   renderDays();
   renderSummary();
+  renderProgress();  // update streak + deficit banner
   updateCalTotals();
   renderWorkoutLogPanel(day);
 }
 
 
+// ─── COPY LAST WEEK — clone activities, notes, workout log from previous week ─
+function copyLastWeekPlan() {
+  if (currentWeek <= 1) {
+    alert("No previous week to copy from.");
+    return;
+  }
+  const prevWd = peekWeekData(currentWeek - 1);
+  if (!prevWd || !prevWd.days) {
+    alert("No data found in week " + (currentWeek - 1) + " to copy.");
+    return;
+  }
+
+  const thisWd = getWeekData(currentWeek);
+  const hasCurrent = thisWd.days && Object.values(thisWd.days).some(d =>
+    (d.activities && d.activities.length > 0) || d.activity || d.workoutLog
+  );
+
+  if (hasCurrent && !confirm(
+    "This week already has some data logged. Copying last week will overwrite activities, " +
+    "workout logs and notes for each day. Food entries will NOT be affected. Continue?"
+  )) return;
+
+  // Copy day-level data (activities, workout log, notes, core, RPE, sleep, mood)
+  // but NOT food entries (calories) — those stay per-day
+  DAYS.forEach(day => {
+    const prev = prevWd.days && prevWd.days[day];
+    if (!prev) return;
+
+    if (!thisWd.days) thisWd.days = {};
+    if (!thisWd.days[day]) thisWd.days[day] = {};
+    const curr = thisWd.days[day];
+
+    // Deep-copy activity array
+    if (prev.activities && prev.activities.length > 0) {
+      curr.activities = prev.activities.map(a => ({ ...a }));
+      curr.activity   = prev.activity || '';
+    }
+
+    // Copy workout log (sets/reps/kg per exercise)
+    if (prev.workoutLog) {
+      curr.workoutLog = JSON.parse(JSON.stringify(prev.workoutLog));
+      // Reset any cardio time/distance so they re-enter this week's values
+      if (curr.workoutLog.cardio) {
+        curr.workoutLog.cardio = { ...curr.workoutLog.cardio, time: '', distance: '' };
+      }
+    }
+
+    // Copy subjective fields
+    if (prev.core    !== undefined) curr.core    = prev.core;
+    if (prev.rpe     !== undefined) curr.rpe     = prev.rpe;
+    if (prev.sleepHrs !== undefined) curr.sleepHrs = prev.sleepHrs;
+    if (prev.mood    !== undefined) curr.mood    = prev.mood;
+    // Don't copy notes — they're week-specific
+  });
+
+  // Copy week notes
+  if (prevWd.weekNotes) {
+    thisWd.weekNotes = '[Copied from Wk ' + (currentWeek - 1) + '] ' + prevWd.weekNotes;
+    const notesEl = document.getElementById('weekNotesInput');
+    if (notesEl) notesEl.value = thisWd.weekNotes;
+  }
+
+  invalidateStreakCache();
+  autoPersist();
+  render();
+
+  // Show confirmation
+  const msg = document.getElementById('saveMsg');
+  if (msg) {
+    const btn = document.querySelector('.save-btn');
+    if (btn && msg) {
+      const btnRect = btn.getBoundingClientRect();
+      const parentRect = msg.parentElement.getBoundingClientRect();
+      msg.style.position = 'absolute';
+      msg.style.left = (btnRect.left - parentRect.left + btnRect.width / 2) + 'px';
+      msg.style.transform = 'translateX(-50%)';
+      msg.style.whiteSpace = 'nowrap';
+    }
+    msg.textContent = 'Last week copied ✓';
+    msg.classList.add('show');
+    setTimeout(() => { msg.classList.remove('show'); msg.textContent = 'Saved ✓'; }, 3000);
+  }
+}
+
+
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
-  if (local) { allData = JSON.parse(local); checkStartDateSetup(); render(); }
+  if (local) {
+    try {
+      allData = JSON.parse(local);
+      checkStartDateSetup();
+      render();
+    } catch(e) {
+      console.warn('Corrupted localStorage — resetting:', e);
+      localStorage.removeItem('fitnessTracker');
+      allData = {};
+    }
+  }
   const pulled = await pullFromSheets();
   if (pulled) { checkStartDateSetup(); render(); }
+  // If still no data at all, do an initial render with empty state
+  if (!local && !pulled) { checkStartDateSetup(); render(); }
   initReminders();
 }
 
