@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fitness Tracker">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='75' x='10'>💪</text></svg>">
   <link rel="serviceworker" href="sw.js">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
@@ -1326,6 +1327,7 @@
         <div class="cal-stat"><div class="cal-stat-label">Burned (exercise)</div><div class="cal-stat-val" id="calBurned">0 <small>kcal</small></div></div>
         <div class="cal-stat"><div class="cal-stat-label">Net intake</div><div class="cal-stat-val" id="calNet">0 <small>kcal</small></div></div>
         <div class="cal-stat"><div class="cal-stat-label">Daily target</div><div class="cal-stat-val" id="calTarget">1,850 <small>kcal</small></div></div>
+        <div class="cal-stat"><div class="cal-stat-label" title="Maintenance calories minus net intake = real daily deficit">Real deficit</div><div class="cal-stat-val" id="calRealDeficit" style="color:var(--green);">— <small>kcal</small></div></div>
       </div>
       <!-- FEATURE: 3-segment calorie budget bar — eaten / burned / remaining -->
       <div class="cal-bar-wrap" style="margin-top:10px;">
@@ -1436,14 +1438,15 @@
           <div style="flex-shrink:0;text-align:center;">
             <canvas id="macroPieChart" width="80" height="80" style="display:block;"></canvas>
             <div id="macroPieLegend" style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.6;"></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:4px;font-style:italic;max-width:80px;line-height:1.4;">kcal from logged macros only</div>
           </div>
         </div>
       </div>
 
-      <!-- WATER TRACKER -->
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <!-- WATER TRACKER — moved above macro for clarity; blue styling to distinguish it as an active logging section -->
+      <div style="margin-top:14px;padding-top:12px;border-top:2px solid #2563eb;background:rgba(37,99,235,0.04);border-radius:0 0 8px 8px;padding:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Water intake</div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#2563eb;font-weight:600;">💧 Water intake</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button onclick="clearSection(calDay,'water')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);">× clear</button>
             <div id="waterBadge" style="font-family:var(--mono);font-size:11px;padding:2px 10px;border-radius:10px;background:var(--surface2);color:var(--text3);">0 / 2.5 L</div>
@@ -1497,7 +1500,7 @@
           </div>
           <span id="waterPct" style="font-family:var(--mono);font-size:11px;color:var(--text3);min-width:32px;text-align:right;">0%</span>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:5px;" id="waterTargetNote">Target: 2.5 L/day — more on workout days and in Bangkok heat</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;" id="waterTargetNote" style="color:#2563eb;opacity:0.8;">Target: 2.5 L/day — more on workout days and in Bangkok heat</div>
       </div>
     </div>
 
@@ -1957,6 +1960,12 @@
 
   <!-- SETTINGS -->
   <div id="settings" class="tab-panel">
+
+    <!-- FEATURE: Multi-plan management — users can add a second plan without losing data -->
+    <div class="section-title">My plans</div>
+    <div id="plansSection" style="margin-bottom:16px;">
+      <div style="font-size:13px;color:var(--text3);">Loading plans…</div>
+    </div>
 
     <div class="section-title">Goals &amp; plan</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Adjust your plan structure, calorie targets, and goals. Changes here update all calculations and the Plan Reference summary automatically.</div>
@@ -2442,10 +2451,144 @@ const OFF_API_URL  = 'https://world.openfoodfacts.org/api/v2/product/'; // Open 
 
 const DEFAULTS = { startWeight: 168, goal1: 155.5, goal2: 143, dailyTarget1: 1750, dailyTarget2: 1750, waterTargetL: 2.5, proteinTarget: 120, carbTarget: 175, fatTarget: 55, sugarTarget: 35, totalWeeks: 35, phase1Weeks: 18, maintenance: 2100, weeklyHoursGoal: 4 };
 
+// ─── MULTI-PLAN SYSTEM ────────────────────────────────────────────────────────
+// Plans are stored as allData._plans = [{ id, name, startDate, settings, createdAt }]
+// allData._activePlanId identifies the currently live plan.
+// Week data (allData[1], allData[2]...) uses GLOBAL week numbers anchored to
+// the FIRST plan's start date. Each plan records its own startDate so we can
+// compute which global week its "plan week 1" corresponds to.
+// This means NO existing data is ever remapped or deleted when adding a new plan.
+
+// ── Plan migration — run once on first load if _plans absent ─────────────────
+function migrateToPlanSystem() {
+  if (allData._plans && allData._plans.length > 0) return; // already migrated
+
+  // Build plan 1 from existing _startDate + _settings
+  const plan1 = {
+    id:          'plan_1',
+    name:        'Plan 1',
+    startDate:   allData._startDate || null,
+    settings:    allData._settings  || {},
+    createdAt:   allData._startDate || new Date().toISOString().slice(0,10),
+  };
+  allData._plans        = [plan1];
+  allData._activePlanId = 'plan_1';
+  // Leave allData._startDate and allData._settings in place for backward compat
+  // (they're now redundant but harmless)
+}
+
+// ── Get all plans ─────────────────────────────────────────────────────────────
+function getPlans() {
+  migrateToPlanSystem();
+  return allData._plans || [];
+}
+
+// ── Get the active (live) plan object ────────────────────────────────────────
+function getActivePlan() {
+  migrateToPlanSystem();
+  const id   = allData._activePlanId;
+  const plan = (allData._plans || []).find(p => p.id === id);
+  return plan || (allData._plans && allData._plans[0]) || null;
+}
+
+// ── Get plan 1 (the earliest plan — used as calendar anchor) ─────────────────
+function getFirstPlan() {
+  migrateToPlanSystem();
+  return (allData._plans && allData._plans[0]) || null;
+}
+
+// ── Get global week number where a plan starts ───────────────────────────────
+// Plan 1 starts at global week 1.
+// Plan 2 starts at whatever global week its startDate corresponds to.
+function getPlanStartGlobalWeek(plan) {
+  const firstPlan = getFirstPlan();
+  if (!firstPlan || !firstPlan.startDate || !plan.startDate) return 1;
+  if (plan.id === firstPlan.id) return 1;
+
+  // Calculate how many weeks from plan 1 start to this plan's start
+  const anchor = new Date(firstPlan.startDate);
+  const monday = new Date(anchor);
+  const dow = monday.getDay();
+  monday.setDate(monday.getDate() + (dow === 0 ? -6 : 1 - dow));
+  monday.setHours(0,0,0,0);
+
+  const planStart = new Date(plan.startDate);
+  const diff = Math.floor((planStart - monday) / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(1, diff + 1);
+}
+
+// ── Convert global week → plan-relative week for the active plan ──────────────
+function getActivePlanRelativeWeek(globalWeek) {
+  const plan = getActivePlan();
+  if (!plan) return globalWeek;
+  const planStartGlobal = getPlanStartGlobalWeek(plan);
+  return Math.max(1, globalWeek - planStartGlobal + 1);
+}
+
+// ── Get the global week number where the active plan starts ───────────────────
+function getActivePlanStartGlobalWeek() {
+  const plan = getActivePlan();
+  if (!plan) return 1;
+  return getPlanStartGlobalWeek(plan);
+}
+
+// ── Create a new plan ─────────────────────────────────────────────────────────
+// startDate: ISO date string (YYYY-MM-DD)
+// settings: object with totalWeeks, phase1Weeks, startWeight, goal1, goal2, etc.
+// name: display name e.g. "Plan 2 — Maintenance"
+function createPlan(name, startDate, settings) {
+  migrateToPlanSystem();
+  const id = 'plan_' + Date.now();
+  const plan = {
+    id,
+    name:      name || ('Plan ' + (allData._plans.length + 1)),
+    startDate,
+    settings:  { ...DEFAULTS, ...settings },
+    createdAt: new Date().toISOString().slice(0,10),
+  };
+  allData._plans.push(plan);
+  allData._activePlanId = id;
+  autoPersist();
+  return plan;
+}
+
+// ── Set active plan ───────────────────────────────────────────────────────────
+function setActivePlan(planId) {
+  migrateToPlanSystem();
+  if (!(allData._plans || []).find(p => p.id === planId)) return;
+  allData._activePlanId = planId;
+  currentWeek = getCurrentWeekFromDate();
+  autoPersist();
+  render();
+}
+
+// ── Update a plan's settings ──────────────────────────────────────────────────
+function updateActivePlanSettings(newSettings) {
+  const plan = getActivePlan();
+  if (!plan) return;
+  plan.settings = { ...(plan.settings || {}), ...newSettings };
+  // Keep allData._settings in sync for any legacy code that reads it directly
+  allData._settings = plan.settings;
+  autoPersist();
+}
+
+
 function getSetting(key) {
-  return (allData._settings && allData._settings[key] != null) ? allData._settings[key] : DEFAULTS[key];
+  // Read from the ACTIVE plan's settings (falls back to DEFAULTS)
+  // migrateToPlanSystem() ensures _plans exists before this runs
+  const plan = getActivePlan();
+  if (plan && plan.settings && plan.settings[key] != null) return plan.settings[key];
+  // Legacy fallback for old data that hasn't been migrated yet
+  if (allData._settings && allData._settings[key] != null) return allData._settings[key];
+  return DEFAULTS[key];
 }
 function saveSetting(key, val) {
+  // Write to the ACTIVE plan's settings, keeping allData._settings in sync for legacy compat
+  const plan = getActivePlan();
+  if (plan) {
+    if (!plan.settings) plan.settings = {};
+    plan.settings[key] = val;
+  }
   if (!allData._settings) allData._settings = {};
   allData._settings[key] = val;
   autoPersist();
@@ -2477,7 +2620,12 @@ const PHASE1_WEEKS    = () => getSetting('phase1Weeks');
 
 // Helper: which phase is a given week in?
 function getPhase(weekNum) {
-  return weekNum <= PHASE1_WEEKS() ? 1 : 2;
+  // weekNum here is a GLOBAL week number.
+  // Convert to plan-relative week for phase calculation.
+  const planRelWeek = getActivePlanRelativeWeek(weekNum);
+  // Post-plan weeks maintain phase 2 characteristics (no restriction)
+  if (planRelWeek > TOTAL_WEEKS()) return 2;
+  return planRelWeek <= PHASE1_WEEKS() ? 1 : 2;
 }
 // Helper: calorie target for a given week
 function getTargetForWeek(weekNum) {
@@ -2729,6 +2877,13 @@ function getDietData(w, d) {
 
 // ─── DATE UTILITIES — start date, week/day helpers, streak ─
 function getStartDate() {
+  // Returns the FIRST plan's start date — used as global calendar anchor.
+  // This never changes even when a second plan is added.
+  // DO NOT change this to return active plan's startDate — it would break
+  // all existing week-to-calendar mappings.
+  const first = getFirstPlan();
+  if (first && first.startDate) return new Date(first.startDate);
+  // Legacy fallback
   return allData._startDate ? new Date(allData._startDate) : null;
 }
 
@@ -2778,7 +2933,8 @@ function getCurrentWeekFromDate() {
   const daysToMonday = dow === 0 ? -6 : 1 - dow;
   monday.setDate(monday.getDate() + daysToMonday);
   const diff = Math.floor((today - monday) / (7 * 24 * 60 * 60 * 1000));
-  return Math.min(TOTAL_WEEKS(), Math.max(1, diff + 1));
+  // No upper cap — users can log past the plan end date
+  return Math.max(1, diff + 1);
 }
 
 // Cache for expensive streak calculation — invalidated when activity saved
@@ -2843,7 +2999,9 @@ function changeWeek(dir) {
   const panelWasOpen  = selectedDay !== null;
   const activeDay     = selectedDay || calDay; // the day we were viewing
 
-  currentWeek = Math.max(1, Math.min(TOTAL_WEEKS(), currentWeek + dir));
+  // Allow navigation beyond plan end (post-plan logging)
+  const maxWeek = TOTAL_WEEKS() + 260; // up to 5 years post-plan
+  currentWeek = Math.max(1, Math.min(maxWeek, currentWeek + dir));
   dietDayManuallySet = false;
   collapsedMeals.clear();
 
@@ -2986,11 +3144,26 @@ function render() {
   const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
   const dateRange = ws ? formatDate(ws) + ' – ' + formatDate(we) : 'Set start date →';
   document.getElementById('weekLabel').textContent = 'Week ' + currentWeek;
-  document.getElementById('weekNum').innerHTML = currentWeek + ' <span>of ' + TOTAL_WEEKS() + '</span>';
+  const isPostPlan = currentWeek > TOTAL_WEEKS();
+  // Show plan-relative week number (not global week number)
+  const planRelWeekForLabel = getActivePlanRelativeWeek(currentWeek);
+  const weekNumSuffix = isPostPlan
+    ? ' <span style="color:var(--text3);">post-plan</span>'
+    : (' <span>of ' + TOTAL_WEEKS() + '</span>');
+  document.getElementById('weekNum').innerHTML = planRelWeekForLabel + weekNumSuffix;
   const p1w = PHASE1_WEEKS();
-  document.getElementById('weekPhaseDesc').textContent = getPhase(currentWeek) === 1
-    ? 'Phase 1, wk ' + currentWeek
-    : 'Phase 2, wk ' + (currentWeek - p1w);
+  // Show plan-relative week number and active plan name
+  const activePlanForLabel = getActivePlan();
+  const planRelWk          = getActivePlanRelativeWeek(currentWeek);
+  const isPostPlanForLabel = planRelWk > TOTAL_WEEKS();
+  const planName           = activePlanForLabel ? activePlanForLabel.name : '';
+  const phaseLabel         = isPostPlanForLabel
+    ? 'Post-plan · wk ' + planRelWk
+    : (getPhase(currentWeek) === 1
+        ? 'Phase 1, wk ' + planRelWk
+        : 'Phase 2, wk ' + planRelWk);
+  document.getElementById('weekPhaseDesc').textContent =
+    phaseLabel + (planName ? ' · ' + planName : '');
   const wdr = document.getElementById('weekDateRange');
   if (wdr) wdr.textContent = dateRange;
 
@@ -3239,7 +3412,8 @@ function renderDays() {
     const ws = getWeekStartDate(currentWeek);
     const wLabel = ws ? formatDate(ws, {day:'numeric',month:'short'}) : '';
     const prevDis = currentWeek <= 1 ? 'opacity:0.35;cursor:default;pointer-events:none;' : '';
-    const nextDis = currentWeek >= TOTAL_WEEKS() ? 'opacity:0.35;cursor:default;pointer-events:none;' : '';
+    // Button only disabled at week 1 (prev) — no cap going forward
+    const nextDis = '';
     nav.innerHTML = `
       <button onclick="changeWeek(-1)" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);${prevDis}">‹ Prev</button>
       <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;min-width:90px;">Wk ${currentWeek}${wLabel ? ' · ' + wLabel : ''}</div>
@@ -3312,8 +3486,14 @@ function renderDays() {
       checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--green);"></div><span>${Math.round(dayBurnedCard).toLocaleString()} kcal burned</span></div>`;
     }
     if (dayKcal > 0) {
-      const netCard = dayKcal - dayBurnedCard;
-      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div><span>${dayKcal.toLocaleString()} kcal eaten${dayBurnedCard > 0 ? ' · net ' + Math.round(netCard).toLocaleString() : ''}</span></div>`;
+      const netCard     = dayKcal - dayBurnedCard;
+      const maintCard   = getSetting('maintenance') || 2250;
+      const realDefCard = maintCard - netCard;
+      const defCol      = realDefCard >= 0 ? 'var(--green)' : 'var(--red)';
+      const defStr      = (realDefCard >= 0 ? '↓' : '↑') + Math.abs(Math.round(realDefCard)).toLocaleString() + ' vs maint.';
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--amber);"></div>` +
+        `<span>${dayKcal.toLocaleString()} kcal${dayBurnedCard > 0 ? ' · net ' + Math.round(netCard).toLocaleString() : ''} ` +
+        `· <span style="color:${defCol};">${defStr}</span></span></div>`;
     }
     if (dd.rpe) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--purple,#7c3aed);"></div><span>RPE ${dd.rpe}/10</span></div>`;
     if (dd.sleepHrs) checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:var(--blue);"></div><span>${dd.sleepHrs}h sleep</span></div>`;
@@ -3411,7 +3591,7 @@ function renderDayDetail(day) {
           </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <select id="activityAddSelect_${day}" class="activity-select" style="flex:1;min-width:140px;">
-              <option value="">+ add activity…</option>
+              <option value="">— select activity —</option>
               ${optHtml}
             </select>
             <input type="number" id="activityAddBurn_${day}" class="cal-num-input" placeholder="kcal (opt)" min="0" max="2000" style="width:100px;">
@@ -3475,9 +3655,17 @@ function renderDayDetail(day) {
           <div id="workoutLogPanel_${day}"></div>
         </div>
 
-        <!-- MOOD / SLEEP / ENERGY -->
+        <!-- WELLBEING SECTION — sleep, mood, energy, RPE logged per day ──────
+             Shown as a standalone mini-section beneath the workout log.
+             Sleep hours = hours slept the PREVIOUS night waking up on this day.
+             e.g. Saturday sleep = Friday night → Saturday morning. -->
+        <div class="detail-section" style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid var(--border);">
+          <div class="detail-label" style="margin-bottom:8px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">📊 Wellbeing</div>
+        </div>
         <div class="detail-section">
-          <div class="detail-label">Sleep (hours)</div>
+          <div class="detail-label">Sleep last night
+            <span style="font-size:10px;color:var(--text3);font-weight:400;display:block;margin-top:1px;">hrs slept before waking up ${day === 'Mon' ? 'Mon' : day}</span>
+          </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" class="cal-num-input" step="0.5" min="2" max="14" style="width:72px;"
               value="${dd.sleepHrs || ''}" placeholder="7.5"
@@ -4467,6 +4655,8 @@ function saveAllSettings() {
     waterTargetL:    parseFloat(gv('setWaterTarget')),
     weeklyHoursGoal: parseFloat(gv('setWeeklyHoursGoal')),
   };
+  if (activePlan) activePlan.settings = { ...(activePlan.settings || {}), ...newSettings };
+  allData._settings = newSettings;
   if (!isNaN(fields.phase1Weeks) && !isNaN(fields.totalWeeks) && fields.phase1Weeks >= fields.totalWeeks) {
     alert('Phase 1 length must be less than total weeks.'); return;
   }
@@ -4480,7 +4670,8 @@ function saveAllSettings() {
     if (cwt) allData._settings._maintenanceSetAtWeight = cwt;
   }
   autoPersist();
-  if (currentWeek > TOTAL_WEEKS()) currentWeek = TOTAL_WEEKS();
+  // Don't snap currentWeek back — user may be logging post-plan
+  // if (currentWeek > TOTAL_WEEKS()) currentWeek = TOTAL_WEEKS();
   render();
   renderPlanRef();
   updateSettingsCalcs();
@@ -4491,6 +4682,191 @@ function saveAllSettings() {
     if (msg) { msg.textContent = 'Settings saved ✓'; msg.style.color = 'var(--green)'; msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 3500); }
   }, 50);
 }
+
+// ─── PLAN MANAGEMENT UI ───────────────────────────────────────────────────────
+// Renders the plans section in the Settings tab.
+// Users can: view all plans, switch active plan, create a new plan.
+// No data is ever deleted when switching plans.
+
+function renderPlansSection() {
+  const container = document.getElementById('plansSection');
+  if (!container) return;
+
+  migrateToPlanSystem();
+  const plans       = getPlans();
+  const activePlanId = allData._activePlanId;
+
+  // Plan cards
+  const planCards = plans.map(plan => {
+    const isActive    = plan.id === activePlanId;
+    const startGlobal = getPlanStartGlobalWeek(plan);
+    const startLabel  = plan.startDate
+      ? new Date(plan.startDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})
+      : 'No start date';
+    const totalW  = (plan.settings && plan.settings.totalWeeks)  || DEFAULTS.totalWeeks;
+    const endDate = plan.startDate ? (() => {
+      const d = new Date(plan.startDate);
+      d.setDate(d.getDate() + totalW * 7);
+      return d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+    })() : '—';
+
+    return `
+      <div style="border:${isActive ? '2px solid var(--accent)' : '1px solid var(--border)'};
+                  border-radius:10px;padding:12px 14px;margin-bottom:8px;
+                  background:${isActive ? 'rgba(196,80,26,0.05)' : 'var(--surface)'};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">
+              ${escapeHtml(plan.name)}
+              ${isActive ? '<span style="font-size:10px;color:var(--accent);margin-left:6px;font-weight:500;">● ACTIVE</span>' : ''}
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono);">
+              ${startLabel} → ${endDate} · ${totalW} weeks
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);">
+              Goal: ${(plan.settings && plan.settings.startWeight) || '—'} → ${(plan.settings && plan.settings.goal1) || '—'} lbs
+              · ${(plan.settings && plan.settings.dailyTarget1) || '—'} kcal/day
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            ${!isActive ? `<button onclick="setActivePlan('${plan.id}')"
+              style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">
+              Set active
+            </button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // "New plan" form (collapsed by default)
+  const newPlanForm = `
+    <div id="newPlanFormWrap" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-top:6px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">New plan</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <label style="font-size:12px;color:var(--text2);">Plan name
+          <input id="newPlanName" type="text" placeholder="e.g. Maintenance 2026" value="Plan ${plans.length + 1}"
+            style="display:block;margin-top:3px;width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Start date
+          <input id="newPlanStartDate" type="date"
+            style="display:block;margin-top:3px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Total weeks
+          <input id="newPlanTotalWeeks" type="number" min="1" max="260" value="28"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Phase 1 weeks
+          <input id="newPlanPhase1Weeks" type="number" min="1" max="260" value="15"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Start weight (lbs)
+          <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Goal 1 (lbs)
+          <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Daily calorie target (kcal)
+          <input id="newPlanDailyTarget" type="number" min="500" max="5000"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+        <label style="font-size:12px;color:var(--text2);">Maintenance calories (kcal)
+          <input id="newPlanMaintenance" type="number" min="500" max="8000"
+            class="cal-num-input" style="width:80px;display:block;margin-top:3px;">
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="saveNewPlan()"
+          style="padding:7px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">
+          Create plan
+        </button>
+        <button onclick="document.getElementById('newPlanFormWrap').style.display='none'"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+
+  container.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">
+      All logged data (food, activities, sleep, workouts) is shared across plans.
+      Switching the active plan only changes which goals and phase structure are used for tracking.
+    </div>
+    ${planCards}
+    <button onclick="document.getElementById('newPlanFormWrap').style.display='block';this.style.display='none';"
+      style="width:100%;padding:8px;border:1px dashed var(--border2);border-radius:8px;background:none;color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:4px;">
+      + Start a new plan
+    </button>
+    ${newPlanForm}
+  `;
+
+  // Pre-fill start date with day after current plan ends
+  const lastPlan = plans[plans.length - 1];
+  if (lastPlan && lastPlan.startDate && lastPlan.settings) {
+    const endD = new Date(lastPlan.startDate);
+    endD.setDate(endD.getDate() + (lastPlan.settings.totalWeeks || 28) * 7);
+    const sdInput = document.getElementById('newPlanStartDate');
+    if (sdInput) sdInput.value = endD.toISOString().slice(0,10);
+  } else {
+    const sdInput = document.getElementById('newPlanStartDate');
+    if (sdInput) sdInput.value = new Date().toISOString().slice(0,10);
+  }
+}
+
+function saveNewPlan() {
+  const name        = document.getElementById('newPlanName')?.value.trim() || ('Plan ' + (getPlans().length + 1));
+  const startDate   = document.getElementById('newPlanStartDate')?.value;
+  const totalWeeks  = parseInt(document.getElementById('newPlanTotalWeeks')?.value)  || 28;
+  const phase1Weeks = parseInt(document.getElementById('newPlanPhase1Weeks')?.value) || 15;
+  const startWeight = parseFloat(document.getElementById('newPlanStartWeight')?.value) || getSetting('startWeight');
+  const goal1       = parseFloat(document.getElementById('newPlanGoal1')?.value)       || getSetting('goal1');
+  const dailyTarget = parseInt(document.getElementById('newPlanDailyTarget')?.value)   || getSetting('dailyTarget1');
+  const maintenance = parseInt(document.getElementById('newPlanMaintenance')?.value)   || getSetting('maintenance');
+
+  if (!startDate) {
+    alert('Please set a start date for the new plan.');
+    return;
+  }
+
+  // Validate: new plan must start after the last plan ends
+  const plans = getPlans();
+  const lastPlan = plans[plans.length - 1];
+  if (lastPlan && lastPlan.startDate) {
+    const lastEnd = new Date(lastPlan.startDate);
+    lastEnd.setDate(lastEnd.getDate() + ((lastPlan.settings && lastPlan.settings.totalWeeks) || 28) * 7);
+    const newStart = new Date(startDate);
+    if (newStart < lastEnd) {
+      if (!confirm(
+        'The new plan start date (' + startDate + ') overlaps with your current plan.\n\n' +
+        'This is allowed but may cause the phase display to look unusual for the overlap period.\n\n' +
+        'Continue?'
+      )) return;
+    }
+  }
+
+  // Build settings — inherit all current active plan settings, then override with new values
+  const currentSettings = { ...(getActivePlan()?.settings || {}), ...DEFAULTS };
+  const newSettings = {
+    ...currentSettings,
+    totalWeeks, phase1Weeks, startWeight, goal1,
+    dailyTarget1: dailyTarget, dailyTarget2: dailyTarget,
+    maintenance,
+  };
+
+  const newPlan = createPlan(name, startDate, newSettings);
+  // Navigate to the first week of the new plan
+  currentWeek = getActivePlanStartGlobalWeek();
+  render();
+  renderPlansSection();
+  renderSettingsTab();
+
+  // Show confirmation
+  alert(`"${name}" created and set as active plan. ` +
+    `Starting from week ${currentWeek} (${startDate}).\n\n` +
+    `All your historical data is preserved and visible on the calendar.`);
+}
+
 
 function populateSettingsFields() {
   const map = {
@@ -4690,6 +5066,8 @@ function saveBodySetting(key, val) {
 }
 
 function renderSettingsTab() {
+  // Render plans section first (multi-plan UI)
+  renderPlansSection();
   // Populate all settings fields
   populateSettingsFields();
   updateSettingsCalcs();
@@ -5572,11 +5950,26 @@ function editQuickPreset(idx) {
   div.innerHTML = `
     <input type="text" id="${rowId}_label" value="${p.label.replace(/"/g,'&quot;')}" style="flex:1;min-width:130px;padding:5px 9px;border:1px solid var(--accent);border-radius:7px;background:var(--bg);font-family:var(--sans);font-size:12px;color:var(--text);outline:none;"
       onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');if(event.key==='Escape')document.getElementById('${rowId}').remove();">
-    <input type="number" id="${rowId}_kcal"  value="${p.kcal}"          placeholder="kcal"    class="cal-num-input" min="0" max="5000" style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
-    <input type="number" id="${rowId}_prot"  value="${p.protein}"        placeholder="prot g"  class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
-    <input type="number" id="${rowId}_carbs" value="${p.carbs ?? ''}"    placeholder="carbs g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
-    <input type="number" id="${rowId}_fats"  value="${p.fats  ?? ''}"    placeholder="fats g"  class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
-    <input type="number" id="${rowId}_sugar" value="${p.sugar ?? ''}"    placeholder="sugar g" class="cal-num-input" min="0" max="500"  style="width:65px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:var(--accent);font-weight:600;letter-spacing:0.04em;">KCAL</span>
+      <input type="number" id="${rowId}_kcal"  value="${p.kcal}"       class="cal-num-input" min="0" max="5000" style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#2563eb;font-weight:600;letter-spacing:0.04em;">PROTEIN</span>
+      <input type="number" id="${rowId}_prot"  value="${p.protein}"    class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#d97706;font-weight:600;letter-spacing:0.04em;">CARBS</span>
+      <input type="number" id="${rowId}_carbs" value="${p.carbs ?? ''}" class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#7c3aed;font-weight:600;letter-spacing:0.04em;">FAT</span>
+      <input type="number" id="${rowId}_fats"  value="${p.fats  ?? ''}" class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    </label>
+    <label style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <span style="font-size:9px;color:#e11d48;font-weight:600;letter-spacing:0.04em;">SUGAR</span>
+      <input type="number" id="${rowId}_sugar" value="${p.sugar ?? ''}" class="cal-num-input" min="0" max="500"  style="width:60px;" onkeydown="if(event.key==='Enter')saveQuickPresetEdit(${idx},'${rowId}');">
+    </label>
     <button onclick="saveQuickPresetEdit(${idx},'${rowId}')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save</button>
     <button onclick="document.getElementById('${rowId}').remove()" style="padding:5px 8px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Cancel</button>
   `;
@@ -6916,6 +7309,36 @@ function toggleMealCollapse(meal) {
   renderCalEntries();
 }
 
+// ─── CLEAR MEAL — remove all entries for a specific meal in one tap ──────────
+// ─── MEAL-SPECIFIC MANUAL ENTRY — add custom food directly to a specific meal ─
+// Called from per-meal "+ add manually" button. Overrides active meal selector.
+function addCustomEntryToMeal(targetMeal) {
+  // Temporarily switch active meal so addCustomEntry writes to the right place
+  const prev = activeMeal;
+  activeMeal = targetMeal;
+  // Update the meal tab button highlight
+  document.querySelectorAll('.meal-tab-btn').forEach(b => {
+    b.classList.toggle('meal-tab-active', b.textContent.trim() === MEAL_LABELS[targetMeal]);
+  });
+  addCustomEntry();
+  // Note: activeMeal will remain as targetMeal after this, which is intentional
+  // so any subsequent search results also go to the right meal
+}
+
+
+function clearMealSection(meal) {
+  const label = (window.MEAL_LABELS && MEAL_LABELS[meal]) || meal;
+  if (!confirm('Clear all ' + label + ' entries for today?')) return;
+  const cd = getCalData(currentWeek, calDay);
+  if (cd[meal]) cd[meal] = [];
+  autoPersist();
+  renderCalEntries();
+  updateCalTotals();
+  renderDays();
+  renderProgress();
+}
+
+
 function renderCalEntries() {
   const cd = getCalData(currentWeek, calDay);
   const container = document.getElementById('mealSections');
@@ -6936,8 +7359,14 @@ function renderCalEntries() {
 
   container.innerHTML = copyBtnsHtml + MEALS.map(meal => {
     const entries = cd[meal] || [];
-    if (entries.length === 0) return '';
-    const mealKcal   = entries.reduce((s, e) => s + (e.kcal || 0), 0);
+    // Always render every meal section even if empty (Q5)
+    const mealKcal   = entries.reduce((s, e) => s + (e.kcal    || 0), 0);
+    // Q17: Compute per-meal macro totals for header display
+    const mealProt   = entries.reduce((s, e) => s + (e.protein || 0), 0);
+    const mealCarbs  = entries.some(e => e.carbs != null)
+      ? entries.reduce((s, e) => s + (e.carbs  || 0), 0) : null;
+    const mealFats   = entries.some(e => e.fats  != null)
+      ? entries.reduce((s, e) => s + (e.fats   || 0), 0) : null;
     const collapsed  = collapsedMeals.has(meal);
 
     const rows = collapsed ? '' : entries.map((e, i) => {
@@ -6972,11 +7401,23 @@ function renderCalEntries() {
         <span class="meal-section-title">${MEAL_LABELS[meal]}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <button onclick="event.stopPropagation();copyMealFromPrevDay('${meal}')" style="font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid currentColor;opacity:0.6;background:none;cursor:pointer;font-family:var(--sans);">copy prev</button>
-          <span class="meal-section-kcal">${mealKcal} kcal</span>
+          ${entries.length > 0 ? `<button onclick="event.stopPropagation();clearMealSection('${meal}')" style="font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid var(--red,#ef4444);color:var(--red,#ef4444);opacity:0.7;background:none;cursor:pointer;font-family:var(--sans);" title="Clear all ${MEAL_LABELS[meal]} entries">clear</button>` : ''}
+          <span class="meal-section-kcal" style="font-family:var(--mono);font-size:11px;">
+            <span style="color:var(--accent);font-weight:600;">${mealKcal} kcal</span>
+            ${mealProt > 0 ? ` <span style="color:#2563eb;">${Math.round(mealProt)}g P</span>` : ''}
+            ${mealCarbs != null ? ` <span style="color:#d97706;">${Math.round(mealCarbs)}g C</span>` : ''}
+            ${mealFats  != null ? ` <span style="color:#7c3aed;">${Math.round(mealFats)}g F</span>`  : ''}
+          </span>
           <span style="font-size:12px;transition:transform 0.2s;display:inline-block;transform:${collapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};">▾</span>
         </div>
       </div>
-      <div id="mealBody_${meal}" style="display:${collapsed ? 'none' : 'block'}">${rows}</div>
+      <div id="mealBody_${meal}" style="display:${collapsed ? 'none' : 'block'}">
+        ${rows}
+        ${!collapsed ? `<button onclick="event.stopPropagation();addCustomEntryToMeal('${meal}')"
+          style="width:100%;margin-top:6px;padding:6px;border:1px dashed var(--border2);border-radius:7px;background:none;color:var(--text3);font-family:var(--sans);font-size:11px;cursor:pointer;text-align:center;">
+          + add manually to ${MEAL_LABELS[meal]} (food not found in search)
+        </button>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -7298,6 +7739,18 @@ function updateCalTotals() {
   }
   const pct = Math.min(120, Math.round((net / target) * 100));
 
+  // Real deficit = maintenance calories - net intake (consumed - burned)
+  const maintenance = getSetting('maintenance') || 2250;
+  const realDeficit = maintenance - net;
+  const realDefEl = document.getElementById('calRealDeficit');
+  if (realDefEl && net > 0) {
+    realDefEl.innerHTML = (realDeficit >= 0 ? '+' : '') + fmt(realDeficit) + ' <small>kcal</small>';
+    realDefEl.style.color = realDeficit >= 0 ? 'var(--green)' : 'var(--red)';
+  } else if (realDefEl) {
+    realDefEl.innerHTML = '— <small>kcal</small>';
+    realDefEl.style.color = 'var(--text3)';
+  }
+
   const badge = document.getElementById('deficitBadge');
   if (net === 0) {
     badge.textContent = '— deficit'; badge.className = 'deficit-badge deficit-ok';
@@ -7340,9 +7793,31 @@ function updateCalTotals() {
 
 // ─── START DATE — save, check, setup prompt ────────────────
 function saveStartDate() {
+  // ── Start date change — data preservation ──────────────────────────────────
+  // Weekly data is stored by program-week number (1, 2, 3...), NOT by calendar date.
+  // Changing the start date re-maps week numbers to different calendar dates but
+  // does NOT delete any logged data — all historical entries are preserved.
+  // If user wants a fresh program, they can use "Export backup" first for safety.
   const inp = document.getElementById('startDateInput');
   if (!inp || !inp.value) return;
-  setStartDate(inp.value);
+  const existingDate = allData._startDate;
+  const isChangingDate = existingDate && existingDate !== inp.value;
+  if (isChangingDate) {
+    const hasData = Object.keys(allData).some(k => !isNaN(k) && allData[k].weight);
+    if (hasData && !confirm(
+      'Changing your start date will re-map your week numbers to new calendar dates.\n\n' +
+      'Your logged data (food, activities, workouts) is NOT deleted — it stays in weeks 1, 2, 3... ' +
+      'and will appear on the new calendar dates.\n\n' +
+      'Tip: use "Export backup" first if you want to preserve a snapshot of your current program.\n\n' +
+      'Continue?'
+    )) return;
+  }
+  // Save startDate to the active plan (and keep legacy _startDate in sync)
+  const activePlan = getActivePlan();
+  if (activePlan) {
+    activePlan.startDate = inp.value;
+  }
+  setStartDate(inp.value); // keeps allData._startDate in sync for legacy code
   currentWeek = getCurrentWeekFromDate();
   document.getElementById('startDateSetup').style.display = 'none';
   autoPersist();
@@ -9530,7 +10005,9 @@ async function loadAndRender() {
   if (local) {
     try {
       allData = JSON.parse(local);
-      hasLocalData = !!allData._startDate; // only counts if properly initialised
+      // Migrate legacy single-plan data to multi-plan system (safe, non-destructive)
+      migrateToPlanSystem();
+      hasLocalData = !!allData._startDate || getPlans().some(p => p.startDate); // properly initialised
       checkStartDateSetup();
       render();
     } catch(e) {
