@@ -4886,11 +4886,19 @@ async function pullFromSheets() {
 }
 
 // ─── SAVE & EXPORT — persist, copy summary, export CSV ─────
+let _sheetsWriteBlocked = false; // prevents pushing empty data after failed pull
+
 function autoPersist() {
   allData._lastSaved = Date.now();
   localStorage.setItem('fitnessTracker', JSON.stringify(allData));
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(pushToSheets, 1500);
+  syncTimer = setTimeout(() => {
+    // Only push if we have real data (start date set) or write was never blocked
+    if (!_sheetsWriteBlocked || allData._startDate) {
+      _sheetsWriteBlocked = false;
+      pushToSheets();
+    }
+  }, 1500);
 }
 
 function copyWeekSummary() {
@@ -9517,9 +9525,12 @@ function copyLastWeekPlan() {
 
 async function loadAndRender() {
   const local = localStorage.getItem('fitnessTracker');
+  let hasLocalData = false;
+
   if (local) {
     try {
       allData = JSON.parse(local);
+      hasLocalData = !!allData._startDate; // only counts if properly initialised
       checkStartDateSetup();
       render();
     } catch(e) {
@@ -9528,10 +9539,19 @@ async function loadAndRender() {
       allData = {};
     }
   }
+
   const pulled = await pullFromSheets();
-  if (pulled) { checkStartDateSetup(); render(); }
-  // If still no data at all, do an initial render with empty state
-  if (!local && !pulled) { checkStartDateSetup(); render(); }
+  if (pulled) {
+    checkStartDateSetup();
+    render();
+  } else if (!local) {
+    // Pull failed AND no local data — render empty state but DO NOT push to Sheets
+    // This prevents overwriting Sheets data with an empty object
+    _sheetsWriteBlocked = true;
+    checkStartDateSetup();
+    render();
+  }
+
   initReminders();
 }
 
