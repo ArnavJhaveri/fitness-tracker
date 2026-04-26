@@ -4228,19 +4228,20 @@ function startRetry() {
 async function pushToSheets() {
   if (window.location.protocol === 'file:') return;
   setSyncStatus('saving');
+  // Add a timestamp so we can do last-write-wins conflict resolution
+  allData._lastSaved = Date.now();
+  localStorage.setItem('fitnessTracker', JSON.stringify(allData));
   try {
-    const resp = await fetch(SCRIPT_URL, {
+    // Apps Script requires no-cors + text/plain to avoid CORS preflight failure
+    await fetch(SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'write', data: { fitnessTracker: allData } }),
     });
-    const json = await resp.json();
-    if (json.ok) {
-      setSyncStatus('saved');
-      if (retryInterval) { clearInterval(retryInterval); retryInterval = null; }
-    } else {
-      setSyncStatus('error');
-      startRetry();
-    }
+    // no-cors responses are opaque — if no network error, treat as success
+    setSyncStatus('saved');
+    if (retryInterval) { clearInterval(retryInterval); retryInterval = null; }
   } catch {
     setSyncStatus('error');
     startRetry();
@@ -4255,10 +4256,22 @@ async function pullFromSheets() {
     if (!resp.ok) { setSyncStatus('error'); return false; }
     const json = await resp.json();
     if (json.ok && json.data && json.data.fitnessTracker) {
-      allData = json.data.fitnessTracker;
-      localStorage.setItem('fitnessTracker', JSON.stringify(allData));
-      setSyncStatus('saved');
-      return true;
+      const remote = json.data.fitnessTracker;
+      const local  = allData;
+      // Last-write-wins: use whichever version was saved most recently
+      const remoteTs = remote._lastSaved || 0;
+      const localTs  = local._lastSaved  || 0;
+      if (remoteTs >= localTs) {
+        allData = remote;
+        localStorage.setItem('fitnessTracker', JSON.stringify(allData));
+        setSyncStatus('saved');
+        return true;
+      } else {
+        // Local is newer — push it to Sheets immediately
+        setSyncStatus('saved');
+        setTimeout(pushToSheets, 500);
+        return false;
+      }
     }
     setSyncStatus('saved');
     return false;
@@ -4270,6 +4283,7 @@ async function pullFromSheets() {
 
 // ─── SAVE & EXPORT — persist, copy summary, export CSV ─────
 function autoPersist() {
+  allData._lastSaved = Date.now();
   localStorage.setItem('fitnessTracker', JSON.stringify(allData));
   clearTimeout(syncTimer);
   syncTimer = setTimeout(pushToSheets, 1500);
