@@ -4847,7 +4847,13 @@ async function pullFromSheets() {
   if (window.location.protocol === 'file:') return false;
   setSyncStatus('loading');
   try {
-    const resp = await fetch(SCRIPT_URL + '?action=read', { method: 'GET' });
+    // Apps Script CORS workaround: use credentials:'omit' to prevent auth redirect
+    // which would strip the Access-Control-Allow-Origin header
+    const resp = await fetch(SCRIPT_URL + '?action=read', {
+      method: 'GET',
+      credentials: 'omit',
+      redirect: 'follow',
+    });
     if (!resp.ok) { setSyncStatus('error'); return false; }
     const json = await resp.json();
     if (json.ok && json.data && json.data.fitnessTracker) {
@@ -4871,6 +4877,9 @@ async function pullFromSheets() {
     setSyncStatus('saved');
     return false;
   } catch(err) {
+    // CORS errors from Apps Script redirect are non-fatal —
+    // app continues from localStorage which is always the primary store
+    console.log('Sheets read failed (non-fatal, using localStorage):', err.message);
     setSyncStatus('error');
   }
   return false;
@@ -5985,7 +5994,7 @@ function renderMacroStats() {
     `).join('');
 
   // Draw donut chart
-  renderMacroPie(protein, carbs, fat);
+  renderMacroPie(protein, carbs, fats);
 }
 
 // ─── MACRO DONUT CHART — protein / carbs / fat visual breakdown ──────────────
