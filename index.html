@@ -8205,12 +8205,16 @@ function scheduleReminders() {
 // Notifications are shown via SW postMessage so they work even when minimised.
 
 async function initReminders() {
-  // Register Service Worker for PWA + background notifications
-  if ('serviceWorker' in navigator) {
+  // Register Service Worker for offline caching + notifications
+  // Skip on file:// protocol (local testing) and iOS Safari < 16.4 (SW+sessionStorage issues)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     try {
-      await navigator.serviceWorker.register('./sw.js');
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      // Log but don't block on SW state
+      console.log('SW registered:', reg.scope);
     } catch(e) {
-      console.log('SW registration failed:', e);
+      // SW registration failure is non-fatal — app works without it
+      console.log('SW registration failed (non-fatal):', e.message);
     }
   }
 
