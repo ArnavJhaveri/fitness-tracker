@@ -3566,9 +3566,7 @@ function renderDays() {
     const waterTargetForCard = WATER_TARGET_ML(day);
     if (dayWaterMl > 0) {
       const waterL    = (dayWaterMl / 1000).toFixed(1);
-      const waterPct  = Math.min(100, Math.round((dayWaterMl / waterTargetForCard) * 100));
-      const waterCol  = waterPct >= 100 ? 'var(--green)' : waterPct >= 60 ? '#2563eb' : 'var(--text3)';
-      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:#2563eb;"></div><span style="color:${waterCol};">💧 ${waterL}L${waterPct >= 100 ? ' ✓' : ' / ' + (waterTargetForCard/1000).toFixed(1) + 'L'}</span></div>`;
+      checksHtml += `<div class="check-item"><div class="check-dot checked" style="background:#2563eb;"></div><span style="color:#2563eb;">💧 ${waterL}L</span></div>`;
     }
     if (dd.mood) {
       const moodEmoji = ['','😞','😕','😐','🙂','😄'][dd.mood];
@@ -4880,6 +4878,7 @@ function renderPlansSection() {
     <!-- Calories & nutrition -->
     <div class="plan-ref" style="margin-bottom:12px;">
       <div class="plan-ref-title">Calories &amp; nutrition</div>
+      <!-- Row 1: calorie targets -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
         <div><label class="set-label">Maintenance (kcal/day)</label>
           <input type="number" id="ps_maintenance_${plan.id}" value="${getPS('maintenance')}" min="500" max="8000" step="50" class="set-input"></div>
@@ -4887,6 +4886,9 @@ function renderPlansSection() {
           <input type="number" id="ps_dailyTarget1_${plan.id}" value="${getPS('dailyTarget1')}" min="500" max="5000" step="50" class="set-input"></div>
         <div><label class="set-label">Phase 2 daily target (kcal)</label>
           <input type="number" id="ps_dailyTarget2_${plan.id}" value="${getPS('dailyTarget2')}" min="500" max="5000" step="50" class="set-input"></div>
+      </div>
+      <!-- Row 2: macro targets together -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:10px;">
         <div><label class="set-label">Protein target (g/day)</label>
           <input type="number" id="ps_proteinTarget_${plan.id}" value="${getPS('proteinTarget')}" min="0" max="500" class="set-input"></div>
         <div><label class="set-label">Carb target (g/day)</label>
