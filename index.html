@@ -1187,7 +1187,7 @@
       <div class="prog-stat">
         <div class="prog-label">Start weight</div>
         <div class="prog-val" id="startWt">168 <span>lbs</span></div>
-        <div class="prog-sub">Your baseline</div>
+        <div class="prog-sub" id="startWtSub">Your baseline</div>
       </div>
       <div class="prog-stat">
         <div class="prog-label">This week</div>
@@ -1195,7 +1195,7 @@
         <div class="prog-sub" id="wtDeltaText">Log below</div>
       </div>
       <div class="prog-stat">
-        <div class="prog-label">Total lost</div>
+        <div class="prog-label" id="totalLostLabel">Weight change</div>
         <div class="prog-val" id="totalLost">0 <span>lbs</span></div>
         <div class="prog-sub" id="toGoText">14 lbs to goal 1</div>
       </div>
@@ -1967,71 +1967,9 @@
       <div style="font-size:13px;color:var(--text3);">Loading plans…</div>
     </div>
 
-    <div class="section-title">Goals &amp; plan</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Adjust your plan structure, calorie targets, and goals. Changes here update all calculations and the Plan Reference summary automatically.</div>
-
-    <!-- PLAN STRUCTURE -->
-    <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
-      <div class="plan-ref-title">Plan structure</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
-        <div><label class="set-label">Total plan weeks</label><input type="number" id="setTotalWeeks" step="1" min="4" max="52" class="set-input" oninput="updateSettingsCalcs()"></div>
-        <div><label class="set-label">Start weight (lbs)</label><input type="number" id="setStartWeight" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-        <div><label class="set-label">Final goal weight (lbs)</label><input type="number" id="setGoal2" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-        <div><label class="set-label">Maintenance calories (kcal/day)</label><input type="number" id="setMaintenance" step="50" min="1200" max="5000" class="set-input" placeholder="e.g. 2350" oninput="updateSettingsCalcs()"><div style="font-size:10px;color:var(--text3);margin-top:3px;">Used for deficit calc</div></div>
-      </div>
-      <div style="border-left:3px solid var(--accent);padding-left:12px;">
-        <div style="font-size:11px;font-weight:600;color:var(--accent);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 1</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
-          <div><label class="set-label">Length (weeks)</label><input type="number" id="setPhase1Weeks" step="1" min="1" max="51" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget1" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Goal 1 — end of phase (lbs)</label><input type="number" id="setGoal1" step="0.1" min="50" max="400" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div id="phase1DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
-        </div>
-      </div>
-      <div style="border-left:3px solid var(--blue);padding-left:12px;">
-        <div style="font-size:11px;font-weight:600;color:var(--blue);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px;">Phase 2</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;">
-          <div><label class="set-label">Length (weeks) <span style="font-weight:400;color:var(--text3);">auto</span></label><input type="number" id="setPhase2Disp" class="set-input" disabled style="opacity:0.55;"></div>
-          <div><label class="set-label">Calorie target (kcal/day)</label><input type="number" id="setTarget2" step="10" min="1000" max="4000" class="set-input" oninput="updateSettingsCalcs()"></div>
-          <div><label class="set-label">Goal 2 — end of phase (lbs) <span style="font-weight:400;color:var(--text3);">(= final goal)</span></label><input type="number" id="setGoal2disp" class="set-input" disabled style="opacity:0.55;"></div>
-          <div id="phase2DeficitCalc" style="font-size:12px;color:var(--text2);padding-bottom:2px;"></div>
-        </div>
-      </div>
-      <div>
-        <label class="set-label">Target date (optional) — shows required daily deficit to hit Goal 1</label>
-        <input type="date" id="setTargetDate" class="set-input" style="width:200px;" oninput="updateSettingsCalcs()">
-        <div id="targetDateCalc" style="font-size:12px;color:var(--text2);margin-top:6px;min-height:18px;"></div>
-      </div>
-      <div id="settingsOverallWarn"></div>
-    </div>
-
-    <!-- MACRO & HYDRATION -->
-    <div class="plan-ref" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
-      <div class="plan-ref-title">Macro &amp; hydration goals <span style="font-size:11px;font-weight:400;color:var(--text3);">daily targets</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
-        <div><label class="set-label">Protein (g)</label><input type="number" id="setProteinTarget" step="5" min="20" max="300" class="set-input"></div>
-        <div><label class="set-label">Carbs (g)</label><input type="number" id="setCarbTarget" step="10" min="20" max="600" class="set-input"></div>
-        <div><label class="set-label">Fat (g)</label><input type="number" id="setFatTarget" step="5" min="10" max="200" class="set-input"></div>
-        <div><label class="set-label">Sugar limit (g)</label><input type="number" id="setSugarTarget" step="5" min="5" max="150" class="set-input"></div>
-        <div><label class="set-label">Water (litres)</label><input type="number" id="setWaterTarget" step="0.25" min="0.5" max="6" class="set-input"></div>
-      </div>
-    </div>
-
-    <!-- WORKOUT GOALS -->
-    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-      <div class="plan-ref-title">Workout goals <span style="font-size:11px;font-weight:400;color:var(--text3);">weekly targets</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
-        <div><label class="set-label">Weekly workout hours target</label><input type="number" id="setWeeklyHoursGoal" step="0.25" min="0.25" max="40" class="set-input" placeholder="e.g. 3"></div>
-      </div>
-      <div style="font-size:12px;color:var(--text3);">Tracked automatically from logged activity durations on the Home tab.</div>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-      <button onclick="saveAllSettings()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Save settings</button>
-      <span id="settingsSaveMsg" style="font-size:13px;font-weight:500;color:var(--green);opacity:0;transition:opacity 0.4s;"></span>
-    </div>
-
-    <!-- BODY MEASUREMENTS -->
+    
+    <!-- Goals & plan section removed — now per-plan in My Plans tab -->
+    
     <div class="section-title">Body measurements</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Log your measurements here. Stored against today's date so you can track changes over time.</div>
     <div class="plan-ref" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
@@ -2099,18 +2037,7 @@
     </div>
 
     <!-- PLAN START DATE -->
-    <div class="section-title">Plan dates</div>
-    <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-      <div class="plan-ref-title">Change plan start date</div>
-      <div style="font-size:12px;color:var(--text2);">Current: <span id="currentStartDate">not set</span></div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="date" id="changeStartDateInput" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);outline:none;">
-        <button onclick="changeStartDate()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Update</button>
-      </div>
-      <div style="font-size:11px;color:var(--text3);">This shifts all week and day dates. Your logged data stays exactly where it is — only the dates shown change.</div>
-    </div>
-
-    <!-- SECURITY -->
+        <!-- SECURITY — start date change is now in the My Plans tab above -->
     <div class="section-title">Security</div>
     <div class="plan-ref" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
       <div class="plan-ref-title">Daily reminders</div>
@@ -2618,6 +2545,42 @@ const WATER_TARGET_ML = (day) => {
 const TOTAL_WEEKS     = () => getSetting('totalWeeks');
 const PHASE1_WEEKS    = () => getSetting('phase1Weeks');
 
+// ─── DATA WEEK BOUNDS — how far back and forward to scan ─────────────────────
+// getMaxDataWeek() = the highest global week number that either has logged data
+// OR is within 26 weeks of today (so future logging is always accessible).
+// Use this instead of TOTAL_WEEKS() in any loop that should span ALL history,
+// not just the current plan's duration.
+function getMaxDataWeek() {
+  // Find highest numeric key in allData that has actual content
+  let maxLogged = 0;
+  for (const key of Object.keys(allData)) {
+    const n = parseInt(key);
+    if (!isNaN(n) && n > 0) {
+      const wd = allData[key];
+      // Count it if it has weight, any day activity, or any calories logged
+      if (wd && (wd.weight || Object.keys(wd.days || {}).some(d => wd.days[d].activity) ||
+          Object.keys(wd.calories || {}).some(d => {
+            const dc = wd.calories[d];
+            return dc && (dc.breakfast?.length || dc.lunch?.length || dc.dinner?.length || dc.snacks?.length);
+          }))) {
+        maxLogged = Math.max(maxLogged, n);
+      }
+    }
+  }
+  // Always show at least to current week + 26 (6 months ahead) for future planning
+  const todayWeek = getCurrentWeekFromDate();
+  return Math.max(maxLogged, todayWeek + 26, TOTAL_WEEKS());
+}
+
+// getCalendarWeeks() — how many weeks to show in the calendar grid
+// Shows: all weeks with data + 26 ahead of today, min 52 total
+function getCalendarWeeks() {
+  const todayWeek = getCurrentWeekFromDate();
+  const maxData   = getMaxDataWeek();
+  return Math.max(52, maxData, todayWeek + 26);
+}
+
+
 // Helper: which phase is a given week in?
 function getPhase(weekNum) {
   // weekNum here is a GLOBAL week number.
@@ -2785,8 +2748,8 @@ function deleteDietRule(idx) {
   if (!confirm('Delete this diet rule? Any check-ins for this rule across all days will be lost.')) return;
   const rules = getDietRules();
   // Shift existing diet check data down to keep indices aligned
-  // For each week and day, remove the entry at idx
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Delete diet rule across ALL logged weeks (not just plan weeks)
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     const wd = peekWeekData(w);
     if (!wd || !wd.diet) continue;
     DAYS.forEach(d => {
@@ -2948,7 +2911,8 @@ function calcStreak() {
   const today = new Date(); today.setHours(0,0,0,0);
   const actualStart = new Date(allData._startDate); actualStart.setHours(0,0,0,0);
   const days = [];
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Scan all logged weeks, not just plan weeks
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     for (let d = 0; d < 7; d++) {
       const date = getDayDate(w, d);
       if (!date) continue;
@@ -3019,9 +2983,15 @@ function renderWeightSparkline() {
   const canvas = document.getElementById('weightSparkline');
   if (!canvas) return;
 
-  // Collect all weight entries across all weeks
+  // Collect weight entries — use active plan's week range if available,
+  // otherwise show last 26 weeks (no-plan / general logging mode)
+  const activePlanForSpark = getActivePlan();
+  const sparkMaxWeek = activePlanForSpark ? TOTAL_WEEKS() : Math.min(currentWeek, 26);
+  const sparkStartWeek = activePlanForSpark
+    ? getActivePlanStartGlobalWeek()
+    : Math.max(1, currentWeek - 25);
   const points = [];
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  for (let w = sparkStartWeek; w <= sparkStartWeek + sparkMaxWeek - 1; w++) {
     const wd = peekWeekData(w);
     if (wd && wd.weight) {
       const ws = getWeekStartDate(w);
@@ -3152,26 +3122,48 @@ function render() {
     : (' <span>of ' + TOTAL_WEEKS() + '</span>');
   document.getElementById('weekNum').innerHTML = planRelWeekForLabel + weekNumSuffix;
   const p1w = PHASE1_WEEKS();
-  // Show plan-relative week number and active plan name
+  // ── Week context label — shows plan name, phase, and post-plan status ───────
   const activePlanForLabel = getActivePlan();
   const planRelWk          = getActivePlanRelativeWeek(currentWeek);
   const isPostPlanForLabel = planRelWk > TOTAL_WEEKS();
   const planName           = activePlanForLabel ? activePlanForLabel.name : '';
-  const phaseLabel         = isPostPlanForLabel
-    ? 'Post-plan · wk ' + planRelWk
-    : (getPhase(currentWeek) === 1
-        ? 'Phase 1, wk ' + planRelWk
-        : 'Phase 2, wk ' + planRelWk);
+  let phaseLabel;
+  if (isPostPlanForLabel) {
+    phaseLabel = 'Post-plan · wk ' + planRelWk;
+  } else if (getPhase(currentWeek) === 1) {
+    phaseLabel = 'Phase 1 · wk ' + planRelWk + ' of ' + PHASE1_WEEKS();
+  } else {
+    const p2RelWk = planRelWk - PHASE1_WEEKS();
+    const p2Total = TOTAL_WEEKS() - PHASE1_WEEKS();
+    phaseLabel = 'Phase 2 · wk ' + p2RelWk + ' of ' + p2Total;
+  }
   document.getElementById('weekPhaseDesc').textContent =
-    phaseLabel + (planName ? ' · ' + planName : '');
+    (planName ? planName + ' · ' : '') + phaseLabel;
   const wdr = document.getElementById('weekDateRange');
   if (wdr) wdr.textContent = dateRange;
 
+  // Phase tile — shows active plan's phase and goal range
+  const activePlanForPhase = getActivePlan();
+  const hasPlanForPhase    = !!(activePlanForPhase && activePlanForPhase.startDate);
   const phase = getPhase(currentWeek);
-  document.getElementById('currentPhase').textContent = phase;
-  document.getElementById('phaseDesc').textContent = phase === 1
-    ? `${START_WEIGHT()}→${GOAL1()} lbs`
-    : `${GOAL1()}→${GOAL2()} lbs`;
+  const planRelWkForPhase  = getActivePlanRelativeWeek(currentWeek);
+  const isPostForPhase     = planRelWkForPhase > TOTAL_WEEKS();
+  const phaseEl = document.getElementById('currentPhase');
+  const descEl  = document.getElementById('phaseDesc');
+  if (phaseEl) {
+    if (!hasPlanForPhase) {
+      phaseEl.textContent = '—';
+      if (descEl) descEl.textContent = 'No active plan';
+    } else if (isPostForPhase) {
+      phaseEl.textContent = '✓';
+      if (descEl) descEl.textContent = 'Post-plan logging';
+    } else {
+      phaseEl.textContent = phase;
+      if (descEl) descEl.textContent = phase === 1
+        ? `${getSetting('startWeight')}→${getSetting('goal1')} lbs`
+        : `${getSetting('goal1')}→${getSetting('goal2')} lbs`;
+    }
+  }
 
   const streak = calcStreak();
   const cs = document.getElementById('currentStreak');
@@ -3211,7 +3203,7 @@ function calcWeeklyDeficit(weekNum) {
   // not the phase calorie target (which is used for the food log remaining tracker)
   const maintenance = getSetting('maintenance');
   const today = new Date(); today.setHours(0,0,0,0);
-  const actualStart = allData._startDate ? new Date(allData._startDate) : null;
+  const actualStart = getStartDate(); // uses first plan's start date (calendar anchor)
   if (actualStart) actualStart.setHours(0,0,0,0);
 
   let totalDeficit = 0;
@@ -3256,47 +3248,106 @@ function calcWeeklyDeficit(weekNum) {
 }
 
 function renderProgress() {
+  // ─── PROGRESS BANNER — always reads from the ACTIVE plan's goals ─────────────
+  // If no plan is set up, the banner switches to a simple "calorie logger" mode
+  // that shows this week's intake vs maintenance, with no weight goal display.
+
+  const activePlan = getActivePlan();
+  const hasPlan    = !!(activePlan && activePlan.startDate && activePlan.settings);
+
+  // Read goals ALWAYS from the active plan (never from a stale/completed plan)
+  const sw = getSetting('startWeight');
+  const g1 = getSetting('goal1');
+  const g2 = getSetting('goal2');
+
+  // Update the "Start weight" tile to reflect active plan's start weight
+  const startWtEl = document.getElementById('startWt');
+  if (startWtEl) {
+    if (hasPlan) {
+      startWtEl.innerHTML = sw + ' <span>lbs</span>';
+      const subEl1 = document.getElementById('startWtSub');
+      if (subEl1) subEl1.textContent = activePlan.name + ' baseline';
+    } else {
+      startWtEl.innerHTML = '— <span>lbs</span>';
+      const subEl2 = document.getElementById('startWtSub');
+      if (subEl2) subEl2.textContent = 'No active plan';
+    }
+  }
+
+  // Find most recent logged weight (scan backwards from current week)
   let latestWt = null;
   for (let w = currentWeek; w >= 1; w--) {
     const d = peekWeekData(w);
     if (d && d.weight) { latestWt = d.weight; break; }
   }
-  const sw = START_WEIGHT(), g1 = GOAL1(), g2 = GOAL2();
-  if (latestWt) {
+
+  if (!hasPlan) {
+    // ── No-plan mode: simple calorie logger ──────────────────────────────────
+    // Weight stats hidden or neutral; banner focuses on calorie tracking only
+    document.getElementById('currentWt').textContent = latestWt || '—';
+    document.getElementById('wtDeltaText').textContent = latestWt ? latestWt + ' lbs' : 'Log your weight';
+    document.getElementById('totalLost').textContent = '—';
+    document.getElementById('toGoText').textContent = 'No goal set';
+    document.getElementById('goal1Bar').style.width = '0%';
+    document.getElementById('goal1Pct').textContent = 'Set up a plan in Settings to track goals';
+  } else if (latestWt) {
+    // ── Has plan + has logged weight ─────────────────────────────────────────
     document.getElementById('currentWt').textContent = latestWt;
     const lost = sw - latestWt;
-    document.getElementById('totalLost').textContent = Math.max(0, lost).toFixed(1);
-    document.getElementById('wtDeltaText').textContent = lost > 0 ? '↓ ' + lost.toFixed(1) + ' lbs lost' : lost < 0 ? '↑ gained' : 'no change';
-    const pct = Math.min(100, Math.max(0, (lost / (sw - g1)) * 100));
+    const absLost = Math.abs(lost).toFixed(1);
+    document.getElementById('totalLost').textContent = absLost;
+    const labelEl = document.getElementById('totalLostLabel');
+    if (labelEl) labelEl.textContent = lost > 0 ? 'Total lost' : lost < 0 ? 'Total gained' : 'Weight change';
+    document.getElementById('wtDeltaText').textContent =
+      lost > 0 ? '↓ ' + lost.toFixed(1) + ' lbs lost'
+      : lost < 0 ? '↑ ' + Math.abs(lost).toFixed(1) + ' lbs gained'
+      : 'no change';
+
+    // Progress bar: % of the way from start weight to Goal 1
+    const totalToLose = sw - g1;
+    const pct = totalToLose > 0
+      ? Math.min(100, Math.max(0, (lost / totalToLose) * 100))
+      : (latestWt <= g1 ? 100 : 0);
     document.getElementById('goal1Bar').style.width = pct.toFixed(0) + '%';
-    document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target ' + g1 + ' lbs';
-    const toGo = Math.max(0, latestWt - g1);
-    document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
+
+    // If goal 1 already achieved, show progress toward goal 2
+    if (latestWt <= g1 && g2 && g2 < g1) {
+      const toGo2 = Math.max(0, latestWt - g2);
+      const pct2  = Math.min(100, Math.max(0, ((g1 - latestWt) / (g1 - g2)) * 100));
+      document.getElementById('goal1Pct').textContent  = '✓ Goal 1 hit! ' + pct2.toFixed(0) + '% to goal 2 (' + g2 + ' lbs)';
+      document.getElementById('toGoText').textContent  = toGo2.toFixed(1) + ' lbs to goal 2';
+      document.getElementById('goal1Bar').style.width  = pct2.toFixed(0) + '%';
+    } else {
+      const toGo = Math.max(0, latestWt - g1);
+      document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target ' + g1 + ' lbs';
+      document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
+    }
   } else {
+    // ── Has plan but no weight logged yet ────────────────────────────────────
     document.getElementById('currentWt').textContent = '—';
-    document.getElementById('wtDeltaText').textContent = 'Log below';
+    document.getElementById('wtDeltaText').textContent = 'Log your weight';
     document.getElementById('totalLost').textContent = '0';
-    const toGoDefault = (sw - g1).toFixed(1);
-    document.getElementById('toGoText').textContent = toGoDefault + ' lbs to goal 1';
+    document.getElementById('toGoText').textContent = (sw - g1).toFixed(1) + ' lbs to goal 1';
     document.getElementById('goal1Bar').style.width = '0%';
     document.getElementById('goal1Pct').textContent = '0% — target ' + g1 + ' lbs';
   }
 
-  // Weekly calorie deficit (vs maintenance — real fat burn, not vs eating goal)
-  const maintenance = getSetting('maintenance');
-  const maintenanceSet = allData._settings && allData._settings.maintenance != null;
-  const { totalDeficit, daysWithData, daysWithFood } = calcWeeklyDeficit(currentWeek);
+  // ── Weekly calorie deficit (vs active plan's maintenance, not allData._settings) ──
+  const maintenance    = getSetting('maintenance'); // reads active plan always
+  const maintenanceSet = !!(activePlan && activePlan.settings && activePlan.settings.maintenance != null)
+                         || !!(allData._settings && allData._settings.maintenance != null);
+  const { totalDeficit, daysWithData } = calcWeeklyDeficit(currentWeek);
   const defEl  = document.getElementById('weeklyDeficit');
   const defSub = document.getElementById('weeklyDeficitSub');
   if (defEl) {
     if (!maintenanceSet) {
       defEl.innerHTML = '— <span>kcal</span>';
       defEl.style.color = '';
-      if (defSub) defSub.textContent = 'Set maintenance kcal in Settings';
+      if (defSub) defSub.textContent = hasPlan ? 'Set maintenance kcal in plan settings' : 'Add a plan to track deficit';
     } else if (daysWithData === 0) {
       defEl.innerHTML = '— <span>kcal</span>';
       defEl.style.color = '';
-      if (defSub) defSub.textContent = 'No data yet this week';
+      if (defSub) defSub.textContent = 'No food logged this week';
     } else if (totalDeficit >= 0) {
       defEl.innerHTML = totalDeficit.toLocaleString() + ' <span>kcal</span>';
       defEl.style.color = 'var(--green)';
@@ -3416,7 +3467,18 @@ function renderDays() {
     const nextDis = '';
     nav.innerHTML = `
       <button onclick="changeWeek(-1)" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);${prevDis}">‹ Prev</button>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;min-width:90px;">Wk ${currentWeek}${wLabel ? ' · ' + wLabel : ''}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;min-width:120px;line-height:1.4;">
+        <div>${(() => {
+          const ap = getActivePlan();
+          const relWk = getActivePlanRelativeWeek(currentWeek);
+          const isPost = relWk > TOTAL_WEEKS();
+          const planLabel = ap ? ap.name : '';
+          if (isPost) return planLabel ? planLabel + ' · Post-plan' : 'Post-plan';
+          const phase = getPhase(currentWeek);
+          return (planLabel ? planLabel + ' · ' : '') + 'Ph' + phase;
+        })()}</div>
+        <div style="color:var(--text2);font-weight:500;">Wk ${getActivePlanRelativeWeek(currentWeek)}${wLabel ? ' · ' + wLabel : ''}</div>
+      </div>
       <button onclick="changeWeek(1)" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);${nextDis}">Next ›</button>
     `;
   }
@@ -3926,7 +3988,8 @@ function detectPRs(day) {
 
     // Search all previous weeks for this exercise's best max weight and volume
     let prevMax = 0, prevVol = 0;
-    for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+    // PR detection scans ALL logged weeks across all plans
+    for (let w = 1; w <= getMaxDataWeek(); w++) {
       if (w === currentWeek) continue;
       const wd = peekWeekData(w);
       if (!wd) continue;
@@ -4707,6 +4770,9 @@ function saveAllSettings() {
 let _selectedPlanTabId = null; // which plan tab is open in the UI
 
 function renderPlansSection() {
+  // ─── PLAN TABS — tabbed per-plan settings in the Settings tab ─────────────
+  // Each plan gets its own tab. Active plan has orange dot.
+  // All settings unique to each plan: phases, goals, calories, macros, water.
   const container = document.getElementById('plansSection');
   if (!container) return;
 
@@ -4719,34 +4785,31 @@ function renderPlansSection() {
     _selectedPlanTabId = activePlanId;
   }
 
-  // ── Plan tab bar ────────────────────────────────────────────────────────────
+  // ── Tab bar — matches app's existing tab-bar style ─────────────────────────
   const tabBar = plans.map(plan => {
-    const isSelected = plan.id === _selectedPlanTabId;
-    const isActive   = plan.id === activePlanId;
+    const isSel    = plan.id === _selectedPlanTabId;
+    const isActive = plan.id === activePlanId;
     return `<button onclick="selectPlanTab('${plan.id}')"
-      style="padding:6px 14px;border-radius:8px 8px 0 0;border:1px solid var(--border);
-             border-bottom:${isSelected ? '1px solid var(--bg)' : '1px solid var(--border)'};
-             background:${isSelected ? 'var(--bg)' : 'var(--surface)'};
-             color:${isActive ? 'var(--accent)' : 'var(--text2)'};
-             font-family:var(--sans);font-size:12px;font-weight:${isSelected?'600':'400'};
-             cursor:pointer;margin-right:4px;position:relative;bottom:-1px;">
+      style="padding:6px 16px;border:none;border-radius:0;border-bottom:2px solid ${isSel ? 'var(--accent)' : 'transparent'};
+             background:none;color:${isSel ? 'var(--accent)' : 'var(--text3)'};
+             font-family:var(--sans);font-size:13px;font-weight:${isSel ? '600' : '400'};
+             cursor:pointer;white-space:nowrap;">
       ${escapeHtml(plan.name)}${isActive ? ' ●' : ''}
     </button>`;
   }).join('');
 
-  // ── Selected plan content ────────────────────────────────────────────────────
-  const plan = plans.find(p => p.id === _selectedPlanTabId) || plans[0];
-  const isActivePlan = plan && plan.id === activePlanId;
-  const ps = plan ? (plan.settings || {}) : {};
-  const getPS = (key) => ps[key] != null ? ps[key] : DEFAULTS[key];
+  // ── Selected plan content ──────────────────────────────────────────────────
+  const plan     = plans.find(p => p.id === _selectedPlanTabId) || plans[0];
+  const isActive = plan && plan.id === activePlanId;
+  const ps       = plan ? (plan.settings || {}) : {};
+  const getPS    = (key) => ps[key] != null ? ps[key] : DEFAULTS[key];
 
-  // Calculate derived values for display
-  const startLabel = plan && plan.startDate
-    ? new Date(plan.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
-    : 'Not set';
   const totalW = getPS('totalWeeks');
   const p1w    = getPS('phase1Weeks');
   const p2w    = Math.max(0, totalW - p1w);
+  const startLabel = plan && plan.startDate
+    ? new Date(plan.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+    : 'Not set';
   const endDate = plan && plan.startDate ? (() => {
     const d = new Date(plan.startDate);
     d.setDate(d.getDate() + totalW * 7);
@@ -4754,35 +4817,50 @@ function renderPlansSection() {
   })() : '—';
 
   const planContent = plan ? `
-    <!-- Plan status bar -->
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+
+    <!-- Status row -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
       <div>
-        <span style="font-size:13px;font-weight:600;color:var(--text);">${escapeHtml(plan.name)}</span>
-        ${isActivePlan ? '<span style="font-size:10px;color:var(--accent);margin-left:8px;font-weight:600;">● ACTIVE</span>' : ''}
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono);">
-          ${startLabel} → ${endDate} · ${totalW} weeks
+        <div style="font-size:14px;font-weight:600;color:var(--text);">
+          ${escapeHtml(plan.name)}
+          ${isActive ? '<span style="font-size:11px;color:var(--accent);margin-left:6px;font-weight:500;">● Active plan</span>' : ''}
+        </div>
+        <div class="plan-ref" style="padding:6px 10px;margin-top:6px;display:inline-block;">
+          ${startLabel} → ${endDate} · ${totalW} wk
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${!isActivePlan ? `<button onclick="setActivePlan('${plan.id}')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Set as active</button>` : ''}
-        <button onclick="renamePlanPrompt('${plan.id}')" style="padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">Rename</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${!isActive ? `<button onclick="setActivePlan('${plan.id}')"
+          style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;font-weight:500;">
+          Set as active
+        </button>` : ''}
+        <button onclick="renamePlanPrompt('${plan.id}')"
+          style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">
+          Rename
+        </button>
       </div>
     </div>
 
-    <!-- Start date -->
-    <div style="margin-bottom:16px;">
-      <div class="set-label">Plan start date</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+    <!-- Plan start date -->
+    <div class="plan-ref" style="margin-bottom:12px;">
+      <div class="plan-ref-title">Plan start date</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
         <input type="date" id="planStartDate_${plan.id}" value="${plan.startDate || ''}"
-          style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-family:var(--sans);font-size:13px;color:var(--text);">
-        <button onclick="savePlanStartDate('${plan.id}')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:12px;cursor:pointer;">Save date</button>
+          style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
+        <button onclick="savePlanStartDate('${plan.id}')"
+          style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">
+          Save date
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">
+        This anchors the calendar. Logged data stays in place — only displayed dates shift.
       </div>
     </div>
 
     <!-- Plan structure -->
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Plan structure</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;">
+    <div class="plan-ref" style="margin-bottom:12px;">
+      <div class="plan-ref-title">Plan structure</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
         <div><label class="set-label">Total weeks</label>
           <input type="number" id="ps_totalWeeks_${plan.id}" value="${getPS('totalWeeks')}" min="1" max="260" step="1" class="set-input" oninput="updatePlanSettingLive('${plan.id}')"></div>
         <div><label class="set-label">Phase 1 weeks</label>
@@ -4791,19 +4869,19 @@ function renderPlansSection() {
           <input type="number" id="ps_startWeight_${plan.id}" value="${getPS('startWeight')}" min="50" max="500" step="0.5" class="set-input"></div>
         <div><label class="set-label">Goal 1 — end of Phase 1 (lbs)</label>
           <input type="number" id="ps_goal1_${plan.id}" value="${getPS('goal1')}" min="50" max="500" step="0.5" class="set-input"></div>
-        <div><label class="set-label">Goal 2 — final goal (lbs)</label>
+        <div><label class="set-label">Final goal (lbs)</label>
           <input type="number" id="ps_goal2_${plan.id}" value="${getPS('goal2')}" min="50" max="500" step="0.5" class="set-input"></div>
       </div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">
-        Phase 1: ${p1w} wk · Phase 2: ${p2w} wk · Ends: ${endDate}
+      <div style="font-size:11px;color:var(--text3);margin-top:10px;font-family:var(--mono);">
+        Phase 1: ${p1w} wk · Phase 2: ${p2w} wk · Plan ends: ${endDate}
       </div>
     </div>
 
     <!-- Calories & nutrition -->
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Calories &amp; nutrition</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
-        <div><label class="set-label">Maintenance kcal/day</label>
+    <div class="plan-ref" style="margin-bottom:12px;">
+      <div class="plan-ref-title">Calories &amp; nutrition</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
+        <div><label class="set-label">Maintenance (kcal/day)</label>
           <input type="number" id="ps_maintenance_${plan.id}" value="${getPS('maintenance')}" min="500" max="8000" step="50" class="set-input"></div>
         <div><label class="set-label">Phase 1 daily target (kcal)</label>
           <input type="number" id="ps_dailyTarget1_${plan.id}" value="${getPS('dailyTarget1')}" min="500" max="5000" step="50" class="set-input"></div>
@@ -4815,15 +4893,15 @@ function renderPlansSection() {
           <input type="number" id="ps_carbTarget_${plan.id}" value="${getPS('carbTarget')}" min="0" max="1000" class="set-input"></div>
         <div><label class="set-label">Fat target (g/day)</label>
           <input type="number" id="ps_fatTarget_${plan.id}" value="${getPS('fatTarget')}" min="0" max="500" class="set-input"></div>
-        <div><label class="set-label">Sugar target (g/day)</label>
+        <div><label class="set-label">Sugar limit (g/day)</label>
           <input type="number" id="ps_sugarTarget_${plan.id}" value="${getPS('sugarTarget')}" min="0" max="500" class="set-input"></div>
       </div>
     </div>
 
     <!-- Activity & water -->
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Activity &amp; hydration</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+    <div class="plan-ref" style="margin-bottom:16px;">
+      <div class="plan-ref-title">Activity &amp; hydration</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
         <div><label class="set-label">Water target (L/day)</label>
           <input type="number" id="ps_waterTargetL_${plan.id}" value="${getPS('waterTargetL')}" min="0.5" max="10" step="0.1" class="set-input"></div>
         <div><label class="set-label">Weekly workout hours goal</label>
@@ -4833,63 +4911,74 @@ function renderPlansSection() {
 
     <!-- Save button -->
     <button onclick="savePlanSettings('${plan.id}')"
-      style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
+      style="padding:10px 24px;border-radius:9px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
       Save ${escapeHtml(plan.name)} settings
     </button>
+
   ` : '<div style="color:var(--text3);font-size:13px;">No plan selected.</div>';
 
   container.innerHTML = `
-    <div style="display:flex;align-items:flex-end;margin-bottom:0;border-bottom:1px solid var(--border);padding-bottom:0;">
+    <!-- Plan tab bar — same visual language as the main nav tabs -->
+    <div style="display:flex;align-items:center;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;gap:0;">
       ${tabBar}
-      <button onclick="showNewPlanForm()" title="Add a new plan"
-        style="padding:6px 12px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:1px solid var(--border);
-               background:var(--surface);color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;margin-right:0;position:relative;bottom:-1px;">
+      <button onclick="showNewPlanForm()"
+        style="padding:6px 14px;border:none;border-bottom:2px solid transparent;background:none;
+               color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
         + New plan
       </button>
     </div>
-    <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:14px;background:var(--bg);">
-      ${planContent}
-    </div>
-    <!-- New plan form (hidden by default) -->
-    <div id="newPlanFormWrap" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-top:10px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">Create new plan</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;">
-        <div style="grid-column:1/-1;"><label class="set-label">Plan name</label>
-          <input id="newPlanName" type="text" value="Plan ${plans.length + 1}" class="set-input" style="width:100%;box-sizing:border-box;"></div>
-        <div><label class="set-label">Start date</label>
-          <input id="newPlanStartDate" type="date" class="set-input"></div>
-        <div><label class="set-label">Total weeks</label>
-          <input id="newPlanTotalWeeks" type="number" value="28" min="1" max="260" class="set-input"></div>
-        <div><label class="set-label">Phase 1 weeks</label>
-          <input id="newPlanPhase1Weeks" type="number" value="15" min="1" max="260" class="set-input"></div>
-        <div><label class="set-label">Start weight (lbs)</label>
-          <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5" class="set-input" placeholder="${getPS('goal1') || ''}"></div>
-        <div><label class="set-label">Goal 1 (lbs)</label>
-          <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5" class="set-input"></div>
-        <div><label class="set-label">Daily calorie target</label>
-          <input id="newPlanDailyTarget" type="number" min="500" max="5000" step="50" class="set-input" placeholder="${getPS('dailyTarget1') || ''}"></div>
-        <div><label class="set-label">Maintenance calories</label>
-          <input id="newPlanMaintenance" type="number" min="500" max="8000" step="50" class="set-input" placeholder="${getPS('maintenance') || ''}"></div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="saveNewPlan()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;">Create plan</button>
-        <button onclick="document.getElementById('newPlanFormWrap').style.display='none'" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">Cancel</button>
+    ${planContent}
+
+    <!-- New plan creation form (hidden until user clicks "+ New plan") -->
+    <div id="newPlanFormWrap" style="display:none;">
+      <div class="plan-ref" style="margin-top:12px;">
+        <div class="plan-ref-title">Create new plan</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
+          <div style="grid-column:1/-1;"><label class="set-label">Plan name</label>
+            <input id="newPlanName" type="text" value="Plan ${plans.length + 1}" class="set-input"></div>
+          <div><label class="set-label">Start date</label>
+            <input id="newPlanStartDate" type="date" class="set-input"></div>
+          <div><label class="set-label">Total weeks</label>
+            <input id="newPlanTotalWeeks" type="number" value="28" min="1" max="260" class="set-input"></div>
+          <div><label class="set-label">Phase 1 weeks</label>
+            <input id="newPlanPhase1Weeks" type="number" value="15" min="1" max="260" class="set-input"></div>
+          <div><label class="set-label">Start weight (lbs)</label>
+            <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5" class="set-input"></div>
+          <div><label class="set-label">Goal 1 (lbs)</label>
+            <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5" class="set-input"></div>
+          <div><label class="set-label">Daily calorie target (kcal)</label>
+            <input id="newPlanDailyTarget" type="number" min="500" max="5000" step="50" class="set-input"></div>
+          <div><label class="set-label">Maintenance calories (kcal)</label>
+            <input id="newPlanMaintenance" type="number" min="500" max="8000" step="50" class="set-input"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button onclick="saveNewPlan()"
+            style="padding:8px 20px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;cursor:pointer;font-weight:500;">
+            Create plan
+          </button>
+          <button onclick="document.getElementById('newPlanFormWrap').style.display='none'"
+            style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   `;
 
   // Pre-fill new plan start date = day after last plan ends
   const lastPlan = plans[plans.length - 1];
-  if (lastPlan && lastPlan.startDate) {
-    const endD = new Date(lastPlan.startDate);
-    endD.setDate(endD.getDate() + ((lastPlan.settings && lastPlan.settings.totalWeeks) || 28) * 7);
-    const sdInput = document.getElementById('newPlanStartDate');
-    if (sdInput) sdInput.value = endD.toISOString().slice(0,10);
-  } else {
-    const sdInput = document.getElementById('newPlanStartDate');
-    if (sdInput) sdInput.value = new Date().toISOString().slice(0,10);
+  const sdInput  = document.getElementById('newPlanStartDate');
+  if (sdInput) {
+    if (lastPlan && lastPlan.startDate) {
+      const endD = new Date(lastPlan.startDate);
+      endD.setDate(endD.getDate() + ((lastPlan.settings && lastPlan.settings.totalWeeks) || 28) * 7);
+      sdInput.value = endD.toISOString().slice(0,10);
+    } else {
+      sdInput.value = new Date().toISOString().slice(0,10);
+    }
   }
 }
+
 
 function selectPlanTab(planId) {
   _selectedPlanTabId = planId;
@@ -5159,6 +5248,25 @@ function updateSettingsCalcs() {
 
 
 function renderPlanRef() {
+  // ─── PLAN REFERENCE TAB — reads from active plan ──────────────────────────
+  // All values come from getSetting() which always reads the active plan.
+  // If no plan is set up, the tab shows a prompt to create one.
+  const activePlanCheck = getActivePlan();
+  if (!activePlanCheck || !activePlanCheck.startDate) {
+    // No-plan mode — show friendly message in each plan-ref field
+    const fields = ['planP1Target','planP1Cals','planP1Protein',
+                    'planP2Target','planP2Cals','planP2Protein',
+                    'planGoal1Lbs','planGoal2Lbs'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
+    const b1 = document.getElementById('planPhase1Badge');
+    if (b1) b1.textContent = 'No active plan';
+    const b2 = document.getElementById('planPhase2Badge');
+    if (b2) b2.textContent = 'Set up a plan in Settings → My plans';
+    return;
+  }
   const sw = START_WEIGHT(), g1 = GOAL1(), g2 = GOAL2();
   const t1 = DAILY_TARGET(), t2 = DAILY_TARGET2();
   const pt = getSetting('proteinTarget');
@@ -8040,14 +8148,44 @@ function renderCalendar() {
   let html = '';
   html += `<div class="cal-header-row"><div class="cal-header-cell"></div>${DAYS.map(d=>`<div class="cal-header-cell">${d}</div>`).join('')}</div>`;
 
+  // ── Calendar renders ALL weeks — no plan-length cap ─────────────────────────
+  // Shows past data + 26 weeks ahead of today, so user can always log forward.
+  // Plan boundaries are shown as visual labels (Plan 1, Plan 2, post-plan).
+  const calTotalWeeks = getCalendarWeeks();
   let lastMonth = -1;
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Track plan boundaries for label rendering
+  const allPlans = getPlans();
+  let lastPlanLabel = null;
+
+  for (let w = 1; w <= calTotalWeeks; w++) {
     const ws = getWeekStartDate(w);
     if (!ws) continue;
     const month = ws.getMonth();
     if (month !== lastMonth) {
       html += `<div class="cal-month-label">${ws.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</div>`;
       lastMonth = month;
+    }
+    // Show plan boundary label when a plan starts or ends this week
+    for (const plan of allPlans) {
+      const planStartGlobal = getPlanStartGlobalWeek(plan);
+      const planEndGlobal   = planStartGlobal + (plan.settings?.totalWeeks || TOTAL_WEEKS()) - 1;
+      if (w === planStartGlobal && plan.name !== lastPlanLabel) {
+        lastPlanLabel = plan.name;
+        const isActive = plan.id === allData._activePlanId;
+        html += `<div style="font-size:10px;font-family:var(--mono);letter-spacing:0.08em;color:${isActive ? 'var(--accent)' : 'var(--text3)'};padding:4px 8px;background:${isActive ? 'rgba(196,80,26,0.06)' : 'var(--surface)'};border-left:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin:4px 0;">
+          ${escapeHtml(plan.name).toUpperCase()}${isActive ? ' ● ACTIVE' : ''} — Starts ${ws.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+        </div>`;
+      }
+      if (w === planEndGlobal + 1) {
+        // Week after plan ends — show "post-plan" marker once
+        const isLastPlan = plan === allPlans[allPlans.length - 1];
+        if (isLastPlan) {
+          html += `<div style="font-size:10px;font-family:var(--mono);letter-spacing:0.08em;color:var(--text3);padding:4px 8px;background:var(--surface);border-left:2px solid var(--border);margin:4px 0;">
+            POST-PLAN LOGGING — All data recorded as usual
+          </div>`;
+          lastPlanLabel = 'post-plan';
+        }
+      }
     }
     const wd = peekWeekData(w) || {};
     const wLabel = `Wk ${w}<br>${formatDate(ws,{day:'numeric',month:'short'})}`;
@@ -8375,7 +8513,8 @@ function renderHistory() {
   const chartLabels = [];
   const chartData = [];
 
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Week comparison scans all logged data
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     const wd = peekWeekData(w);
     if (!wd) continue;
     const ws = getWeekStartDate(w);
@@ -8647,7 +8786,8 @@ function renderProgressiveOverload() {
   // Collect all workout logs with weights entries, keyed by exercise name
   const exerciseHistory = {}; // { "Bench Press": [{week, date, sets:[{reps,weight}]}] }
 
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Scan all logged weeks for progressive overload data
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     const wd = peekWeekData(w);
     if (!wd || !wd.days) continue;
     DAYS.forEach((day, di) => {
@@ -8937,7 +9077,8 @@ function exportData() {
 
 function exportCSV() {
   const rows = [['Week','Day','Date','Activity','Duration (min)','Kcal Burned','Kcal Eaten','Net Kcal','Protein (g)','Carbs (g)','Fat (g)','Sugar (g)','Water (ml)','Sleep (hrs)','Mood','Energy','RPE','Weight (lbs)']];
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Export ALL logged weeks across all plans
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     const wd = peekWeekData(w);
     if (!wd) continue;
     DAYS.forEach((day, di) => {
@@ -9066,7 +9207,8 @@ function showNudge(id) { const el = document.getElementById(id); if (el) el.styl
 function hideNudge(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 
 function getCurrentLoggedWeight() {
-  for (let w = TOTAL_WEEKS(); w >= 1; w--) {
+  // Scan from current week downward to find most recent logged weight
+  for (let w = Math.max(currentWeek, getMaxDataWeek()); w >= 1; w--) {
     const d = peekWeekData(w);
     if (d && d.weight) return d.weight;
   }
@@ -9178,7 +9320,8 @@ function renderWeekComparison() {
 
   // Collect all weeks that have at least weight or food data
   const weeks = [];
-  for (let w = 1; w <= TOTAL_WEEKS(); w++) {
+  // Compare ALL logged weeks
+  for (let w = 1; w <= getMaxDataWeek(); w++) {
     const wd = peekWeekData(w);
     if (!wd) continue;
     const hasWeight = !!wd.weight;
