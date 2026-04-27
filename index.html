@@ -4902,66 +4902,136 @@ function renderPlansSection() {
     return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   })() : '—';
 
-  // ── Draft new plan form — rendered inline in the tab content area ────────────
-  // This is shown when user clicks "+ New plan" tab. Feels like editing a real plan.
-  // On "Create plan" it becomes a real plan; on "Cancel" the draft tab closes.
+  // ── Draft new plan — build a blank plan object and flow through normal template ─
+  // When user clicks "+ New plan", _selectedPlanTabId = 'new'.
+  // We create a blank plan stub so the full settings layout renders identically
+  // to editing an existing plan, but with all values blank/defaulted.
+  // The save button says "Create Plan" instead of "Save X settings".
   if (isNewDraft) {
-    // Pre-fill start date = day after last plan ends
-    const lastPlan   = plans[plans.length - 1];
-    const defaultSD  = lastPlan && lastPlan.startDate ? (() => {
+    const lastPlan  = plans[plans.length - 1];
+    const defaultSD = lastPlan && lastPlan.startDate ? (() => {
       const d = new Date(lastPlan.startDate);
       d.setDate(d.getDate() + ((lastPlan.settings?.totalWeeks || 28) * 7));
       return d.toISOString().slice(0,10);
     })() : new Date().toISOString().slice(0,10);
-    const defaultName = 'Plan ' + (plans.length + 1);
+
+    // Blank plan stub — id='new' is the sentinel; all setting values are empty
+    // so all inputs render blank (user fills from scratch)
+    const draftPlan = {
+      id:        'new',
+      name:      'Plan ' + (plans.length + 1),
+      startDate: defaultSD,
+      settings:  {}, // empty — getPS() will return '' for all fields → blank inputs
+    };
+    // Override plan/isActive/getPS for the draft render
+    const draftGetPS = () => ''; // all fields blank in draft mode
+    const draftIsActive = false;
+
+    // Build the status row for the draft
+    const draftStatusRow = `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);">New plan</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Fill in your plan details below, then press Create Plan.</div>
+        </div>
+        <button onclick="cancelNewPlan()"
+          style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);font-family:var(--sans);font-size:12px;cursor:pointer;">
+          Cancel
+        </button>
+      </div>`;
+
+    // Build the plan name field (sits above start date, unique to draft)
+    const draftNameRow = `
+      <div class="plan-ref" style="margin-bottom:12px;">
+        <div class="plan-ref-title">Plan name</div>
+        <div style="margin-top:8px;">
+          <input id="newPlanName" type="text" value="${'Plan ' + (plans.length + 1)}" class="set-input"
+            style="width:100%;box-sizing:border-box;" placeholder="e.g. Maintenance 2027">
+        </div>
+      </div>`;
+
+    // Build start date section (same style as existing plan)
+    const draftStartDate = `
+      <div class="plan-ref" style="margin-bottom:12px;">
+        <div class="plan-ref-title">Plan start date</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+          <input type="date" id="newPlanStartDate" value="${defaultSD}"
+            style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);">
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">
+          This anchors the calendar. Logged data stays in place — only displayed dates shift.
+        </div>
+      </div>`;
+
+    // Build plan structure section with blank inputs
+    const draftStructure = `
+      <div class="plan-ref" style="margin-bottom:12px;">
+        <div class="plan-ref-title">Plan structure</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
+          <div><label class="set-label">Total weeks</label>
+            <input type="number" id="newPlanTotalWeeks" placeholder="28" min="1" max="260" step="1" class="set-input"></div>
+          <div><label class="set-label">Phase 1 weeks</label>
+            <input type="number" id="newPlanPhase1Weeks" placeholder="15" min="1" max="260" step="1" class="set-input"></div>
+          <div><label class="set-label">Start weight (lbs)</label>
+            <input type="number" id="newPlanStartWeight" min="50" max="500" step="0.5" class="set-input"></div>
+          <div><label class="set-label">Goal 1 — end of Phase 1 (lbs)</label>
+            <input type="number" id="newPlanGoal1" min="50" max="500" step="0.5" class="set-input"></div>
+          <div><label class="set-label">Final goal (lbs)</label>
+            <input type="number" id="newPlanGoal2" min="50" max="500" step="0.5" class="set-input"></div>
+        </div>
+      </div>`;
+
+    // Build calories & nutrition section with blank inputs
+    const draftCalories = `
+      <div class="plan-ref" style="margin-bottom:12px;">
+        <div class="plan-ref-title">Calories &amp; nutrition</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
+          <div><label class="set-label">Maintenance (kcal/day)</label>
+            <input type="number" id="newPlanMaintenance" min="500" max="8000" step="50" class="set-input"></div>
+          <div><label class="set-label">Phase 1 daily target (kcal)</label>
+            <input type="number" id="newPlanDailyTarget" min="500" max="5000" step="50" class="set-input"></div>
+          <div><label class="set-label">Phase 2 daily target (kcal)</label>
+            <input type="number" id="newPlanDailyTarget2" min="500" max="5000" step="50" class="set-input"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:10px;">
+          <div><label class="set-label">Protein target (g/day)</label>
+            <input type="number" id="newPlanProtein" min="0" max="500" class="set-input"></div>
+          <div><label class="set-label">Carb target (g/day)</label>
+            <input type="number" id="newPlanCarbs" min="0" max="1000" class="set-input"></div>
+          <div><label class="set-label">Fat target (g/day)</label>
+            <input type="number" id="newPlanFat" min="0" max="500" class="set-input"></div>
+          <div><label class="set-label">Sugar limit (g/day)</label>
+            <input type="number" id="newPlanSugar" min="0" max="500" class="set-input"></div>
+        </div>
+      </div>`;
+
+    // Build activity & hydration section
+    const draftActivity = `
+      <div class="plan-ref" style="margin-bottom:16px;">
+        <div class="plan-ref-title">Activity &amp; hydration</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px;">
+          <div><label class="set-label">Water target (L/day)</label>
+            <input type="number" id="newPlanWater" min="0.5" max="10" step="0.1" class="set-input"></div>
+          <div><label class="set-label">Weekly workout hours goal</label>
+            <input type="number" id="newPlanHours" min="0" max="40" step="0.5" class="set-input"></div>
+        </div>
+      </div>`;
 
     container.innerHTML = `
       <div style="display:flex;align-items:center;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;gap:0;">
         ${tabBar}
-        <button onclick="showNewPlanForm()"
-          style="padding:6px 14px;border:none;border-bottom:2px solid transparent;background:none;
-                 color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;display:none;">
-          + New plan
-        </button>
       </div>
-      <div class="plan-ref">
-        <div class="plan-ref-title" style="margin-bottom:12px;">New plan details</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:14px;">
-          <div style="grid-column:1/-1;"><label class="set-label">Plan name</label>
-            <input id="newPlanName" type="text" value="${defaultName}" class="set-input" style="width:100%;box-sizing:border-box;"></div>
-          <div><label class="set-label">Start date</label>
-            <input id="newPlanStartDate" type="date" value="${defaultSD}" class="set-input"></div>
-          <div><label class="set-label">Total weeks</label>
-            <input id="newPlanTotalWeeks" type="number" value="28" min="1" max="260" class="set-input"></div>
-          <div><label class="set-label">Phase 1 weeks</label>
-            <input id="newPlanPhase1Weeks" type="number" value="15" min="1" max="260" class="set-input"></div>
-          <div><label class="set-label">Start weight (lbs)</label>
-            <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5" class="set-input"
-              placeholder="${getSetting('goal1') || ''}"></div>
-          <div><label class="set-label">Goal 1 (lbs)</label>
-            <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5" class="set-input"></div>
-          <div><label class="set-label">Daily calorie target (kcal)</label>
-            <input id="newPlanDailyTarget" type="number" min="500" max="5000" step="50" class="set-input"
-              placeholder="${getSetting('dailyTarget1') || ''}"></div>
-          <div><label class="set-label">Maintenance calories (kcal)</label>
-            <input id="newPlanMaintenance" type="number" min="500" max="8000" step="50" class="set-input"
-              placeholder="${getSetting('maintenance') || ''}"></div>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">
-          All other settings (macros, water, phase 2 details) can be adjusted after creation in the plan's settings tab.
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="saveNewPlan()"
-            style="padding:9px 22px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
-            Create plan
-          </button>
-          <button onclick="cancelNewPlan()"
-            style="padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
-            Cancel
-          </button>
-        </div>
-      </div>`;
-    return; // exit renderPlansSection early — draft view is fully rendered
+      ${draftStatusRow}
+      ${draftNameRow}
+      ${draftStartDate}
+      ${draftStructure}
+      ${draftCalories}
+      ${draftActivity}
+      <button onclick="saveNewPlan()"
+        style="padding:10px 24px;border-radius:9px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
+        Create Plan
+      </button>`;
+    return; // draft view fully rendered — exit early
   }
 
   const planContent = plan ? `
@@ -5257,14 +5327,31 @@ function updatePlanSettingLive(planId) {
 
 
 function saveNewPlan() {
-  const name        = document.getElementById('newPlanName')?.value.trim() || ('Plan ' + (getPlans().length + 1));
-  const startDate   = document.getElementById('newPlanStartDate')?.value;
-  const totalWeeks  = parseInt(document.getElementById('newPlanTotalWeeks')?.value)  || 28;
-  const phase1Weeks = parseInt(document.getElementById('newPlanPhase1Weeks')?.value) || 15;
-  const startWeight = parseFloat(document.getElementById('newPlanStartWeight')?.value) || getSetting('startWeight');
-  const goal1       = parseFloat(document.getElementById('newPlanGoal1')?.value)       || getSetting('goal1');
-  const dailyTarget = parseInt(document.getElementById('newPlanDailyTarget')?.value)   || getSetting('dailyTarget1');
-  const maintenance = parseInt(document.getElementById('newPlanMaintenance')?.value)   || getSetting('maintenance');
+  // ─── CREATE NEW PLAN — reads all fields from the draft form ──────────────────
+  // Field IDs match the draft form in renderPlansSection (isNewDraft branch).
+  // Falls back to '' / DEFAULTS for any field the user left blank.
+  const g = id => document.getElementById(id);
+  const numVal = (id, fallback) => {
+    const el = g(id);
+    const v  = el && el.value !== '' ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? fallback : v;
+  };
+  const name        = g('newPlanName')?.value.trim() || ('Plan ' + (getPlans().length + 1));
+  const startDate   = g('newPlanStartDate')?.value;
+  const totalWeeks  = numVal('newPlanTotalWeeks',  28);
+  const phase1Weeks = numVal('newPlanPhase1Weeks', 15);
+  const startWeight = numVal('newPlanStartWeight', null);
+  const goal1       = numVal('newPlanGoal1',       null);
+  const goal2       = numVal('newPlanGoal2',       null);
+  const dailyTarget = numVal('newPlanDailyTarget',  null);
+  const dailyTarget2= numVal('newPlanDailyTarget2', null);
+  const maintenance = numVal('newPlanMaintenance',  null);
+  const protein     = numVal('newPlanProtein',      null);
+  const carbs       = numVal('newPlanCarbs',        null);
+  const fat         = numVal('newPlanFat',          null);
+  const sugar       = numVal('newPlanSugar',        null);
+  const water       = numVal('newPlanWater',        null);
+  const hours       = numVal('newPlanHours',        null);
 
   if (!startDate) {
     showToast('"' + newPlan.name + '" created and set as active plan');
@@ -5290,11 +5377,25 @@ function saveNewPlan() {
 
   // Build settings — inherit all current active plan settings, then override with new values
   const currentSettings = { ...(getActivePlan()?.settings || {}), ...DEFAULTS };
+  // Build settings — only include fields the user actually filled in
+  // (null values are excluded so DEFAULTS apply for anything left blank)
   const newSettings = {
     ...currentSettings,
-    totalWeeks, phase1Weeks, startWeight, goal1,
-    dailyTarget1: dailyTarget, dailyTarget2: dailyTarget,
-    maintenance,
+    totalWeeks,
+    phase1Weeks,
+    ...(startWeight != null && { startWeight }),
+    ...(goal1       != null && { goal1 }),
+    ...(goal2       != null && { goal2 }),
+    ...(dailyTarget != null && { dailyTarget1: dailyTarget }),
+    ...(dailyTarget2!= null && { dailyTarget2 }),
+    ...(dailyTarget != null && dailyTarget2  == null && { dailyTarget2: dailyTarget }), // default P2 = P1
+    ...(maintenance != null && { maintenance }),
+    ...(protein     != null && { proteinTarget: protein }),
+    ...(carbs       != null && { carbTarget: carbs }),
+    ...(fat         != null && { fatTarget: fat }),
+    ...(sugar       != null && { sugarTarget: sugar }),
+    ...(water       != null && { waterTargetL: water }),
+    ...(hours       != null && { weeklyHoursGoal: hours }),
   };
 
   const newPlan = createPlan(name, startDate, newSettings);
