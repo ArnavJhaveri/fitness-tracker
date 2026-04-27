@@ -1200,7 +1200,7 @@
         <div class="prog-sub" id="toGoText">14 lbs to goal 1</div>
       </div>
       <div class="prog-stat">
-        <div class="prog-label">Goal 1 progress</div>
+        <div class="prog-label" id="goal1ProgressLabel">Goal 1 progress</div>
         <div style="margin-top: 8px;">
           <div class="prog-bar-bg"><div class="prog-bar-fill" id="goal1Bar" style="width:0%"></div></div>
         </div>
@@ -3110,6 +3110,10 @@ function renderWeightSparkline() {
 
 // ─── RENDER — main render loop, progress, weight ───────────
 function render() {
+  // ─── MAIN RENDER — redraws all UI for current state ──────────────────────────
+  // Called after every state change (week nav, food log, activity, settings save).
+  // getSetting() → getActivePlan() → migrateToPlanSystem() cascade ensures plan
+  // data is always available without needing an explicit migration call here.
   const ws = getWeekStartDate(currentWeek);
   const we = ws ? new Date(ws.getTime() + 6*24*60*60*1000) : null;
   const dateRange = ws ? formatDate(ws) + ' – ' + formatDate(we) : 'Set start date →';
@@ -3290,6 +3294,8 @@ function renderProgress() {
     document.getElementById('toGoText').textContent = 'No goal set';
     document.getElementById('goal1Bar').style.width = '0%';
     document.getElementById('goal1Pct').textContent = 'Set up a plan in Settings to track goals';
+    const gpl = document.getElementById('goal1ProgressLabel');
+    if (gpl) gpl.textContent = 'No plan active';
   } else if (latestWt) {
     // ── Has plan + has logged weight ─────────────────────────────────────────
     document.getElementById('currentWt').textContent = latestWt;
@@ -3321,6 +3327,8 @@ function renderProgress() {
       const toGo = Math.max(0, latestWt - g1);
       document.getElementById('goal1Pct').textContent = pct.toFixed(0) + '% — target ' + g1 + ' lbs';
       document.getElementById('toGoText').textContent = toGo.toFixed(1) + ' lbs to goal 1';
+      const gplActive = document.getElementById('goal1ProgressLabel');
+      if (gplActive) gplActive.textContent = 'Goal 1 progress';
     }
   } else {
     // ── Has plan but no weight logged yet ────────────────────────────────────
@@ -4870,7 +4878,7 @@ function renderPlansSection() {
         <div><label class="set-label">Final goal (lbs)</label>
           <input type="number" id="ps_goal2_${plan.id}" value="${getPS('goal2')}" min="50" max="500" step="0.5" class="set-input"></div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:10px;font-family:var(--mono);">
+      <div data-plan-summary="${plan.id}" style="font-size:11px;color:var(--text3);margin-top:10px;font-family:var(--mono);">
         Phase 1: ${p1w} wk · Phase 2: ${p2w} wk · Plan ends: ${endDate}
       </div>
     </div>
@@ -5064,17 +5072,26 @@ function savePlanSettings(planId) {
 }
 
 function updatePlanSettingLive(planId) {
-  // Live preview of phase weeks when fields change
+  // ─── LIVE PREVIEW — update derived phase display without mutating plan object ─
+  // Only updates the summary text (e.g. "Phase 1: 15 wk · Phase 2: 13 wk")
+  // without writing to plan.settings — that only happens when user clicks Save.
+  if (planId !== _selectedPlanTabId) return;
   const totalEl = document.getElementById('ps_totalWeeks_' + planId);
   const p1El    = document.getElementById('ps_phase1Weeks_' + planId);
-  // Just re-render the section to update the derived display
-  // (lightweight: only if this is the currently selected tab)
-  if (planId === _selectedPlanTabId) {
-    const plan = getPlans().find(p => p.id === planId);
-    if (plan && totalEl) plan.settings = { ...(plan.settings||{}), totalWeeks: parseInt(totalEl.value)||28 };
-    if (plan && p1El)    plan.settings.phase1Weeks = parseInt(p1El.value)||15;
-    renderPlansSection();
-  }
+  const totalW  = parseInt(totalEl?.value) || 0;
+  const p1w     = parseInt(p1El?.value)    || 0;
+  const p2w     = Math.max(0, totalW - p1w);
+  // Update the derived summary line only (not the stored plan object)
+  const plan    = getPlans().find(p => p.id === planId);
+  const endDate = plan && plan.startDate ? (() => {
+    const d = new Date(plan.startDate);
+    d.setDate(d.getDate() + totalW * 7);
+    return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  })() : '—';
+  const summaryEls = document.querySelectorAll('[data-plan-summary="' + planId + '"]');
+  summaryEls.forEach(el => {
+    el.textContent = `Phase 1: ${p1w} wk · Phase 2: ${p2w} wk · Plan ends: ${endDate}`;
+  });
 }
 
 
@@ -5484,6 +5501,18 @@ function startRetry() {
 
 async function pushToSheets() {
   if (window.location.protocol === 'file:') return;
+  // ─── DATA SAFETY GUARD ─────────────────────────────────────────────────────
+  // Never push if allData is empty or has no meaningful content.
+  // An empty push would wipe the Google Sheet with {} if a pull failed silently.
+  // We require either a plan start date or at least one numeric week key with data.
+  const hasPlans    = allData._plans && allData._plans.length > 0 && allData._plans[0].startDate;
+  const hasLegacySD = !!allData._startDate;
+  const hasWeekData = Object.keys(allData).some(k => !isNaN(parseInt(k)));
+  if (!hasPlans && !hasLegacySD && !hasWeekData) {
+    console.warn('pushToSheets: allData appears empty — push blocked to prevent data loss');
+    setSyncStatus('error');
+    return;
+  }
   setSyncStatus('saving');
   // Add a timestamp so we can do last-write-wins conflict resolution
   allData._lastSaved = Date.now();
@@ -5556,7 +5585,11 @@ function autoPersist() {
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     // Only push if we have real data (start date set) or write was never blocked
-    if (!_sheetsWriteBlocked || allData._startDate) {
+    // Allow push if: (a) write was never blocked, OR (b) we have real data
+    // Real data = has a plan with a start date OR has legacy _startDate
+    const hasRealData = !!(allData._startDate ||
+      (allData._plans && allData._plans.length > 0 && allData._plans[0].startDate));
+    if (!_sheetsWriteBlocked || hasRealData) {
       _sheetsWriteBlocked = false;
       pushToSheets();
     }
@@ -8138,6 +8171,10 @@ function checkStartDateSetup() {
 
 // ─── CALENDAR — monthly grid, activity colouring ───────────
 function renderCalendar() {
+  // ─── CALENDAR RENDER — shows all weeks from plan start to 6mo ahead ──────────
+  // Must call migrateToPlanSystem() before accessing _plans, in case this
+  // is called before loadAndRender has had a chance to migrate.
+  migrateToPlanSystem();
   const grid = document.getElementById('calendarGrid');
   if (!grid) return;
   const start = getStartDate();
