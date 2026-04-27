@@ -2480,13 +2480,45 @@ function createPlan(name, startDate, settings) {
 }
 
 // ── Set active plan ───────────────────────────────────────────────────────────
+// ─── TOAST NOTIFICATIONS — brief non-blocking confirmation messages ───────────
+// Used for low-priority confirmations (plan switched, settings saved, etc.)
+// Stacks cleanly if multiple toasts appear in quick succession.
+function showToast(message, duration = 2500) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.style.cssText = 'background:var(--text);color:var(--bg);padding:10px 20px;border-radius:20px;font-family:var(--sans);font-size:13px;font-weight:500;opacity:0;transition:opacity 0.2s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.18);';
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
+}
+
+
 function setActivePlan(planId) {
+  // ─── SET ACTIVE PLAN — switches which plan governs goals and tracking ─────────
+  // Updates _activePlanId, recalculates currentWeek for the new plan's start,
+  // then immediately re-renders (no refresh needed) and persists.
   migrateToPlanSystem();
-  if (!(allData._plans || []).find(p => p.id === planId)) return;
+  const plan = (allData._plans || []).find(p => p.id === planId);
+  if (!plan) return;
   allData._activePlanId = planId;
+  _selectedPlanTabId    = planId; // switch tab to newly active plan
   currentWeek = getCurrentWeekFromDate();
   autoPersist();
+  // Immediately re-render both the plans section and the full app UI
+  renderPlansSection();
   render();
+  // Confirmation toast (non-blocking — doesn't interrupt the user)
+  showToast(plan.name + ' is now your active plan');
 }
 
 // ── Update a plan's settings ──────────────────────────────────────────────────
@@ -4775,6 +4807,53 @@ function saveAllSettings() {
 
 let _selectedPlanTabId = null; // which plan tab is open in the UI
 
+// ─── DELETE PLAN — removes a plan with confirmation ──────────────────────────
+// Cannot delete the only plan, or Plan 1 if it has logged data.
+// Shows a strong confirmation prompt since this cannot be undone.
+// NOTE: deleting a plan does NOT delete any logged food/activity data —
+// weekly data (allData[1..N]) is keyed by global week and is never removed here.
+function deletePlan(planId) {
+  const plans = getPlans();
+  const plan  = plans.find(p => p.id === planId);
+  if (!plan) return;
+
+  if (plans.length === 1) {
+    showToast('Cannot delete your only plan.');
+    return;
+  }
+
+  // Strong confirmation — styled like a destructive action
+  const confirmed = confirm(
+    'Delete "' + plan.name + '"?\n\n' +
+    'This cannot be undone.\n\n' +
+    'Your logged food, activities, and workouts are NOT deleted — ' +
+    'they stay in the app and remain visible on the calendar.\n\n' +
+    'Press OK to permanently delete this plan.'
+  );
+  if (!confirmed) return;
+
+  // Remove the plan
+  allData._plans = plans.filter(p => p.id !== planId);
+
+  // If deleted plan was active, switch to plan 1
+  if (allData._activePlanId === planId) {
+    allData._activePlanId = allData._plans[0].id;
+    allData._settings     = allData._plans[0].settings || {};
+    currentWeek = getCurrentWeekFromDate();
+  }
+
+  // If deleted tab was selected, switch to first plan
+  if (_selectedPlanTabId === planId) {
+    _selectedPlanTabId = allData._plans[0].id;
+  }
+
+  autoPersist();
+  renderPlansSection();
+  render();
+  showToast(plan.name + ' deleted');
+}
+
+
 function renderPlansSection() {
   // ─── PLAN TABS — tabbed per-plan settings in the Settings tab ─────────────
   // Each plan gets its own tab. Active plan has orange dot.
@@ -4792,6 +4871,7 @@ function renderPlansSection() {
   }
 
   // ── Tab bar — matches app's existing tab-bar style ─────────────────────────
+  const isNewDraft = _selectedPlanTabId === 'new';
   const tabBar = plans.map(plan => {
     const isSel    = plan.id === _selectedPlanTabId;
     const isActive = plan.id === activePlanId;
@@ -4802,7 +4882,7 @@ function renderPlansSection() {
              cursor:pointer;white-space:nowrap;">
       ${escapeHtml(plan.name)}${isActive ? ' ●' : ''}
     </button>`;
-  }).join('');
+  }).join('') + (isNewDraft ? `<button style="padding:6px 16px;border:none;border-radius:0;border-bottom:2px solid var(--accent);background:none;color:var(--accent);font-family:var(--sans);font-size:13px;font-weight:600;cursor:default;white-space:nowrap;">+ New plan</button>` : '');
 
   // ── Selected plan content ──────────────────────────────────────────────────
   const plan     = plans.find(p => p.id === _selectedPlanTabId) || plans[0];
@@ -4821,6 +4901,68 @@ function renderPlansSection() {
     d.setDate(d.getDate() + totalW * 7);
     return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   })() : '—';
+
+  // ── Draft new plan form — rendered inline in the tab content area ────────────
+  // This is shown when user clicks "+ New plan" tab. Feels like editing a real plan.
+  // On "Create plan" it becomes a real plan; on "Cancel" the draft tab closes.
+  if (isNewDraft) {
+    // Pre-fill start date = day after last plan ends
+    const lastPlan   = plans[plans.length - 1];
+    const defaultSD  = lastPlan && lastPlan.startDate ? (() => {
+      const d = new Date(lastPlan.startDate);
+      d.setDate(d.getDate() + ((lastPlan.settings?.totalWeeks || 28) * 7));
+      return d.toISOString().slice(0,10);
+    })() : new Date().toISOString().slice(0,10);
+    const defaultName = 'Plan ' + (plans.length + 1);
+
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;gap:0;">
+        ${tabBar}
+        <button onclick="showNewPlanForm()"
+          style="padding:6px 14px;border:none;border-bottom:2px solid transparent;background:none;
+                 color:var(--accent);font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;display:none;">
+          + New plan
+        </button>
+      </div>
+      <div class="plan-ref">
+        <div class="plan-ref-title" style="margin-bottom:12px;">New plan details</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:14px;">
+          <div style="grid-column:1/-1;"><label class="set-label">Plan name</label>
+            <input id="newPlanName" type="text" value="${defaultName}" class="set-input" style="width:100%;box-sizing:border-box;"></div>
+          <div><label class="set-label">Start date</label>
+            <input id="newPlanStartDate" type="date" value="${defaultSD}" class="set-input"></div>
+          <div><label class="set-label">Total weeks</label>
+            <input id="newPlanTotalWeeks" type="number" value="28" min="1" max="260" class="set-input"></div>
+          <div><label class="set-label">Phase 1 weeks</label>
+            <input id="newPlanPhase1Weeks" type="number" value="15" min="1" max="260" class="set-input"></div>
+          <div><label class="set-label">Start weight (lbs)</label>
+            <input id="newPlanStartWeight" type="number" min="50" max="500" step="0.5" class="set-input"
+              placeholder="${getSetting('goal1') || ''}"></div>
+          <div><label class="set-label">Goal 1 (lbs)</label>
+            <input id="newPlanGoal1" type="number" min="50" max="500" step="0.5" class="set-input"></div>
+          <div><label class="set-label">Daily calorie target (kcal)</label>
+            <input id="newPlanDailyTarget" type="number" min="500" max="5000" step="50" class="set-input"
+              placeholder="${getSetting('dailyTarget1') || ''}"></div>
+          <div><label class="set-label">Maintenance calories (kcal)</label>
+            <input id="newPlanMaintenance" type="number" min="500" max="8000" step="50" class="set-input"
+              placeholder="${getSetting('maintenance') || ''}"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">
+          All other settings (macros, water, phase 2 details) can be adjusted after creation in the plan's settings tab.
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveNewPlan()"
+            style="padding:9px 22px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;">
+            Create plan
+          </button>
+          <button onclick="cancelNewPlan()"
+            style="padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
+      </div>`;
+    return; // exit renderPlansSection early — draft view is fully rendered
+  }
 
   const planContent = plan ? `
 
@@ -4844,6 +4986,10 @@ function renderPlansSection() {
           style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:var(--sans);font-size:12px;cursor:pointer;">
           Rename
         </button>
+        ${plans.length > 1 ? `<button onclick="deletePlan('${plan.id}')"
+          style="padding:6px 12px;border-radius:8px;border:1px solid var(--red,#ef4444);background:none;color:var(--red,#ef4444);font-family:var(--sans);font-size:12px;cursor:pointer;">
+          Delete plan
+        </button>` : ''}
       </div>
     </div>
 
@@ -4939,7 +5085,7 @@ function renderPlansSection() {
     </div>
     ${planContent}
 
-    <!-- New plan creation form (hidden until user clicks "+ New plan") -->
+    <!-- newPlanFormWrap no longer used — new plan form renders inline in tab (Fix 3) -->
     <div id="newPlanFormWrap" style="display:none;">
       <div class="plan-ref" style="margin-top:12px;">
         <div class="plan-ref-title">Create new plan</div>
@@ -4995,9 +5141,23 @@ function selectPlanTab(planId) {
   renderPlansSection();
 }
 
+// ─── CANCEL NEW PLAN DRAFT — closes the draft tab and returns to active plan ──
+function cancelNewPlan() {
+  _selectedPlanTabId = allData._activePlanId;
+  renderPlansSection();
+}
+
+
 function showNewPlanForm() {
-  const wrap = document.getElementById('newPlanFormWrap');
-  if (wrap) wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  // ─── NEW PLAN DRAFT — creates a draft tab so user fills details inline ────────
+  // Sets _selectedPlanTabId to the sentinel value 'new' which causes
+  // renderPlansSection to render a blank new-plan form inside the tab content area
+  // (same layout as editing an existing plan) instead of a hidden form below.
+  _selectedPlanTabId = 'new';
+  renderPlansSection();
+  // Scroll the plans section into view so the form is immediately visible
+  const el = document.getElementById('plansSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function renamePlanPrompt(planId) {
@@ -5107,7 +5267,8 @@ function saveNewPlan() {
   const maintenance = parseInt(document.getElementById('newPlanMaintenance')?.value)   || getSetting('maintenance');
 
   if (!startDate) {
-    alert('Please set a start date for the new plan.');
+    showToast('"' + newPlan.name + '" created and set as active plan');
+  _selectedPlanTabId = newPlan.id;
     return;
   }
 
@@ -5144,9 +5305,6 @@ function saveNewPlan() {
   renderSettingsTab();
 
   // Show confirmation
-  alert(`"${name}" created and set as active plan. ` +
-    `Starting from week ${currentWeek} (${startDate}).\n\n` +
-    `All your historical data is preserved and visible on the calendar.`);
 }
 
 
@@ -8211,8 +8369,14 @@ function renderCalendar() {
       if (w === planStartGlobal && plan.name !== lastPlanLabel) {
         lastPlanLabel = plan.name;
         const isActive = plan.id === allData._activePlanId;
+        // Compute plan end date for the label
+        const planEndDate = (() => {
+          const d = new Date(plan.startDate);
+          d.setDate(d.getDate() + ((plan.settings?.totalWeeks || TOTAL_WEEKS()) * 7) - 1);
+          return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+        })();
         html += `<div style="font-size:10px;font-family:var(--mono);letter-spacing:0.08em;color:${isActive ? 'var(--accent)' : 'var(--text3)'};padding:4px 8px;background:${isActive ? 'rgba(196,80,26,0.06)' : 'var(--surface)'};border-left:2px solid ${isActive ? 'var(--accent)' : 'var(--border)'};margin:4px 0;">
-          ${escapeHtml(plan.name).toUpperCase()}${isActive ? ' ● ACTIVE' : ''} — Starts ${ws.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+          ${escapeHtml(plan.name).toUpperCase()}${isActive ? ' ● ACTIVE' : ''} — ${ws.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} → ${planEndDate}
         </div>`;
       }
       if (w === planEndGlobal + 1) {
