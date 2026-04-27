@@ -8190,7 +8190,31 @@ function renderCalendar() {
       }
     }
     const wd = peekWeekData(w) || {};
-    const wLabel = `Wk ${w}<br>${formatDate(ws,{day:'numeric',month:'short'})}`;
+    // ── Week label: plan-relative if in a plan, plain week number if not ──────
+    // Find which plan (if any) this global week falls within
+    let wLabelTop, wLabelSub;
+    const dateStr = formatDate(ws, {day:'numeric', month:'short'});
+    const planForWeek = allPlans.find(plan => {
+      const planStart = getPlanStartGlobalWeek(plan);
+      const planEnd   = planStart + ((plan.settings && plan.settings.totalWeeks) || TOTAL_WEEKS()) - 1;
+      return w >= planStart && w <= planEnd;
+    });
+    if (planForWeek) {
+      // Inside a plan — show plan-relative week
+      const relWk     = w - getPlanStartGlobalWeek(planForWeek) + 1;
+      const planTotal = (planForWeek.settings && planForWeek.settings.totalWeeks) || TOTAL_WEEKS();
+      const p1w       = (planForWeek.settings && planForWeek.settings.phase1Weeks) || PHASE1_WEEKS();
+      const phase     = relWk <= p1w ? 1 : 2;
+      const isActive  = planForWeek.id === allData._activePlanId;
+      wLabelTop = `<span style="font-size:9px;color:${isActive ? 'var(--accent)' : 'var(--text3)'};font-weight:600;">Ph${phase} Wk${relWk}</span>`;
+      wLabelSub = dateStr;
+    } else {
+      // Outside any plan (post-plan, between plans, or no plan set up) —
+      // just show a plain week number and date, no plan context needed
+      wLabelTop = `Wk ${w}`;
+      wLabelSub = dateStr;
+    }
+    const wLabel = `${wLabelTop}<br><span style="font-size:10px;">${wLabelSub}</span>`;
     html += `<div class="cal-week-row"><div class="cal-week-label">${wLabel}</div>`;
     for (let d = 0; d < 7; d++) {
       const date = getDayDate(w, d);
