@@ -13,7 +13,7 @@
   <link rel="serviceworker" href="sw.js">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1714'/><text y='.9em' font-size='80' x='10'>💪</text></svg>">
-<title>Arnav — Fitness Tracker</title>
+<title>Fitness Tracker</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1113,7 +1113,7 @@
         <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
       </svg>
     </div>
-    <div class="lock-title">Arnav's Fitness Tracker</div>
+    <div class="lock-title">Fitness Tracker</div>
     <div class="lock-sub" id="lockSub">Enter your password to continue</div>
     <div id="lockBiometricSetupHint" style="display:none;font-size:11px;color:#5f5e5a;margin-bottom:12px;text-align:center;">Touch ID and Face ID available — set up in Settings after logging in.</div>
 
@@ -1149,7 +1149,7 @@
 <div class="header">
   <div class="header-left">
     <div class="header-title">Progress tracker</div>
-    <div class="header-name">Arnav — Fitness Tracker</div>
+    <div class="header-name">Fitness Tracker</div>
   </div>
   <div class="header-right">
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:6px;">
@@ -2132,7 +2132,7 @@ const DEFAULT_PW_HASH = 'bf2782dc96e0a61b66904855e6bdd0e9f0d834d0139fd60857899f4
 const PW_KEY      = 'ftPwHash';
 const PASSKEY_KEY = 'ftPasskeyId';
 const RP_ID       = location.hostname || 'localhost';
-const RP_NAME     = "Arnav's Fitness Tracker";
+const RP_NAME     = "Fitness Tracker";
 
 async function hashStr(str) {
   // crypto.subtle requires HTTPS — graceful fallback for HTTP dev environments
@@ -11070,7 +11070,7 @@ function exportWeekPDF() {
   .section { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #a89e93; margin: 16px 0 8px; font-weight: 500; }
   @media print { body { padding: 16px; } }
 </style></head><body>
-<h1>Arnav — Fitness Tracker</h1>
+<h1>Fitness Tracker</h1>
 <div class="sub">Week ${currentWeek} of ${TOTAL_WEEKS()} · Phase ${phase} · ${dateRange}</div>
 
 <div class="grid">
@@ -11093,7 +11093,7 @@ function exportWeekPDF() {
 ${wd.weekNotes ? ('<div class="section">Weekly notes</div><div class="notes">' + wd.weekNotes + '</div>') : ''}
 
 <div style="margin-top:24px;font-size:10px;color:#a89e93;border-top:1px solid #e0d9d0;padding-top:10px;">
-  Generated ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} · Arnav's Fitness Tracker
+  Generated ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} · Fitness Tracker
 </div>
 </body></html>`;
 
@@ -11165,7 +11165,7 @@ function renderShareCard() {
   ctx.font = 'bold 15px DM Sans, system-ui, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('Arnav — Fitness progress', 20, 16);
+  ctx.fillText('Fitness Progress', 20, 16);
   ctx.fillStyle = '#a89e93';
   ctx.font = '10px DM Mono, monospace';
   ctx.fillText(`Wk ${currentWeek} of ${TOTAL_WEEKS()} · ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, 20, 36);
