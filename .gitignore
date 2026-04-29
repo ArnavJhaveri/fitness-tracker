@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Node (if you add later)
+node_modules/
+
+# Env files (if you ever add APIs)
+.env
+
+# VS Code settings (optional)
+.vscode/
+
+# Temporary files
+*.tmp
